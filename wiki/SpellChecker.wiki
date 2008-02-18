@@ -36,7 +36,7 @@ To report bugs/make suggestions, go to the forum thread: http://forums.miranda-i
 
 Sources are at: https://developer.berlios.de/projects/mgoodies (still thinking about migrating)
 
-== Changelog: ==
+=== Changelog: ===
 {{{
 . 0.1.0.1
   + Will use also language files avaiable for other apps (Thunderbird and Firefox by now) (thanks yb)
