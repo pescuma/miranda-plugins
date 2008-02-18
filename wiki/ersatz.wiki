@@ -1,0 +1,15 @@
+= Ersatz plugin =
+
+Create services to retrieve current status message per protocol (used by My Details).
+
+This plugin was originaly created by TioDuke, and I'm maintaining it.
+
+
+=== Changelog ===
+{{{
+. 0.0.1.1
+  + Added uid for 0.8
+
+. 0.0.1.0
+  + A lot of internal changes
+}}}
