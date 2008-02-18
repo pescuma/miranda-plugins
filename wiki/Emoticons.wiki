@@ -48,6 +48,8 @@ Thanks to FYR for the AniSmiley plugin and to Hylke for the nice emoticons.
 
 Miranda forum thread: http://forums.miranda-im.org/showthread.php?t=17210
 
+Sources are at: https://developer.berlios.de/projects/mgoodies (still thinking about migrating)
+
 
 == TODO: ==
  * Per protocol pack
