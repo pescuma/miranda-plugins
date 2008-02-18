@@ -34,6 +34,8 @@ Many thanks to the Hunspell team and to Vladimir Vainer that made an initial ver
 
 To report bugs/make suggestions, go to the forum thread: http://forums.miranda-im.org/showthread.php?t=11555
 
+Sources are at: https://developer.berlios.de/projects/mgoodies (still thinking about migrating)
+
 == Changelog: ==
 {{{
 . 0.1.0.1
