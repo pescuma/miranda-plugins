@@ -1,0 +1,5 @@
+= AniSmiley plugin =
+
+AniSmiley is a plugin made by FYR that allows inseting animated and non-animated images in a RichEdit control.
+
+It can be found at http://anismiley.googlecode.com
