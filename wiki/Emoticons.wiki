@@ -51,14 +51,14 @@ Miranda forum thread: http://forums.miranda-im.org/showthread.php?t=17210
 Sources are at: https://developer.berlios.de/projects/mgoodies (still thinking about migrating)
 
 
-== TODO: ==
+=== TODO ===
  * Per protocol pack
  * Support for custom smileys
  * Updater support for Emoticon Packs
  * Support h++ (works using AniSmiley)
 
 
-== Changelog: ==
+=== Changelog ===
 {{{
 . 0.0.1.0
   + Allows loading emoticons from folder with proto name
