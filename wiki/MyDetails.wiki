@@ -1,3 +1,5 @@
+#summary My Details plugin description
+
 = My Details plugin =
 
 What it does:
