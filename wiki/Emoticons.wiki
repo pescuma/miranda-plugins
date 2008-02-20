@@ -1,3 +1,5 @@
+#summary Emoticons plugin description
+
 = Emoticons plugin =
 
 *CAUTION: THIS IS AN ALPHA STAGE PLUGIN. IT CAN DO VERY BAD THINGS. USE AT YOUR OWN RISK.*
