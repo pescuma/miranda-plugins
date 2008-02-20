@@ -1,3 +1,5 @@
+#summary Spell Checker plugin description
+
 = Spell Checker plugin = 
 
 *CAUTION: THIS IS A BETA STAGE PLUGIN. IT CAN DO VERY BAD THINGS. USE AT YOUR OWN RISK.*
