@@ -53,6 +53,11 @@ Miranda forum thread: http://forums.miranda-im.org/showthread.php?t=17210
 Sources are at: https://developer.berlios.de/projects/mgoodies (still thinking about migrating)
 
 
+=== Screenshot ===
+
+http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/emoticons/Docs/emoticons.png
+
+
 === TODO ===
  * Per protocol pack
  * Support for custom smileys
