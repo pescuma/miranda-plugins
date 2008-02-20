@@ -1,3 +1,5 @@
+#summary Ersatz plugin description
+
 = Ersatz plugin =
 
 Create services to retrieve current status message per protocol (used by My Details).
