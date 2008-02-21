@@ -1,0 +1,88 @@
+#summary Quick Contacts plugin description
+
+= Quick Contacts plugin =
+
+On pressing an user defined hotkey an dialog pops up where you can enter a contacts name or select it from a combobox and send it messages/files/urls an look at his details.
+
+This is a mod of the Hotkey plugin by micron-x
+
+To be able to set the hotkey you need clist_modern (or some other that implements Hotkeys2), Hotkeys+ or HotkeyService.
+
+Available hotkeys:
+ * Ctrl-V: Make a voice call
+ * Ctrl-F: Send file
+ * Ctrl-U: Send URL
+ * Ctrl-I: Show userinfo
+ * Ctrl-H: Open history
+ * Ctrl-M: Open contact menu
+ * User defined: Open hotkey dialog
+In Miranda 0.8 all this keys can be configured in options.
+
+To report bugs/make suggestions, go to the forum thread: http://forums.miranda-im.org/showthread.php?t=8797
+
+
+
+=== Changelog ===
+{{{
+. 0.0.3.0
+  + Added support for hotkeys module in 0.8(some texts changed in langpack)
+
+. 0.0.2.9
+  + Added contact icon
+  * Fix when comparing unicode strings
+
+. 0.0.2.8
+  + Added VoiceService support
+
+. 0.0.2.7
+  + Added support for Miranda 0.8
+
+. 0.0.2.6
+  * Fix for crash on exit
+
+. 0.0.2.5
+  + Added contact menu buttom
+
+. 0.0.2.4
+  * Only to fix upload of wrong file to FL
+
+. 0.0.2.3
+  + Added support for Hotkeys+
+  * Now it will register to all hotkey services if found
+
+. 0.0.2.2
+  * Fix for icons
+  * Fix for backspace
+  * -pv- fix
+
+. 0.0.2.1
+  * Try to fix error reported
+  + Support of Hotkey service (if it exists, will be used instead of HotKeys2)
+  + Support for Magnetic windows
+
+. 0.0.2.0
+  - First version in FL
+  * Fix for more than one contact wth same name
+  * Fix to always open the dialog inside a monitor
+
+. 0.0.1.4
+  + Option to show group as a column
+  + Act as double click when pressing enter in the combo
+  + Disable buttons that protocol do not allow
+  * Bug fixes
+
+. 0.0.1.3
+  + Changes in options
+  + Added unicode release
+
+. 0.0.1.2
+  + Option to append group name to contact name
+
+. 0.0.1.1
+  + Checkbox in main dialog works
+  + Option to hide contacts from offline protocols
+  * Fix in getting metacontact status
+
+. 0.0.1.0
+  First verion based on Hotkey plugin 3.2.1.0
+}}}
