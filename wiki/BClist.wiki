@@ -1,0 +1,36 @@
+#summary BClist plugin details
+
+= BClist plugin =
+
+This is a contact list for blind folks. It uses a list control to show all contacts, so screen readers can "read" the clist to the user.
+
+Based on classic contact list.
+
+This plugin needs at least Miranda 0.7
+
+To report bugs/make suggestions, go to the forum thread: http://forums.miranda-im.org/showthread.php?t=11778
+
+=== Changelog ===
+{{{
+. 0.7.1.0
+  * Sync with latest clist version from SVN
+  * Fix for CTRL-1
+  * Changed version number to match clist
+
+. 0.0.0.5
+  + Added support for miranda 0.8
+
+. 0.0.0.4
+  * Fix for when showing more than one clist at the same time
+
+. 0.0.0.3
+  * Fix for losing selection and focus on rebuild
+
+. 0.0.0.2
+  + Added templates for row types
+  + Added updater support
+  * Fixed rebuild on item data change
+
+. 0.0.0.1
+  + Initial version
+}}}
