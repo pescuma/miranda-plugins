@@ -2,6 +2,8 @@
 
 = Ersatz plugin =
 
+*CAUTION: THIS IS AN BETA STAGE PLUGIN. IT CAN DO VERY BAD THINGS. USE AT YOUR OWN RISK.*
+
 Create services to retrieve current status message per protocol (used by My Details).
 
 This plugin was originaly created by TioDuke, and I'm maintaining it.
