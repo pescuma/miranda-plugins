@@ -2,7 +2,7 @@
 
 = ListeningTo plugin =
 
-*CAUTION: THIS IS AN BETA STAGE PLUGIN. IT CAN DO VERY BAD THINGS. USE AT YOUR OWN RISK.*
+*CAUTION: THIS IS A BETA STAGE PLUGIN. IT CAN DO VERY BAD THINGS. USE AT YOUR OWN RISK.*
 
 This plugins allows to set/remove your listening info to protocols that support it. It also has basic support for getting this info from the players.
 
