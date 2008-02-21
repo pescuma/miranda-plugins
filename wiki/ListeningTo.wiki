@@ -2,6 +2,8 @@
 
 = ListeningTo plugin =
 
+*CAUTION: THIS IS AN BETA STAGE PLUGIN. IT CAN DO VERY BAD THINGS. USE AT YOUR OWN RISK.*
+
 This plugins allows to set/remove your listening info to protocols that support it. It also has basic support for getting this info from the players.
 
 This means that it set the user listening to information, not the info from your contacts. To see the info from your contacts you need a clist that supports it (only modern now) or a plugin like tipper (for a contact this info is stored inside `<ProtocolName>/ListeningTo` db key of the contact).
