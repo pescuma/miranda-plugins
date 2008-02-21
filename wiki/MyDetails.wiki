@@ -2,6 +2,8 @@
 
 = My Details plugin =
 
+*CAUTION: THIS IS AN BETA STAGE PLUGIN. IT CAN DO VERY BAD THINGS. USE AT YOUR OWN RISK.*
+
 What it does:
  * Show your current configuration, per protocol, for avatar, nickname, status and away message
  * It shows each protocol at a time, cicling throught then
