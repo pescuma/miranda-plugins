@@ -69,7 +69,7 @@ http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/emoticons/Docs/emoticons
 {{{
 . 0.0.1.1
   * Fix for copy in input area
-  + Added silly to de default pack
+  + Added silly to the default pack
 
 . 0.0.1.0
   + Allows loading emoticons from folder with proto name
