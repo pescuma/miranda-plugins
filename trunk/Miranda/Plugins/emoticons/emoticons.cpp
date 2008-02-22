@@ -804,12 +804,34 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	Dialog *dlg = dlgit->second;
 
+	BOOL rebuild = FALSE;
+	switch(msg)
+	{
+		case WM_KEYDOWN:
+			if ((!(GetKeyState(VK_CONTROL) & 0x8000) || (wParam != 'C' && wParam != 'X' && wParam != VK_INSERT))
+				&& (!(GetKeyState(VK_SHIFT) & 0x8000) || wParam != VK_DELETE))
+				break;
+		case WM_CUT:
+		case WM_COPY:
+		{
+			STOP_RICHEDIT(dlg->input);
+			__old_sel.cpMax += RestoreInput(dlg->input, __old_sel.cpMin, __old_sel.cpMax);
+			START_RICHEDIT(dlg->input);
+
+			rebuild = TRUE;
+			break;
+		}
+	}
+
 	LRESULT ret = CallWindowProc(dlg->input.old_edit_proc, hwnd, msg, wParam, lParam);
 
 	switch(msg)
 	{
 		case WM_KEYDOWN:
 		{
+			if ((GetKeyState(VK_SHIFT) & 0x8000) && wParam == VK_DELETE) 
+				break;
+
 			if (wParam != VK_DELETE && wParam != VK_BACK)
 				break;
 		}
@@ -885,12 +907,12 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				break;
 		case EM_PASTESPECIAL:
 		case WM_PASTE:
-		{
-			ReplaceAllEmoticonsBackwards(dlg->input, NULL, dlg->module);
-
+			rebuild = TRUE;
 			break;
-		}
 	}
+
+	if (rebuild)
+		ReplaceAllEmoticonsBackwards(dlg->input, NULL, dlg->module);
 
 	return ret;
 }
