@@ -44,6 +44,11 @@ or
 
 A default pack, containing Tango Emoticons (made by Hylke) is packed and can be used as an example.
 
+For custom smileys to work, you need to use my mod of MSN protocol. The only difference in this mod is that it fires a notication (at the same time as the popup is shown) telling about the new custom smiley:
+[http://pescuma.googlecode.com/files/msn_cs.zip Ansi]
+[http://pescuma.googlecode.com/files/msn_csW.zip Unicode]
+[http://pescuma.googlecode.com/files/msn_cs.patch Patch]
+
 Currently there is a lot more work to be done on this plugin, but I wanted to show an initial version, so I could get some feedback.
 
 Thanks to FYR for the AniSmiley plugin and to Hylke for the nice emoticons.
@@ -58,7 +63,6 @@ http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/emoticons/Docs/emoticons
 
 === TODO ===
  * Per protocol pack
- * Support for custom smileys
  * Updater support for Emoticon Packs
  * Support h++ (works using AniSmiley)
 
@@ -72,6 +76,10 @@ http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/emoticons/Docs/emoticons
 
 === Changelog ===
 {{{
+. 0.0.1.2
+  * Fix for wrong memory free
+  + Support for custom smileys
+
 . 0.0.1.1
   * Fix for copy in input area
   + Added silly to the default pack
