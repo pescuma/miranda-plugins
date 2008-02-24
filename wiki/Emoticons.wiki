@@ -65,11 +65,9 @@ http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/emoticons/Docs/emoticons
 
 === Download ===
 
-[http://pescuma.googlecode.com/files/emoticonsW.zip Unicode]
-
-[http://pescuma.googlecode.com/files/emoticons.zip Ansi]
-
-[http://code.google.com/p/pescuma/downloads/list?q=plugin:Emoticons Older versions]
+ * [http://pescuma.googlecode.com/files/emoticonsW.zip Unicode]
+ * [http://pescuma.googlecode.com/files/emoticons.zip Ansi]
+ * [http://code.google.com/p/pescuma/downloads/list?q=plugin:Emoticons Older versions]
 
 
 === Changelog ===
