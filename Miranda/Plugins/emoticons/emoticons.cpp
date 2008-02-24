@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,1,1),
+	PLUGIN_MAKE_VERSION(0,0,1,2),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -72,7 +72,7 @@ FI_INTERFACE *fei = NULL;
 LIST<Module> modules(10);
 LIST<EmoticonPack> packs(10);
 LIST<Contact> contacts(10);
-LIST<OleImage> downloading(10);
+LIST<DowloadingEmoticon> downloading(10);
 
 BOOL LoadModule(Module *m);
 void LoadModules();
@@ -228,14 +228,14 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 		upd.szUpdateURL = UPDATER_AUTOREGISTER;
 
-		upd.szBetaVersionURL = "http://pescuma.org/miranda/emoticons_version.txt";
+		upd.szBetaVersionURL = "http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/emoticons/Docs/emoticons_version.txt";
 		upd.szBetaChangelogURL = "http://pescuma.org/miranda/emoticons#Changelog";
 		upd.pbBetaVersionPrefix = (BYTE *)"Emoticons ";
 		upd.cpbBetaVersionPrefix = strlen((char *)upd.pbBetaVersionPrefix);
 #ifdef UNICODE
-		upd.szBetaUpdateURL = "http://pescuma.org/miranda/emoticonsW.zip";
+		upd.szBetaUpdateURL = "http://pescuma.googlecode.com/files/emoticonsW.zip";
 #else
-		upd.szBetaUpdateURL = "http://pescuma.org/miranda/emoticons.zip";
+		upd.szBetaUpdateURL = "http://pescuma.googlecode.com/files/emoticons.zip";
 #endif
 
 		upd.pbVersion = (BYTE *)CreateVersionStringPlugin((PLUGININFO*) &pluginInfo, szCurrentVersion);
@@ -315,9 +315,7 @@ int PreShutdown(WPARAM wParam, LPARAM lParam)
 
 	for(i = downloading.getCount() - 1; i >= 0; i--)
 	{
-		OleImage *oimg = downloading[i];
-		oimg->Release();
-
+		delete downloading[i];
 		downloading.remove(i);
 	}
 
@@ -347,6 +345,25 @@ int PreShutdown(WPARAM wParam, LPARAM lParam)
 }
 
 
+BOOL FileExists(const char *filename)
+{
+	DWORD attrib = GetFileAttributesA(filename);
+	if (attrib == 0xFFFFFFFF || (attrib & FILE_ATTRIBUTE_DIRECTORY))
+		return FALSE;
+	return TRUE;
+}
+
+#ifdef UNICODE
+BOOL FileExists(const WCHAR *filename)
+{
+	DWORD attrib = GetFileAttributesW(filename);
+	if (attrib == 0xFFFFFFFF || (attrib & FILE_ATTRIBUTE_DIRECTORY))
+		return FALSE;
+	return TRUE;
+}
+#endif
+
+
 // Return the size difference with the original text
 int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module, TCHAR *text, int text_len, int last_pos, TCHAR next_char)
 {
@@ -354,7 +371,7 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 	char found_path[1024];
 	int found_len = -1;
 	TCHAR *found_text;
-	BOOL down = FALSE;
+	BOOL found_downloading = FALSE;
 
 	// Replace normal emoticons
 	if (!opts.only_replace_isolated || next_char == _T('\0') || _istspace(next_char))
@@ -410,7 +427,7 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 			mir_snprintf(found_path, MAX_REGS(found_path), "%s", e->path);
 			found_len = len;
 			found_text = txt;
-			down = e->downloading;
+			found_downloading = e->downloading;
 		}
 	}
 
@@ -436,28 +453,67 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 				SendMessage(rec.hwnd, EM_SETBKGNDCOLOR, 0, cf.crBackColor);
 			}
 
+			DowloadingEmoticon *de = NULL;
+			if (found_downloading)
+			{
+				de = new DowloadingEmoticon();
+				de->path = mir_strdup(found_path);
+
+				mir_snprintf(found_path, MAX_REGS(found_path), TCHAR_STR_PARAM "\\downloading.gif", protocolsFolder);
+			}
+
 			TCHAR *path = mir_a2t(found_path);
-			if (InsertAnimatedSmiley(rec.hwnd, path, cf.crBackColor, 0 , found_text))
+			IUnknown * gctrl;
+			if (gctrl = (IGifSmileyCtrl *) InsertAnimatedSmiley(rec.hwnd, path, cf.crBackColor, 0 , found_text))
 			{
 				ret = - found_len + 1;
 			}
 			MIR_FREE(path);
-		}
-		else
-		{
-			OleImage *img = new OleImage(found_path, found_text, found_text);
-			if (!img->isValid())
+
+			if (found_downloading)
 			{
-				if (down && img->ShowDownloadingIcon(TRUE))
+				if (gctrl == NULL)
 				{
-					img->AddRef();
-					downloading.insert(img);
+					delete de;
 				}
 				else
 				{
-					delete img;
-					return 0;
+					IGifSmileyCtrl * igsc;
+					if (gctrl->QueryInterface(__uuidof(IGifSmileyCtrl), (void **) &igsc) != S_OK || igsc == NULL)
+					{
+						delete de;
+					}
+					else
+					{
+						de->img = igsc;
+						downloading.insert(de);
+					}
 				}
+			}
+		}
+		else
+		{
+			DowloadingEmoticon *de = NULL;
+			if (found_downloading)
+			{
+				de = new DowloadingEmoticon();
+				de->path = mir_strdup(found_path);
+
+				mir_snprintf(found_path, MAX_REGS(found_path), TCHAR_STR_PARAM "\\downloading.gif", protocolsFolder);
+			}
+
+			OleImage *img = new OleImage(found_path, found_text, found_text);
+
+			if (found_downloading)
+			{
+				de->img = img;
+				img->AddRef();
+				downloading.insert(de);
+			}
+			else if (!img->isValid())
+			{
+				delete img;
+				return 0;
 			}
 
 			IOleClientSite *clientSite; 
@@ -501,13 +557,13 @@ TCHAR *GetText(RichEditCtrl &rec, int start, int end)
 
 	ITextRange *range;
 	if (rec.textDocument->Range(start, end, &range) != S_OK) 
-		return FALSE;
+		return mir_tstrdup(_T(""));
 
 	BSTR text = NULL;
 	if (range->GetText(&text) != S_OK || text == NULL)
 	{
 		range->Release();
-		return _T("");
+		return mir_tstrdup(_T(""));
 	}
 
 	TCHAR *ret = mir_u2t(text);
@@ -1257,8 +1313,7 @@ void LoadModules()
 		{
 			mir_sntprintf(file, MAX_REGS(file), _T("%s\\%s"), protocolsFolder, ffd.cFileName);
 
-			DWORD attrib = GetFileAttributes(file);
-			if (attrib == 0xFFFFFFFF || (attrib & FILE_ATTRIBUTE_DIRECTORY))
+			if (!FileExists(file))
 				continue;
 
 			Module *m = new Module();
@@ -1398,8 +1453,7 @@ void LoadPacks()
 
 			mir_sntprintf(file, MAX_REGS(file), _T("%s\\%s"), emoticonPacksFolder, ffd.cFileName);
 
-			DWORD attrib = GetFileAttributes(file);
-			if (attrib == 0xFFFFFFFF || !(attrib & FILE_ATTRIBUTE_DIRECTORY))
+			if (!FileExists(file))
 				continue;
 
 			EmoticonPack *p = new EmoticonPack();
@@ -1502,8 +1556,7 @@ BOOL LoadPack(EmoticonPack *pack)
 		{
 			mir_snprintf(filename, MAX_REGS(filename), "%s\\%s", pack->path, ffd.cFileName);
 
-			DWORD attrib = GetFileAttributesA(filename);
-			if (attrib == 0xFFFFFFFF || (attrib & FILE_ATTRIBUTE_DIRECTORY))
+			if (!FileExists(filename))
 				continue;
 
 			int len = strlen(ffd.cFileName);
@@ -1647,8 +1700,7 @@ EmoticonImage * GetEmoticomImageFromDisk(EmoticonPack *pack, Emoticon *e, Module
 		{
 			mir_snprintf(filename, MAX_REGS(filename), "%s\\%s\\%s", pack->path, module->name, ffd.cFileName);
 
-			DWORD attrib = GetFileAttributesA(filename);
-			if (attrib == 0xFFFFFFFF || (attrib & FILE_ATTRIBUTE_DIRECTORY))
+			if (!FileExists(filename))
 				continue;
 
 			int len = strlen(ffd.cFileName);
@@ -1944,8 +1996,7 @@ BOOL EmoticonImage::isAvaiableFor(char *module)
 	else
 		mir_snprintf(tmp, MAX_REGS(tmp), "%s\\%s\\%s", pack->path, module, relPath);
 
-	DWORD attrib = GetFileAttributesA(tmp);
-	return !(attrib == 0xFFFFFFFF || (attrib & FILE_ATTRIBUTE_DIRECTORY));
+	return FileExists(tmp);
 }
 
 
@@ -2005,6 +2056,50 @@ void EmoticonImage::Release()
 }
 
 
+DowloadingEmoticon::~DowloadingEmoticon()
+{
+	MIR_FREE(path);
+
+	if (img != NULL) 
+	{
+		if (has_anismiley)
+			((IGifSmileyCtrl *) img)->Release();
+		else
+			((OleImage *) img)->Release();
+
+		img = NULL;
+	}
+}
+
+
+void DowloadingEmoticon::Downloaded()
+{
+	if (img == NULL)
+		return;
+
+	if (has_anismiley)
+	{
+		IGifSmileyCtrl *igsc = (IGifSmileyCtrl *) img;
+
+		WCHAR *p = mir_a2u(path);
+		BSTR bp = SysAllocString(p);
+		igsc->LoadFromFile(bp);
+		SysFreeString(bp);
+		mir_free(p);
+
+		igsc->Release();
+	}
+	else
+	{
+		OleImage *oimg = (OleImage *) img;
+		oimg->SetFilename(path);
+		oimg->Release();
+	}
+
+	img = NULL;
+}
+
+
 Contact * GetContact(HANDLE hContact)
 {
 	if (hContact == NULL)
@@ -2040,7 +2135,11 @@ Contact * GetContact(HANDLE hContact)
 			continue;
 		}
 		
-		if (GetCustomEmoticon(c, dbv_text.ptszVal) != NULL)
+		if (!FileExists(dbv_path.pszVal))
+		{
+			pack = TRUE;
+		}
+		else if (GetCustomEmoticon(c, dbv_text.ptszVal) != NULL)
 		{
 			pack = TRUE;
 		}
@@ -2117,12 +2216,11 @@ void DownloadedCustomEmoticon(HANDLE hContact, const char *path)
 
 	for(int i = downloading.getCount() - 1; i >= 0; i--)
 	{
-		if (stricmp(downloading[i]->GetFilename(), path) == 0)
+		DowloadingEmoticon *de = downloading[i];
+		if (stricmp(de->path, path) == 0)
 		{
-			OleImage *oimg = downloading[i];
-			oimg->ShowDownloadingIcon(FALSE);
-			oimg->Release();
-
+			de->Downloaded();
+			delete de;
 			downloading.remove(i);
 		}
 	}
@@ -2133,6 +2231,10 @@ int CustomSmileyReceivedEvent(WPARAM wParam, LPARAM lParam)
 	CUSTOMSMILEY *cs = (CUSTOMSMILEY *) lParam;
 	if (cs == NULL || cs->cbSize < sizeof(CUSTOMSMILEY) || cs->pszFilename == NULL || cs->hContact == NULL)
 		return 0;
+
+	TCHAR log[1024];
+	mir_sntprintf(log, 1024, _T("---------------\nReceived message: %d\n%S\n%s\n---------------\n"), cs->flags, cs->pszFilename, cs->ptszText);
+	OutputDebugString(log);
 
 	// Check if this is the second notification
 	if (!(cs->flags & CUSTOMSMILEY_STATE_RECEIVED))
@@ -2175,7 +2277,7 @@ int CustomSmileyReceivedEvent(WPARAM wParam, LPARAM lParam)
 	}
 
 	// Check if need to download
-	if (!(cs->flags & CUSTOMSMILEY_STATE_DOWNLOADED) && GetFileAttributesA(cs->pszFilename) == INVALID_FILE_ATTRIBUTES)
+	if (!(cs->flags & CUSTOMSMILEY_STATE_DOWNLOADED) && !FileExists(cs->pszFilename))
 	{
 		// Request emoticon download
 		cs->download = TRUE;

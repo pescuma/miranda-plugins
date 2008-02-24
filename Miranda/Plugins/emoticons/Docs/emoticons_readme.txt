@@ -46,7 +46,10 @@ To report bugs/make suggestions, go to the forum thread: http://forums.miranda-i
 
 TODO:
 - Per protocol pack
-- Support for custom smileys
 - Updater support for Emoticon Packs
 - Support h++ (works using AniSmiley)
+
+
+KNOWN ISSUES:
+- AniSmiley does not resize itself when receiving custom smiley
 

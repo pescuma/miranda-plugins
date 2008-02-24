@@ -21,7 +21,6 @@ OleImage::OleImage(const char *aFilename, const TCHAR *aText, const TCHAR *aTool
 
 	refCount = 1;
 	filename = mir_strdup(aFilename);
-	originalFilename = mir_strdup(aFilename);
 	text = mir_tstrdup(aText);
 	closed = FALSE;
 
@@ -79,29 +78,19 @@ OleImage::~OleImage()
 		tooltip = NULL;
 	}
 	mir_free(filename);
-	mir_free(originalFilename);
 	mir_free(text);
 }
 
 
-BOOL OleImage::ShowDownloadingIcon(BOOL show)
+BOOL OleImage::SetFilename(const char *aFilename)
 {
+	if (stricmp(filename, aFilename) == 0)
+		return isValid();
+
 	DestroyImages();
 
-	if (show)
-	{
-		mir_free(filename);
-
-		size_t len = lstrlen(protocolsFolder) + 20;
-		filename = (char *) mir_alloc(len * sizeof(char));
-		mir_snprintf(filename, len, TCHAR_STR_PARAM "\\downloading.gif", protocolsFolder);
-	}
-	else
-	{
-		mir_free(filename);
-
-		filename = mir_strdup(originalFilename);
-	}
+	mir_free(filename);
+	filename = mir_strdup(aFilename);
 
 	if (!LoadImages())
 		return FALSE;
@@ -116,6 +105,10 @@ BOOL OleImage::ShowDownloadingIcon(BOOL show)
 
 BOOL OleImage::LoadImages()
 {
+	// Initial values
+	sizel.cx = 0;
+	sizel.cy = 0;
+
 	animated = LoadAnimatedGif();
 	if (!animated)
 		if (!LoadStaticImage())
@@ -144,7 +137,7 @@ void OleImage::DestroyImages()
 
 const char * OleImage::GetFilename() const
 {
-	return originalFilename;
+	return filename;
 }
 
 
@@ -412,6 +405,8 @@ HRESULT STDMETHODCALLTYPE OleImage::Draw(/* [in] */ DWORD dwDrawAspect, /* [in] 
 		return E_INVALIDARG;
 	if (lprcBounds == NULL)
 		return E_INVALIDARG;
+	if (!isValid())
+		return S_OK;
 
 	if (closed)
 		closed = FALSE;

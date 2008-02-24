@@ -139,6 +139,16 @@ struct CustomEmoticon
 	CustomEmoticon() : text(0), path(0), downloading(FALSE) {}
 };
 
+struct DowloadingEmoticon
+{
+	char *path;
+	void *img;
+
+	DowloadingEmoticon() : path(0), img(0) {}
+	~DowloadingEmoticon();
+	void Downloaded();
+};
+
 struct Module
 {
 	char *name;
