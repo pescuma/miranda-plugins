@@ -2,6 +2,10 @@ Emoticons
 
 Changelog:
 
+. 0.0.1.2
+  * Fix for wrong memory free
+  + Support for custom smileys
+
 . 0.0.1.1
   * Fix for copy in input area
   + Added silly to de default pack
