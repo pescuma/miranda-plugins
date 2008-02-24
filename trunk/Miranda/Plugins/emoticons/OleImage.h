@@ -31,7 +31,7 @@ public:
 	OleImage(const char *aFilename, const TCHAR *aText, const TCHAR *aTooltip);
 	virtual ~OleImage();
 
-	BOOL ShowDownloadingIcon(BOOL show);
+	BOOL SetFilename(const char *filename);
 
 	BOOL isValid() const;
 	const TCHAR * GetText() const;
@@ -81,7 +81,6 @@ public:
 
 protected: 
 	char *filename;
-	char *originalFilename;
 	TCHAR *text;
 	BSTR tooltip;
 	int width;
