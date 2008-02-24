@@ -63,6 +63,11 @@ http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/emoticons/Docs/emoticons
  * Support h++ (works using AniSmiley)
 
 
+=== Download ===
+
+http://code.google.com/p/pescuma/downloads/list?q=plugin:Emoticons
+
+
 === Changelog ===
 {{{
 . 0.0.1.1
