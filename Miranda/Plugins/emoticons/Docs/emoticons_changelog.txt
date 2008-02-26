@@ -2,6 +2,10 @@ Emoticons
 
 Changelog:
 
+. 0.0.1.3
+  * Fix for protocol emoticons (closes issue 22)
+  * Fix for URLs in input area
+
 . 0.0.1.2
   * Fix for wrong memory free
   + Support for custom smileys

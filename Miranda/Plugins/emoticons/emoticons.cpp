@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,1,2),
+	PLUGIN_MAKE_VERSION(0,0,1,3),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -144,6 +144,23 @@ DEFINE_GUIDXXX(IID_ITextDocument,0x8CC497C0,0xA1DF,0x11CE,0x80,0x98,
 	SendMessage(rec.hwnd, WM_SETREDRAW, TRUE, 0);								\
 	InvalidateRect(rec.hwnd, NULL, FALSE);										\
 	RESUME_UNDO(rec)
+
+
+static TCHAR *webs[] = { 
+	_T("http:/"), 
+	_T("ftp:/"), 
+	_T("irc:/"), 
+	_T("gopher:/"), 
+	_T("file:/"), 
+	_T("www."), 
+	_T("www2."),
+	_T("ftp."),
+	_T("irc."),
+	_T("A:\\"),
+	_T("B:\\"),
+	_T("C:\\"),
+	_T("D:\\"),
+};
 
 
 // Functions ////////////////////////////////////////////////////////////////////////////
@@ -367,6 +384,18 @@ BOOL FileExists(const WCHAR *filename)
 // Return the size difference with the original text
 int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module, TCHAR *text, int text_len, int last_pos, TCHAR next_char)
 {
+	// Check if it is an URL
+	for (int j = 0; j < MAX_REGS(webs); j++)
+	{
+		TCHAR *txt = webs[j];
+		int len = lstrlen(txt);
+		if (last_pos < len || text_len < len)
+			continue;
+
+		if (_tcsncmp(&text[text_len - len], txt, len) == 0) 
+			return 0;
+	}
+
 	// This are needed to allow 2 different emoticons that end the same way
 	char found_path[1024];
 	int found_len = -1;
@@ -674,23 +703,6 @@ int matches(const TCHAR *tag, const TCHAR *text)
 	else
 		return 0;
 }
-
-
-static TCHAR *webs[] = { 
-	_T("http://"), 
-	_T("ftp://"), 
-	_T("irc://"), 
-	_T("gopher://"), 
-	_T("file://"), 
-	_T("www."), 
-	_T("www2."),
-	_T("ftp."),
-	_T("irc."),
-	_T("A:\\"),
-	_T("B:\\"),
-	_T("C:\\"),
-	_T("D:\\"),
-};
 
 
 void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, int start, int end)
@@ -1453,7 +1465,8 @@ void LoadPacks()
 
 			mir_sntprintf(file, MAX_REGS(file), _T("%s\\%s"), emoticonPacksFolder, ffd.cFileName);
 
-			if (!FileExists(file))
+			DWORD attrib = GetFileAttributes(file);
+			if (attrib == 0xFFFFFFFF || !(attrib & FILE_ATTRIBUTE_DIRECTORY))
 				continue;
 
 			EmoticonPack *p = new EmoticonPack();
@@ -1716,7 +1729,8 @@ EmoticonImage * GetEmoticomImageFromDisk(EmoticonPack *pack, Emoticon *e, Module
 			img->name = mir_strdup(ffd.cFileName);
 			img->name[strlen(img->name) - 4] = 0;
 			img->module = module->name;
-			img->relPath = mir_strdup(ffd.cFileName);
+			mir_snprintf(filename, MAX_REGS(filename), "%s\\%s", module->name, ffd.cFileName);
+			img->relPath = mir_strdup(filename);
 			break;
 		}
 		while(FindNextFileA(hFFD, &ffd));
