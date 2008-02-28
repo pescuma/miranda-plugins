@@ -50,7 +50,8 @@ HINSTANCE hInst;
 PLUGINLINK *pluginLink;
 
 HANDLE hHooks[3] = {0};
-HANDLE hServices[3] = {0};
+HANDLE hServices[4] = {0};
+HANDLE hChangedEvent;
 
 HANDLE hProtocolsFolder = NULL;
 TCHAR protocolsFolder[1024];
@@ -72,7 +73,6 @@ FI_INTERFACE *fei = NULL;
 LIST<Module> modules(10);
 LIST<EmoticonPack> packs(10);
 LIST<Contact> contacts(10);
-LIST<DowloadingEmoticon> downloading(10);
 
 BOOL LoadModule(Module *m);
 void LoadModules();
@@ -91,11 +91,11 @@ void ReleaseModuleImage(EmoticonImage *img);
 int ModulesLoaded(WPARAM wParam, LPARAM lParam);
 int PreShutdown(WPARAM wParam, LPARAM lParam);
 int MsgWindowEvent(WPARAM wParam, LPARAM lParam);
-int CustomSmileyReceivedEvent(WPARAM wParam, LPARAM lParam);
 
 int ReplaceEmoticonsService(WPARAM wParam, LPARAM lParam);
 int GetInfo2Service(WPARAM wParam, LPARAM lParam);
 int ShowSelectionService(WPARAM wParam, LPARAM lParam);
+int LoadContactSmileysService(WPARAM wParam, LPARAM lParam);
 
 TCHAR *GetText(RichEditCtrl &rec, int start, int end);
 
@@ -203,9 +203,12 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	mir_getLI(&li);
 	CallService(MS_IMG_GETINTERFACE, FI_IF_VERSION, (LPARAM) &fei);
 
-	// hooks
 	hHooks[0] = HookEvent(ME_SYSTEM_MODULESLOADED, ModulesLoaded);
 	hHooks[1] = HookEvent(ME_SYSTEM_PRESHUTDOWN, PreShutdown);
+
+	hServices[0] = CreateServiceFunction(MS_SMILEYADD_LOADCONTACTSMILEYS, LoadContactSmileysService);
+
+	hChangedEvent = CreateHookableEvent(ME_SMILEYADD_OPTIONSCHANGED);
 
 	return 0;
 }
@@ -299,26 +302,9 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 	hHooks[2] = HookEvent(ME_MSG_WINDOWEVENT, &MsgWindowEvent);
 
-	hServices[0] = CreateServiceFunction(MS_SMILEYADD_REPLACESMILEYS, ReplaceEmoticonsService);
-	hServices[1] = CreateServiceFunction(MS_SMILEYADD_GETINFO2, GetInfo2Service);
-	hServices[2] = CreateServiceFunction(MS_SMILEYADD_SHOWSELECTION, ShowSelectionService);
-
-	// Hook custom emoticons notification
-	PROTOCOLDESCRIPTOR **protos;
-	int count;
-	CallService(MS_PROTO_ENUMPROTOCOLS, (WPARAM)&count, (LPARAM)&protos);
-	for (int i = 0; i < count; i++)
-	{
-		if (protos[i]->type != PROTOTYPE_PROTOCOL)
-			continue;
-
-		if (protos[i]->szName == NULL || protos[i]->szName[0] == '\0')
-			continue;
-
-		char evname[250];
-		mir_snprintf(evname, MAX_REGS(evname), "%s%s", protos[i]->szName, ME_CUSTOMSMILEY_RECEIVED);
-		HookEvent(evname, &CustomSmileyReceivedEvent);
-	}
+	hServices[1] = CreateServiceFunction(MS_SMILEYADD_REPLACESMILEYS, ReplaceEmoticonsService);
+	hServices[2] = CreateServiceFunction(MS_SMILEYADD_GETINFO2, GetInfo2Service);
+	hServices[3] = CreateServiceFunction(MS_SMILEYADD_SHOWSELECTION, ShowSelectionService);
 
 	loaded = TRUE;
 
@@ -329,12 +315,6 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 int PreShutdown(WPARAM wParam, LPARAM lParam)
 {
 	int i;
-
-	for(i = downloading.getCount() - 1; i >= 0; i--)
-	{
-		delete downloading[i];
-		downloading.remove(i);
-	}
 
 	// Delete packs
 	for(i = 0; i < packs.getCount(); i++)
@@ -400,7 +380,6 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 	char found_path[1024];
 	int found_len = -1;
 	TCHAR *found_text;
-	BOOL found_downloading = FALSE;
 
 	// Replace normal emoticons
 	if (!opts.only_replace_isolated || next_char == _T('\0') || _istspace(next_char))
@@ -436,7 +415,7 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 	}
 
 	// Replace custom smileys
-	if (contact != NULL)
+	if (contact != NULL && opts.enable_custom_smileys)
 	{
 		for(int i = 0; i < contact->emoticons.getCount(); i++)
 		{
@@ -456,7 +435,6 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 			mir_snprintf(found_path, MAX_REGS(found_path), "%s", e->path);
 			found_len = len;
 			found_text = txt;
-			found_downloading = e->downloading;
 		}
 	}
 
@@ -482,64 +460,17 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 				SendMessage(rec.hwnd, EM_SETBKGNDCOLOR, 0, cf.crBackColor);
 			}
 
-			DowloadingEmoticon *de = NULL;
-			if (found_downloading)
-			{
-				de = new DowloadingEmoticon();
-				de->path = mir_strdup(found_path);
-
-				mir_snprintf(found_path, MAX_REGS(found_path), TCHAR_STR_PARAM "\\downloading.gif", protocolsFolder);
-			}
-
 			TCHAR *path = mir_a2t(found_path);
-			IUnknown * gctrl;
-			if (gctrl = (IGifSmileyCtrl *) InsertAnimatedSmiley(rec.hwnd, path, cf.crBackColor, 0 , found_text))
+			if (InsertAnimatedSmiley(rec.hwnd, path, cf.crBackColor, 0 , found_text))
 			{
 				ret = - found_len + 1;
 			}
 			MIR_FREE(path);
-
-			if (found_downloading)
-			{
-				if (gctrl == NULL)
-				{
-					delete de;
-				}
-				else
-				{
-					IGifSmileyCtrl * igsc;
-					if (gctrl->QueryInterface(__uuidof(IGifSmileyCtrl), (void **) &igsc) != S_OK || igsc == NULL)
-					{
-						delete de;
-					}
-					else
-					{
-						de->img = igsc;
-						downloading.insert(de);
-					}
-				}
-			}
 		}
 		else
 		{
-			DowloadingEmoticon *de = NULL;
-			if (found_downloading)
-			{
-				de = new DowloadingEmoticon();
-				de->path = mir_strdup(found_path);
-
-				mir_snprintf(found_path, MAX_REGS(found_path), TCHAR_STR_PARAM "\\downloading.gif", protocolsFolder);
-			}
-
 			OleImage *img = new OleImage(found_path, found_text, found_text);
-
-			if (found_downloading)
-			{
-				de->img = img;
-				img->AddRef();
-				downloading.insert(de);
-			}
-			else if (!img->isValid())
+			if (!img->isValid())
 			{
 				delete img;
 				return 0;
@@ -1071,13 +1002,7 @@ LRESULT CALLBACK OwnerProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	Dialog *dlg = dlgit->second;
 
-/*	int old_len;
-	if (msg == DM_APPENDTOLOG)
-	{
-		old_len = GetWindowTextLength(dlg->log.hwnd);
-	}
-	else */ 
-	if (msg == WM_COMMAND && LOWORD(wParam) == IDOK && dlg->input.old_edit_proc != NULL)
+	if (msg == WM_COMMAND && (LOWORD(wParam) == IDOK || LOWORD(wParam) == 1624) && dlg->input.old_edit_proc != NULL)
 	{
 		dlg->log.sending = TRUE;
 
@@ -1094,7 +1019,7 @@ LRESULT CALLBACK OwnerProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 		case WM_COMMAND:
 		{
-			if (LOWORD(wParam) == IDOK)
+			if (LOWORD(wParam) == IDOK || LOWORD(wParam) == 1624)
 			{
 				if (!ret)
 					// Add emoticons again
@@ -1104,55 +1029,6 @@ LRESULT CALLBACK OwnerProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 			break;
 		}
-/*
-		case DM_APPENDTOLOG:
-		{
-			break;
-
-			STOP_RICHEDIT(dlg->log);
-
-			TCHAR *text = GetText(dlg->log, old_len, -1);
-			int len = lstrlen(text);
-
-			for(int i = len; i > 0; i--)
-			{
-				int dif = ReplaceEmoticonBackwards(dlg->log.hwnd, text, i, old_len + i, dlg->module);
-
-				FixSelection(__old_sel.cpMax, i, dif);
-				FixSelection(__old_sel.cpMin, i, dif);
-			}
-
-			MIR_FREE(text);
-
-			START_RICHEDIT(dlg->log);
-			
-			break;
-		}
-
-		case DM_REMAKELOG:
-		{
-			break;
-
-			STOP_RICHEDIT(dlg->log);
-
-			TCHAR *text = GetText(dlg->log, 0, -1);
-			int len = lstrlen(text);
-			
-			for(int i = len; i > 0; i--)
-			{
-				int dif = ReplaceEmoticonBackwards(dlg->log.hwnd, text, i, i, dlg->module);
-
-				FixSelection(__old_sel.cpMax, i, dif);
-				FixSelection(__old_sel.cpMin, i, dif);
-			}
-
-			MIR_FREE(text);
-
-			START_RICHEDIT(dlg->log);
-
-			break;
-		}
-*/
 	}
 
 	return ret;
@@ -2070,48 +1946,6 @@ void EmoticonImage::Release()
 }
 
 
-DowloadingEmoticon::~DowloadingEmoticon()
-{
-	MIR_FREE(path);
-
-	if (img != NULL) 
-	{
-		if (has_anismiley)
-			((IGifSmileyCtrl *) img)->Release();
-		else
-			((OleImage *) img)->Release();
-
-		img = NULL;
-	}
-}
-
-
-void DowloadingEmoticon::Downloaded()
-{
-	if (img == NULL)
-		return;
-
-	if (has_anismiley)
-	{
-		IGifSmileyCtrl *igsc = (IGifSmileyCtrl *) img;
-
-		WCHAR *p = mir_a2u(path);
-		BSTR bp = SysAllocString(p);
-		igsc->LoadFromFile(bp);
-		SysFreeString(bp);
-		mir_free(p);
-
-		igsc->Release();
-	}
-	else
-	{
-		OleImage *oimg = (OleImage *) img;
-		oimg->SetFilename(path);
-		oimg->Release();
-	}
-
-	img = NULL;
-}
 
 
 Contact * GetContact(HANDLE hContact)
@@ -2148,6 +1982,9 @@ Contact * GetContact(HANDLE hContact)
 			DBFreeVariant(&dbv_text);
 			continue;
 		}
+
+		mir_snprintf(setting, MAX_REGS(setting), "%d_FirstReceived", c->lastId);
+		DWORD firstReceived = DBGetContactSettingDword(hContact, "CustomSmileys", setting, 0);
 		
 		if (!FileExists(dbv_path.pszVal))
 		{
@@ -2162,6 +1999,7 @@ Contact * GetContact(HANDLE hContact)
 			CustomEmoticon *ce = new CustomEmoticon();
 			ce->text = mir_tstrdup(dbv_text.ptszVal);
 			ce->path = mir_strdup(dbv_path.pszVal);
+			ce->firstReceived = firstReceived;
 
 			c->emoticons.insert(ce);
 		}
@@ -2185,6 +2023,9 @@ Contact * GetContact(HANDLE hContact)
 
 			mir_snprintf(setting, MAX_REGS(setting), "%d_Path", i);
 			DBWriteContactSettingString(c->hContact, "CustomSmileys", setting, ce->path);
+
+			mir_snprintf(setting, MAX_REGS(setting), "%d_FirstReceived", i);
+			DBWriteContactSettingDword(c->hContact, "CustomSmileys", setting, ce->firstReceived);
 		}
 		for(int j = i; j <= c->lastId; j++)
 		{
@@ -2192,6 +2033,9 @@ Contact * GetContact(HANDLE hContact)
 			DBDeleteContactSetting(c->hContact, "CustomSmileys", setting);
 
 			mir_snprintf(setting, MAX_REGS(setting), "%d_Path", j);
+			DBDeleteContactSetting(c->hContact, "CustomSmileys", setting);
+
+			mir_snprintf(setting, MAX_REGS(setting), "%d_FirstReceived", j);
 			DBDeleteContactSetting(c->hContact, "CustomSmileys", setting);
 		}
 
@@ -2213,98 +2057,150 @@ CustomEmoticon *GetCustomEmoticon(Contact *c, TCHAR *text)
 }
 
 
-void DownloadedCustomEmoticon(HANDLE hContact, const char *path)
+int SingleHexToDecimal(char c)
 {
-	// Mark that it was received
-
-	Contact *c = GetContact(hContact);
-	if (c != NULL)
-	{
-		for(int i = 0; i < c->emoticons.getCount(); i++)
-		{
-			CustomEmoticon *ce = c->emoticons[i];
-			if (stricmp(ce->path, path) == 0)
-				ce->downloading = FALSE;
-		}
-	}
-
-	for(int i = downloading.getCount() - 1; i >= 0; i--)
-	{
-		DowloadingEmoticon *de = downloading[i];
-		if (stricmp(de->path, path) == 0)
-		{
-			de->Downloaded();
-			delete de;
-			downloading.remove(i);
-		}
-	}
+	if ( c >= '0' && c <= '9' ) return c-'0';
+	if ( c >= 'a' && c <= 'f' ) return c-'a'+10;
+	if ( c >= 'A' && c <= 'F' ) return c-'A'+10;
+	return -1;
 }
 
-int CustomSmileyReceivedEvent(WPARAM wParam, LPARAM lParam)
+
+void UrlDecode(char* str)
 {
-	CUSTOMSMILEY *cs = (CUSTOMSMILEY *) lParam;
-	if (cs == NULL || cs->cbSize < sizeof(CUSTOMSMILEY) || cs->pszFilename == NULL || cs->hContact == NULL)
-		return 0;
+	char* s = str, *d = str;
 
-	TCHAR log[1024];
-	mir_sntprintf(log, 1024, _T("---------------\nReceived message: %d\n%S\n%s\n---------------\n"), cs->flags, cs->pszFilename, cs->ptszText);
-	OutputDebugString(log);
-
-	// Check if this is the second notification
-	if (!(cs->flags & CUSTOMSMILEY_STATE_RECEIVED))
+	while( *s )
 	{
-		if (cs->flags & CUSTOMSMILEY_STATE_DOWNLOADED)
-			DownloadedCustomEmoticon(cs->hContact, cs->pszFilename);
-		return 0;
+		if ( *s == '%' ) {
+			int digit1 = SingleHexToDecimal( s[1] );
+			if ( digit1 != -1 ) {
+				int digit2 = SingleHexToDecimal( s[2] );
+				if ( digit2 != -1 ) {
+					s += 3;
+					*d++ = (char)(( digit1 << 4 ) | digit2);
+					continue;
+		}	}	}
+		*d++ = *s++;
 	}
 
-	// This is the first one 
-	if (cs->pszText == NULL)
-		return 0;
+	*d = 0;
+}
 
-	// Get data
-	Contact *c = GetContact(cs->hContact);
 
-	TCHAR *text;
-	if (cs->flags & CUSTOMSMILEY_UNICODE)
-		text = mir_u2t(cs->pwszText);
-	else
-		text = mir_a2t(cs->pszText);
+void CreateCustomSmiley(Contact *contact, TCHAR *fullpath)
+{
+	char *path = mir_t2a(fullpath);
+
+	// Get smiley text
+	char enc[1024];
+	char *start = strrchr(path, '\\');
+	if (start == NULL)
+		return;
+	start++;
+	char *end = strrchr(path, '.');
+	if (end == NULL || end < start)
+		return;
+	size_t enclen = min(end - start, MAX_REGS(enc));
+	strncpy(enc, start, enclen);
+	enc[enclen] = '\0';
+
+	UrlDecode(enc);
+
+	enclen = strlen(enc);
+	size_t len = Netlib_GetBase64DecodedBufferSize(enclen) + 1;
+	char *tmp = (char *) malloc(len * sizeof(char));
+
+	NETLIBBASE64 nlb = { enc, enclen, (PBYTE) tmp, len };
+	if (CallService(MS_NETLIB_BASE64DECODE, 0, (LPARAM) &nlb) == 0) 
+		return;
+	tmp[nlb.cbDecoded] = 0; 
+
+#ifdef _UNICODE
+	TCHAR *text = mir_utf8decodeW(tmp);
+#else
+	mir_utf8decode(tmp, NULL);
+	TCHAR *text = mir_a2t(tmp);
+#endif
+
+	free(tmp);
 
 	// Create it
-	CustomEmoticon *ce = GetCustomEmoticon(c, text);
+	CustomEmoticon *ce = GetCustomEmoticon(contact, text);
 	if (ce != NULL)
 	{
 		MIR_FREE(ce->path);
-		ce->path = mir_strdup(cs->pszFilename);
-
-		MIR_FREE(text);
+		ce->path = path;
 	}
 	else
 	{
 		ce = new CustomEmoticon();
 		ce->text = text;
-		ce->path = mir_strdup(cs->pszFilename);
+		ce->path = path;
 
-		c->emoticons.insert(ce);
-		c->lastId++;
-	}
-
-	// Check if need to download
-	if (!(cs->flags & CUSTOMSMILEY_STATE_DOWNLOADED) && !FileExists(cs->pszFilename))
-	{
-		// Request emoticon download
-		cs->download = TRUE;
-		ce->downloading = TRUE;
+		contact->emoticons.insert(ce);
+		contact->lastId++;
 	}
 
 	// Store in DB
 	char setting[256];
-	mir_snprintf(setting, MAX_REGS(setting), "%d_Text", c->lastId);
-	DBWriteContactSettingTString(c->hContact, "CustomSmileys", setting, ce->text);
+	mir_snprintf(setting, MAX_REGS(setting), "%d_Text", contact->lastId);
+	DBWriteContactSettingTString(contact->hContact, "CustomSmileys", setting, ce->text);
 
-	mir_snprintf(setting, MAX_REGS(setting), "%d_Path", c->lastId);
-	DBWriteContactSettingString(c->hContact, "CustomSmileys", setting, ce->path);
+	mir_snprintf(setting, MAX_REGS(setting), "%d_Path", contact->lastId);
+	DBWriteContactSettingString(contact->hContact, "CustomSmileys", setting, ce->path);
+
+	mir_snprintf(setting, MAX_REGS(setting), "%d_FirstReceived", contact->lastId);
+	DBWriteContactSettingDword(contact->hContact, "CustomSmileys", setting, (DWORD) time(NULL));
+
+	NotifyEventHooks(hChangedEvent, (WPARAM) contact->hContact, 0);
+}
+
+
+int LoadContactSmileysService(WPARAM wParam, LPARAM lParam)
+{
+	SMADD_CONT *sc = (SMADD_CONT *) lParam;
+	if (sc == NULL || sc->cbSize < sizeof(SMADD_CONT) || sc->path == NULL || sc->hContact == NULL || sc->type < 0 || sc->type > 1)
+		return 0;
+
+	Contact *c = GetContact(sc->hContact);
+
+	if (sc->type == 0)
+	{
+		TCHAR filename[1024];
+		mir_sntprintf(filename, MAX_REGS(filename), _T("%s\\*.*"), sc->path);
+
+		WIN32_FIND_DATA ffd = {0};
+		HANDLE hFFD = FindFirstFile(filename, &ffd);
+		if (hFFD != INVALID_HANDLE_VALUE)
+		{
+			do
+			{
+				mir_sntprintf(filename, MAX_REGS(filename), _T("%s\\%s"), sc->path, ffd.cFileName);
+
+				if (!FileExists(filename))
+					continue;
+
+				int len = lstrlen(ffd.cFileName);
+				if (len < 5)
+					continue;
+				if (lstrcmp(&ffd.cFileName[len-4], _T(".jpg")) != 0
+						&& lstrcmp(&ffd.cFileName[len-4], _T(".gif")) != 0
+						&& lstrcmp(&ffd.cFileName[len-4], _T(".png")))
+					continue;
+
+				CreateCustomSmiley(c, filename);
+			}
+			while(FindNextFile(hFFD, &ffd));
+
+			FindClose(hFFD);
+		}
+	}
+	else if (sc->type == 1)
+	{
+		if (FileExists(sc->path))
+			CreateCustomSmiley(c, sc->path);
+	}
 
 	return 0;
 }

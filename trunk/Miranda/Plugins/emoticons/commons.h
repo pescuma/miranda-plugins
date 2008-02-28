@@ -68,7 +68,7 @@ using namespace std;
 #include <m_anismiley.h>
 #include <anismiley.tlh>
 #include <m_smileyadd.h>
-#include <m_customsmileys.h>
+#include <m_netlib.h>
 
 #include "../utils/mir_memory.h"
 #include "../utils/mir_options.h"
@@ -89,7 +89,7 @@ using namespace std;
 extern HINSTANCE hInst;
 extern PLUGINLINK *pluginLink;
 extern FI_INTERFACE *fei;
-
+extern HANDLE hChangedEvent;
 
 #define MIR_FREE(_X_) { mir_free(_X_); _X_ = NULL; }
 #define MAX_REGS(_A_) ( sizeof(_A_) / sizeof(_A_[0]) )
@@ -116,6 +116,7 @@ struct EmoticonImage
 	BOOL isAvaiableFor(char *nodule);
 };
 
+
 struct Emoticon
 {
 	char *name;
@@ -130,24 +131,16 @@ struct Emoticon
 	~Emoticon();
 };
 
+
 struct CustomEmoticon
 {
 	TCHAR *text;
 	char *path;
-	BOOL downloading;
+	DWORD firstReceived;
 
-	CustomEmoticon() : text(0), path(0), downloading(FALSE) {}
+	CustomEmoticon() : text(0), path(0), firstReceived(0) {}
 };
 
-struct DowloadingEmoticon
-{
-	char *path;
-	void *img;
-
-	DowloadingEmoticon() : path(0), img(0) {}
-	~DowloadingEmoticon();
-	void Downloaded();
-};
 
 struct Module
 {
@@ -172,6 +165,7 @@ struct EmoticonPack
 	EmoticonPack() : name(0), path(0), creator(0), updater_URL(0), images(20) {}
 	~EmoticonPack();
 };
+
 
 struct RichEditCtrl
 {
