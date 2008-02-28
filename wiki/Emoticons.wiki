@@ -44,10 +44,7 @@ or
 
 A default pack, containing Tango Emoticons (made by Hylke) is packed and can be used as an example.
 
-For custom smileys to work, you need to use my mod of MSN protocol. The only difference in this mod is that it fires a notication (at the same time as the popup is shown) telling about the new custom smiley:
-[http://pescuma.googlecode.com/files/msn_cs.zip Ansi]
-[http://pescuma.googlecode.com/files/msn_csW.zip Unicode]
-[http://pescuma.googlecode.com/files/msn_cs.patch Patch]
+For custom smileys to work, you need MSN protocol from miranda 0.8 #10.
 
 Currently there is a lot more work to be done on this plugin, but I wanted to show an initial version, so I could get some feedback.
 
@@ -69,13 +66,17 @@ http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/emoticons/Docs/emoticons
 
 === Download ===
 
- * [http://pescuma.googlecode.com/files/emoticonsW.zip Unicode]
- * [http://pescuma.googlecode.com/files/emoticons.zip Ansi]
- * [http://code.google.com/p/pescuma/downloads/list?q=plugin:Emoticons Older versions]
+ * [http://code.google.com/p/pescuma/downloads/list?q=plugin:Emoticons All versions]
 
 
 === Changelog ===
 {{{
+. 0.0.1.3
+  * Fix for protocol emoticons (closes issue 22)
+  * Fix for URLs in input area
+  + Support for borkra's version of custom smileys
+  + Option to disable custom smileys
+
 . 0.0.1.2
   * Fix for wrong memory free
   + Support for custom smileys
