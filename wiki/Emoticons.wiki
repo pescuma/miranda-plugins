@@ -66,7 +66,8 @@ http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/emoticons/Docs/emoticons
 
 === Download ===
 
- * [http://code.google.com/p/pescuma/downloads/list?q=plugin:Emoticons All versions]
+ * [http://code.google.com/p/pescuma/downloads/list?can=3&q=plugin:Emoticons Latest version]
+ * [http://code.google.com/p/pescuma/downloads/list?can=1&q=plugin:Emoticons All versions]
 
 
 === Changelog ===
