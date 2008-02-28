@@ -30,6 +30,7 @@ struct Options {
 	BOOL replace_in_input;
 	BOOL use_default_pack;
 	BOOL only_replace_isolated;
+	BOOL enable_custom_smileys;
 };
 
 extern Options opts;

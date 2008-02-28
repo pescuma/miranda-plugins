@@ -1,5 +1,5 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
+// Microsoft Visual C++ generated include file.
 // Used by resource.rc
 //
 #define IDD_OPTIONS                     119
@@ -13,6 +13,8 @@
 #define IDC_GETMORE                     1076
 #define IDC_EMOTICONS                   1080
 #define IDC_ONLY_ISOLATED               1086
+#define IDC_ONLY_ISOLATED2              1087
+#define IDC_CUSTOM_SMILEYS              1087
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

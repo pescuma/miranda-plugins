@@ -1,12 +1,12 @@
 /*
 Miranda SmileyAdd Plugin
-Plugin support header file
-Copyright (C) 2004-2007 Boris Krasnovskiy, portions by Rein-Peter de Boer
+Copyright (C) 2005-2008 Boris Krasnovskiy
+Copyright (C) 2003-2004 Rein-Peter de Boer
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
+as published by the Free Software Foundation version 2
+of the License.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,10 +14,9 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
+#include <richedit.h>
 
 #define SAFLRE_INSERTEMF  2     // insert smiley as EMF into RichEdit, otherwise bitmap inserted
                                 // this flag allows "true" transparency
@@ -180,3 +179,17 @@ typedef struct
 // {E03C71B2-6DEE-467e-A4F0-DD516745876A}
 #define MIID_SMILEY	{ 0xe03c71b2, 0x6dee, 0x467e, { 0xa4, 0xf0, 0xdd, 0x51, 0x67, 0x45, 0x87, 0x6a } }
 #endif
+
+
+typedef struct 
+{
+    unsigned cbSize;             // size of the structure
+	HANDLE hContact;
+	int type;					 // 0 - directory, 1 - file;
+    TCHAR* path;                  // smiley category name for reference
+} SMADD_CONT;
+
+//Loads all smileys for the contact
+//wParam = (WPARAM) 0; not used
+//lParam = (LPARAM) (SMADD_CONT*) &dir;  // pointer to directory to load smiley from
+#define MS_SMILEYADD_LOADCONTACTSMILEYS  "SmileyAdd/LoadContactSmileys"
