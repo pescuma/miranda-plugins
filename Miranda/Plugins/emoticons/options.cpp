@@ -38,10 +38,11 @@ static OptPageControl optionsControls[] = {
 	{ &opts.replace_in_input,		CONTROL_CHECKBOX,	IDC_INPUT_TOO,			"ReplaceInInput", TRUE },
 	{ &opts.use_default_pack,		CONTROL_CHECKBOX,	IDC_USE_DEFAULT_PACK,	"UseDefaultPack", TRUE },
 	{ &opts.only_replace_isolated,	CONTROL_CHECKBOX,	IDC_ONLY_ISOLATED,		"OnlyReplaceIsolatedEmoticons", FALSE },
+	{ &opts.enable_custom_smileys,	CONTROL_CHECKBOX,	IDC_CUSTOM_SMILEYS,		"EnableCustomSmileys", TRUE },
 };
 
 static UINT optionsExpertControls[] = { 
-	IDC_INPUT_TOO, IDC_USE_DEFAULT_PACK, IDC_ONLY_ISOLATED
+	IDC_INPUT_TOO, IDC_USE_DEFAULT_PACK, IDC_ONLY_ISOLATED, IDC_CUSTOM_SMILEYS
 };
 
 
@@ -183,6 +184,12 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 				DBWriteContactSettingString(NULL, MODULE_NAME, "DefaultPack", pack->name);
 				strcpy(opts.pack, pack->name);
 				FillModuleImages(pack);
+
+				BOOL ret = SaveOptsDlgProc(optionsControls, MAX_REGS(optionsControls), MODULE_NAME, hwndDlg, msg, wParam, lParam);
+
+				NotifyEventHooks(hChangedEvent, NULL, 0);
+
+				return ret;
 			}
 			
 			break;

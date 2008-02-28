@@ -37,6 +37,8 @@ or
 
 A default pack, containing Tango Emoticons (made by Hylke) is packed and can be used as an example.
 
+For custom smileys to work, you need MSN protocol from miranda 0.8 #10.
+
 Currently there is a lot more work to be done on this plugin, but I wanted to show an initial version, so I could get some feedback.
 
 Thanks to FYR for the AniSmiley plugin and to Hylke for the nice emoticons.
@@ -48,8 +50,4 @@ TODO:
 - Per protocol pack
 - Updater support for Emoticon Packs
 - Support h++ (works using AniSmiley)
-
-
-KNOWN ISSUES:
-- AniSmiley does not resize itself when receiving custom smiley
 
