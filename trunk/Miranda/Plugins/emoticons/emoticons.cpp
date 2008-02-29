@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,1,3),
+	PLUGIN_MAKE_VERSION(0,0,1,4),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -248,14 +248,14 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 		upd.szUpdateURL = UPDATER_AUTOREGISTER;
 
-		upd.szBetaVersionURL = "http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/emoticons/Docs/emoticons_version.txt";
+		upd.szBetaVersionURL = "http://pescuma.org/miranda/emoticons_version.txt";
 		upd.szBetaChangelogURL = "http://pescuma.org/miranda/emoticons#Changelog";
 		upd.pbBetaVersionPrefix = (BYTE *)"Emoticons ";
 		upd.cpbBetaVersionPrefix = strlen((char *)upd.pbBetaVersionPrefix);
 #ifdef UNICODE
-		upd.szBetaUpdateURL = "http://pescuma.googlecode.com/files/emoticonsW.zip";
+		upd.szBetaUpdateURL = "http://pescuma.org/miranda/emoticonsW.zip";
 #else
-		upd.szBetaUpdateURL = "http://pescuma.googlecode.com/files/emoticons.zip";
+		upd.szBetaUpdateURL = "http://pescuma.org/miranda/emoticons.zip";
 #endif
 
 		upd.pbVersion = (BYTE *)CreateVersionStringPlugin((PLUGININFO*) &pluginInfo, szCurrentVersion);
