@@ -38,7 +38,14 @@ To report bugs/make suggestions, go to the forum thread: http://forums.miranda-i
 
 Sources are at: https://developer.berlios.de/projects/mgoodies (still thinking about migrating)
 
-=== Changelog: ===
+
+=== Download ===
+
+ * [http://code.google.com/p/pescuma/downloads/list?can=3&q=plugin:SpellChecker Latest version]
+ * [http://code.google.com/p/pescuma/downloads/list?can=1&q=plugin:SpellChecker All versions]
+
+
+=== Changelog ===
 {{{
 . 0.1.0.2
   + Updated to Hunspell 1.2.2b (closes issue 16)
