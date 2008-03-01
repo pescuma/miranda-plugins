@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,1,4),
+	PLUGIN_MAKE_VERSION(0,0,1,5),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -591,8 +591,9 @@ BOOL IsHidden(RichEditCtrl &rec, int start, int end)
 }
 
 
-void ReplaceAllEmoticonsBackwards(RichEditCtrl &rec, Contact *contact, Module *module, TCHAR *text, int len, TCHAR next_char, int start, CHARRANGE &__old_sel)
+int ReplaceAllEmoticonsBackwards(RichEditCtrl &rec, Contact *contact, Module *module, TCHAR *text, int len, TCHAR next_char, int start, CHARRANGE &__old_sel)
 {
+	int ret = 0;
 	for(int i = len; i > 0; i--)
 	{
 		int dif = ReplaceEmoticonBackwards(rec, contact, module, text, i, start + i, i == len ? next_char : text[i]);
@@ -602,23 +603,29 @@ void ReplaceAllEmoticonsBackwards(RichEditCtrl &rec, Contact *contact, Module *m
 			FixSelection(__old_sel.cpMin, i, dif);
 
 			i += dif;
+			ret += dif;
 		}
 	}
+	return ret;
 }
 
 
-void ReplaceAllEmoticonsBackwards(RichEditCtrl &rec, Contact *contact, Module *module)
+int ReplaceAllEmoticonsBackwards(RichEditCtrl &rec, Contact *contact, Module *module)
 {
+	int ret;
+
 	STOP_RICHEDIT(rec);
 
 	TCHAR *text = GetText(rec, 0, -1);
 	int len = lstrlen(text);
 
-	ReplaceAllEmoticonsBackwards(rec, contact, module, text, len, _T('\0'), 0, __old_sel);
+	ret = ReplaceAllEmoticonsBackwards(rec, contact, module, text, len, _T('\0'), 0, __old_sel);
 
 	MIR_FREE(text);
 
 	START_RICHEDIT(rec);
+
+	return ret;
 }
 
 
@@ -642,6 +649,7 @@ void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, in
 	TCHAR *text = GetText(rec, start, end);
 	int len = lstrlen(text);
 
+	int diff = 0;
 	int last_start_pos = 0;
 	BOOL replace = TRUE;
 	HANDLE hContact = (contact == NULL ? NULL : contact->hContact);
@@ -656,7 +664,7 @@ void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, in
 				{
 					if (tl = matches(webs[j], &text[i]))
 					{
-						ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], i - last_start_pos, _T('\0'), start + last_start_pos, __old_sel);
+						diff += ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], i - last_start_pos, _T('\0'), start + last_start_pos + diff, __old_sel);
 
 						i += tl;
 						
@@ -679,7 +687,7 @@ void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, in
 		{
 			if (IsHidden(rec, start + i, start + i + tl))
 			{
-				ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], i - last_start_pos, _T('\0'), start + last_start_pos, __old_sel);
+				diff += ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], i - last_start_pos, _T('\0'), start + last_start_pos + diff, __old_sel);
 
 				replace = FALSE;
 				i += tl - 1;
@@ -702,7 +710,7 @@ void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, in
 		{
 			if (IsHidden(rec, start + i, start + i + tl))
 			{
-				ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], i - last_start_pos, _T('\0'), start + last_start_pos, __old_sel);
+				diff += ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], i - last_start_pos, _T('\0'), start + last_start_pos + diff, __old_sel);
 
 				hContact = (contact == NULL ? NULL : contact->hContact);
 				i += tl - 1;
@@ -724,7 +732,7 @@ void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, in
 
 			if (IsHidden(rec, start + i, start + i + len))
 			{
-				ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], i - last_start_pos, _T('\0'), start + last_start_pos, __old_sel);
+				diff += ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], i - last_start_pos, _T('\0'), start + last_start_pos + diff, __old_sel);
 
 				hContact = (HANDLE) _ttoi(&text[i + tl]);
 				i += len - 1;
@@ -734,7 +742,7 @@ void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, in
 	}
 
 	if (replace)
-		ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], len - last_start_pos, _T('\0'), start + last_start_pos, __old_sel);
+		ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], len - last_start_pos, _T('\0'), start + last_start_pos + diff, __old_sel);
 	
 	MIR_FREE(text);
 
