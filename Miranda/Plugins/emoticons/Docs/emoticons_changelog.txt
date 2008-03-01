@@ -2,6 +2,9 @@ Emoticons
 
 Changelog:
 
+. 0.0.1.5
+  + Added MySpace and AIM emoticons
+
 . 0.0.1.4
   * Fix for updater
 
