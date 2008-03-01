@@ -72,6 +72,10 @@ http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/emoticons/Docs/emoticons
 
 === Changelog ===
 {{{
+. 0.0.1.5
+  + Added MySpace and AIM emoticons
+  * Fix for smileys after URL (closes issue 11)
+
 . 0.0.1.4
   * Fix for updater
 
