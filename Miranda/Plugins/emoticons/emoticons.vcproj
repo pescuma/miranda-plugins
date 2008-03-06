@@ -427,6 +427,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\utils\ContactAsyncQueue.h"
+				>
+			</File>
+			<File
 				RelativePath="m_emoticons.h"
 				>
 			</File>
@@ -504,6 +508,10 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
+			<File
+				RelativePath="..\utils\ContactAsyncQueue.cpp"
+				>
+			</File>
 			<File
 				RelativePath="emoticons.cpp"
 				>

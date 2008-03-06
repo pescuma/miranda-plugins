@@ -52,6 +52,7 @@ PLUGINLINK *pluginLink;
 HANDLE hHooks[3] = {0};
 HANDLE hServices[4] = {0};
 HANDLE hChangedEvent;
+HANDLE hNetlibUser = 0;
 
 HANDLE hProtocolsFolder = NULL;
 TCHAR protocolsFolder[1024];
@@ -74,11 +75,19 @@ LIST<Module> modules(10);
 LIST<EmoticonPack> packs(10);
 LIST<Contact> contacts(10);
 
+ContactAsyncQueue *downloadQueue;
+
 BOOL LoadModule(Module *m);
 void LoadModules();
 BOOL LoadPack(EmoticonPack *p);
 void LoadPacks();
 
+BOOL isValidExtension(char *name);
+#ifdef UNICODE
+BOOL isValidExtension(WCHAR *name);
+#endif
+void DownloadCallback(HANDLE hContact, void *param);
+void log(const char *fmt, ...);
 void FillModuleImages(EmoticonPack *pack);
 
 EmoticonPack *GetPack(char *name);
@@ -189,7 +198,6 @@ extern "C" __declspec(dllexport) const MUUID* MirandaPluginInterfaces(void)
 	return interfaces;
 }
 
-
 extern "C" int __declspec(dllexport) Load(PLUGINLINK *link) 
 {
 	pluginLink = link;
@@ -205,6 +213,8 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	hServices[0] = CreateServiceFunction(MS_SMILEYADD_LOADCONTACTSMILEYS, LoadContactSmileysService);
 
 	hChangedEvent = CreateHookableEvent(ME_SMILEYADD_OPTIONSCHANGED);
+
+	downloadQueue = new ContactAsyncQueue(DownloadCallback, 1);
 
 	return 0;
 }
@@ -302,6 +312,14 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 	hServices[2] = CreateServiceFunction(MS_SMILEYADD_GETINFO2, GetInfo2Service);
 	hServices[3] = CreateServiceFunction(MS_SMILEYADD_SHOWSELECTION, ShowSelectionService);
 
+	NETLIBUSER nl_user = {0};
+	nl_user.cbSize = sizeof(nl_user);
+	nl_user.szSettingsModule = MODULE_NAME;
+	nl_user.flags = NUF_OUTGOING | NUF_HTTPCONNS;
+	nl_user.szDescriptiveName = Translate("Emoticon downloads");
+
+	hNetlibUser = (HANDLE)CallService(MS_NETLIB_REGISTERUSER, 0, (LPARAM)&nl_user);
+
 	loaded = TRUE;
 
 	return 0;
@@ -311,6 +329,9 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 int PreShutdown(WPARAM wParam, LPARAM lParam)
 {
 	int i;
+
+	delete downloadQueue;
+	downloadQueue = NULL;
 
 	// Delete packs
 	for(i = 0; i < packs.getCount(); i++)
@@ -333,6 +354,9 @@ int PreShutdown(WPARAM wParam, LPARAM lParam)
 		UnhookEvent(hHooks[i]);
 
 	DeInitOptions();
+
+	if(hNetlibUser)
+		CallService(MS_NETLIB_CLOSEHANDLE, (WPARAM)hNetlibUser, 0);
 
 	return 0;
 }
@@ -1191,6 +1215,28 @@ char *strtrim(char *str)
 }
 
 
+BOOL HasProto(char *proto)
+{
+	PROTOCOLDESCRIPTOR **protos;
+	int count;
+	CallService(MS_PROTO_ENUMPROTOCOLS, (WPARAM)&count, (LPARAM)&protos);
+
+	for (int i = 0; i < count; i++)
+	{
+		if (protos[i]->type != PROTOTYPE_PROTOCOL)
+			continue;
+
+		if (protos[i]->szName == NULL || protos[i]->szName[0] == '\0')
+			continue;
+
+		if (stricmp(proto, protos[i]->szName) == 0)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+
 void LoadModules()
 {
 	// Load the language files and create an array with then
@@ -1208,9 +1254,17 @@ void LoadModules()
 			if (!FileExists(file))
 				continue;
 
+			char *name = mir_t2a(ffd.cFileName);
+			name[strlen(name) - 4] = 0;
+
+			if (stricmp("Default", name) != 0 && !HasProto(name))
+			{
+				mir_free(name);
+				continue;
+			}
+
 			Module *m = new Module();
-			m->name = mir_t2a(ffd.cFileName);
-			m->name[strlen(m->name) - 4] = 0;
+			m->name = name;
 			m->path = mir_tstrdup(file);
 			modules.insert(m);
 
@@ -1364,6 +1418,38 @@ void LoadPacks()
 }
 
 
+BOOL isValidExtension(char *name)
+{
+	char *p = strrchr(name, '.');
+	if (p == NULL)
+		return FALSE;
+	if (strcmp(p, ".jpg") != 0
+			&& strcmp(p, ".jpeg") != 0
+			&& strcmp(p, ".gif") != 0
+			&& strcmp(p, ".png") != 0
+			/*&& strcmp(p, ".swf") != 0*/)
+		return FALSE;
+	return TRUE;
+}
+
+
+#ifdef UNICODE
+BOOL isValidExtension(WCHAR *name)
+{
+	WCHAR *p = wcsrchr(name, L'.');
+	if (p == NULL)
+		return FALSE;
+	if (lstrcmpW(p, L".jpg") != 0
+			&& lstrcmpW(p, L".jpeg") != 0
+			&& lstrcmpW(p, L".gif") != 0
+			&& lstrcmpW(p, L".png") != 0
+			/*&& lstrcmpW(p, L".swf") != 0*/)
+		return FALSE;
+	return TRUE;
+}
+#endif
+
+
 EmoticonImage * HandleMepLine(EmoticonPack *p, char *line)
 {
 	int len = strlen(line);
@@ -1423,7 +1509,32 @@ EmoticonImage * HandleMepLine(EmoticonPack *p, char *line)
 					img->module = module;
 					break;
 				case 3: 
-					img->relPath = txt; 
+					if (!isValidExtension(txt))
+					{
+						delete img;
+						img = NULL;
+						break;
+					}
+
+					if (strncmp("http://", txt, 7) == 0)
+					{
+						img->url = txt; 
+
+						char *p = strrchr(txt, '//');
+						p++;
+
+						char tmp[1024];
+						if (img->module == NULL)
+							mir_snprintf(tmp, MAX_REGS(tmp), "cache\\%s", p);
+						else
+							mir_snprintf(tmp, MAX_REGS(tmp), "cache\\%s\\%s", img->module, p);
+
+						img->relPath = mir_strdup(tmp); 
+					}
+					else
+					{
+						img->relPath = txt; 
+					}
 					break;
 			}
 
@@ -1452,18 +1563,13 @@ BOOL LoadPack(EmoticonPack *pack)
 			if (!FileExists(filename))
 				continue;
 
-			int len = strlen(ffd.cFileName);
-			if (len < 5)
-				continue;
-			if (strcmp(&ffd.cFileName[len-4], ".jpg") != 0
-					&& strcmp(&ffd.cFileName[len-4], ".gif") != 0
-					&& strcmp(&ffd.cFileName[len-4], ".png"))
+			if (!isValidExtension(ffd.cFileName))
 				continue;
 
 			EmoticonImage *img = new EmoticonImage();
 			img->pack = pack;
 			img->name = mir_strdup(ffd.cFileName);
-			img->name[strlen(img->name) - 4] = 0;
+			*strrchr(img->name, '.') = '\0';
 			img->relPath = mir_strdup(ffd.cFileName);
 			pack->images.insert(img);
 		}
@@ -1596,18 +1702,13 @@ EmoticonImage * GetEmoticomImageFromDisk(EmoticonPack *pack, Emoticon *e, Module
 			if (!FileExists(filename))
 				continue;
 
-			int len = strlen(ffd.cFileName);
-			if (len < 5)
-				continue;
-			if (strcmp(&ffd.cFileName[len-4], ".jpg") != 0
-				&& strcmp(&ffd.cFileName[len-4], ".gif") != 0
-				&& strcmp(&ffd.cFileName[len-4], ".png"))
+			if (!isValidExtension(ffd.cFileName))
 				continue;
 
 			img = new EmoticonImage();
 			img->pack = pack;
 			img->name = mir_strdup(ffd.cFileName);
-			img->name[strlen(img->name) - 4] = 0;
+			*strrchr(img->name, '.') = '\0';
 			img->module = module->name;
 			mir_snprintf(filename, MAX_REGS(filename), "%s\\%s", module->name, ffd.cFileName);
 			img->relPath = mir_strdup(filename);
@@ -1646,7 +1747,10 @@ void FillModuleImages(EmoticonPack *pack)
 				}
 			}
 			if (e->img != NULL)
+			{
+				e->img->Download();
 				continue;
+			}
 
 			// Now try to load from disk
 			e->img = GetEmoticomImageFromDisk(pack, e, m);
@@ -1879,6 +1983,7 @@ EmoticonImage::~EmoticonImage()
 	MIR_FREE(name);
 	MIR_FREE(module);
 	MIR_FREE(relPath);
+	MIR_FREE(url);
 }
 
 
@@ -1897,6 +2002,20 @@ BOOL EmoticonImage::isAvaiableFor(char *module)
 BOOL EmoticonImage::isAvaiable()
 {
 	return isAvaiableFor(module);
+}
+
+
+void EmoticonImage::Download()
+{
+	if (url == NULL)
+		return;
+
+	char tmp[1024];
+	mir_snprintf(tmp, MAX_REGS(tmp), "%s\\%s", pack->path, relPath);
+	if (FileExists(tmp))
+		return;
+
+	downloadQueue->AddIfDontHave(0, (HANDLE) this);
 }
 
 
@@ -2185,12 +2304,7 @@ int LoadContactSmileysService(WPARAM wParam, LPARAM lParam)
 				if (!FileExists(filename))
 					continue;
 
-				int len = lstrlen(ffd.cFileName);
-				if (len < 5)
-					continue;
-				if (lstrcmp(&ffd.cFileName[len-4], _T(".jpg")) != 0
-						&& lstrcmp(&ffd.cFileName[len-4], _T(".gif")) != 0
-						&& lstrcmp(&ffd.cFileName[len-4], _T(".png")))
+				if (!isValidExtension(ffd.cFileName))
 					continue;
 
 				CreateCustomSmiley(c, filename);
@@ -2207,4 +2321,139 @@ int LoadContactSmileysService(WPARAM wParam, LPARAM lParam)
 	}
 
 	return 0;
+}
+
+
+BOOL CreatePath(const char *path) 
+{
+	char folder[1024];
+	strncpy(folder, path, MAX_REGS(folder));
+	folder[MAX_REGS(folder)-1] = '\0';
+
+	char *p = folder;
+	if (p[0] && p[1] && p[1] == ':' && p[2] == '\\') p += 3; // skip drive letter
+
+	SetLastError(ERROR_SUCCESS);
+	while(p = strchr(p, '\\')) 
+	{
+		*p = '\0';
+		CreateDirectoryA(folder, 0);
+		*p = '\\';
+		p++;
+	}
+	CreateDirectoryA(folder, 0);
+
+	DWORD lerr = GetLastError();
+	return (lerr == ERROR_SUCCESS || lerr == ERROR_ALREADY_EXISTS);
+}
+
+
+BOOL GetFile(char *url, char *dest, int recurse_count = 0) 
+{
+	if(recurse_count > 5) 
+	{
+		log("GetFile: error, too many redirects");
+		return FALSE;
+	}
+
+	// Assert path exists
+	char *p = strrchr(dest, '\\');
+	if (p != NULL)
+	{
+		*p = '\0';
+		if (!CreatePath(dest)) 
+		{
+			log("GetFile: error creating temp folder, code %d", (int) GetLastError());
+			*p = '\\';
+			return FALSE;
+		}
+		*p = '\\';
+	}
+
+	NETLIBHTTPREQUEST req = {0};
+
+	req.cbSize = sizeof(req);
+	req.requestType = REQUEST_GET;
+	req.szUrl = url;
+	req.flags = NLHRF_NODUMP;
+
+	NETLIBHTTPREQUEST *resp = (NETLIBHTTPREQUEST *)CallService(MS_NETLIB_HTTPTRANSACTION, (WPARAM)hNetlibUser, (LPARAM)&req);
+	if (resp == NULL) 
+	{
+		log("GetFile: failed to download \"%s\" : error %d", url, (int) GetLastError());
+		return FALSE;
+	}
+
+	BOOL ret = FALSE;
+
+	if (resp->resultCode == 200) 
+	{
+		HANDLE hSaveFile = CreateFileA(dest, GENERIC_WRITE, FILE_SHARE_WRITE, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+		if (hSaveFile != INVALID_HANDLE_VALUE) 
+		{
+			unsigned long bytes_written = 0;
+			if (WriteFile(hSaveFile, resp->pData, resp->dataLength, &bytes_written, NULL) == TRUE) 
+				ret = TRUE;
+			else 
+				log("GetFile: error writing file \"%s\", code %d", dest, (int) GetLastError());
+
+			CloseHandle(hSaveFile);
+		} 
+		else 
+		{
+			log("GetFile: error creating file \"%s\", code %d", dest, (int) GetLastError());
+		}
+	}
+	else if (resp->resultCode >= 300 && resp->resultCode < 400) 
+	{
+		// get new location
+		for (int i = 0; i < resp->headersCount; i++) 
+		{
+			if (strcmp(resp->headers[i].szName, "Location") == 0) 
+			{
+				ret = GetFile(resp->headers[i].szValue, dest, recurse_count + 1);
+				break;
+			}
+		}
+	}
+	else 
+	{
+		log("GetFile: failed to download \"%s\" : Invalid response, code %d", url, resp->resultCode);
+	}
+
+	CallService(MS_NETLIB_FREEHTTPREQUESTSTRUCT, 0, (LPARAM)resp);
+
+	return ret;
+}
+
+
+void DownloadCallback(HANDLE hContact, void *param)
+{
+	EmoticonImage *img = (EmoticonImage *) hContact;
+	if (img == NULL || img->url == NULL)
+		return;
+
+	char tmp[1024];
+	mir_snprintf(tmp, MAX_REGS(tmp), "%s\\%s", img->pack->path, img->relPath);
+	if (FileExists(tmp))
+		return;
+
+	if (!GetFile(img->url, tmp))
+	{
+		// Avoid further downloads
+		MIR_FREE(img->url);
+	}
+}
+
+
+void log(const char *fmt, ...)
+{
+    va_list va;
+    char text[1024];
+
+    va_start(va, fmt);
+    mir_vsnprintf(text, sizeof(text), fmt, va);
+    va_end(va);
+
+	CallService(MS_NETLIB_LOG, (WPARAM) hNetlibUser, (LPARAM) text);
 }

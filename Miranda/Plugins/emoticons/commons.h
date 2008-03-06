@@ -74,6 +74,7 @@ using namespace std;
 #include "../utils/mir_options.h"
 #include "../utils/mir_icons.h"
 #include "../utils/mir_buffer.h"
+#include "../utils/ContactAsyncQueue.h"
 
 #include "resource.h"
 #include "m_emoticons.h"
@@ -102,14 +103,16 @@ struct EmoticonImage
 	char *name;
 	char *relPath;
 	char *module;
+	char *url;
 
 	// For selection window
 	HBITMAP img;
 	BOOL transparent;
 
-	EmoticonImage() : name(0), relPath(0), img(0), module(0) {}
+	EmoticonImage() : name(0), relPath(0), img(0), module(0), url(0) {}
 	~EmoticonImage();
 
+	void Download();
 	void Load(int &max_height, int &max_width);
 	void Release();
 	BOOL isAvaiable();
