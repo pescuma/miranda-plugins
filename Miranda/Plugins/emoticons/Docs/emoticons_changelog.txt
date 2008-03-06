@@ -2,6 +2,9 @@ Emoticons
 
 Changelog:
 
+. 0.0.1.6
+  + Allow URLs in emoticon packs
+
 . 0.0.1.5
   + Added MySpace and AIM emoticons
   * Fix for smileys after URL (closes issue 11)
