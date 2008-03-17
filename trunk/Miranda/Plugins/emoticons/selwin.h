@@ -24,6 +24,7 @@ Boston, MA 02111-1307, USA.
 
 int ShowSelectionService(WPARAM wParam, LPARAM lParam);
 
+HBITMAP CreateBitmap32(int cx, int cy);
 
 
 #endif // __SELWIN_H__

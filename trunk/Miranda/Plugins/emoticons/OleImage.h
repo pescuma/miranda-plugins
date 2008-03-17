@@ -25,6 +25,8 @@ Boston, MA 02111-1307, USA.
 // {2FD9449B-7EBB-476a-A9DD-AE61382CCE08}
 static const GUID IID_IOleImage = { 0x2fd9449b, 0x7ebb, 0x476a, { 0xa9, 0xdd, 0xae, 0x61, 0x38, 0x2c, 0xce, 0x8 } };
 
+class FlashWrapper;
+
 class OleImage : public IOleObject, public IViewObject, public ITooltipData
 {
 public:
@@ -79,6 +81,8 @@ public:
 	virtual HRESULT STDMETHODCALLTYPE SetTooltip(/* [in] */ BSTR aTooltip);
 	virtual HRESULT STDMETHODCALLTYPE GetTooltip(/* [out, retval] */ BSTR * aTooltip);
 
+	void OnImageChange();
+
 protected: 
 	char *filename;
 	TCHAR *text;
@@ -96,6 +100,8 @@ protected:
 	DWORD viewAdvf;
 	SIZEL sizel;
 
+	FlashWrapper *flashWrapper;
+
 	BOOL LoadImages();
 	void DestroyImages();
 	void CalcSize();
@@ -103,7 +109,6 @@ protected:
 	void KillTimer();
 	void Invalidate();
 	void SendOnViewChage();
-	void OnImageChange();
 	void NotifyHpp();
 
 	BOOL LoadStaticImage();
@@ -113,6 +118,8 @@ protected:
 	void AnimatedGifDispodeFrame();
 	void AnimatedGifDeleteTmpValues();
 	void DestroyAnimatedGif();
+	BOOL LoadFlash();
+	BOOL DestroyFlash();
 
 	struct 
 	{

@@ -1,0 +1,338 @@
+// Created by Microsoft (R) C/C++ Compiler Version 12.00.8964.0 (367ef8f2).
+//
+// c:\desenvolvimento\miranda\plugins\emoticons\flash\debug\flash9e.tlh
+//
+// C++ source equivalent of Win32 type library c:\\windows\\system32\\macromed\\flash\\flash9e.ocx
+// compiler-generated file created 03/08/08 at 11:22:11 - DO NOT EDIT!
+
+#pragma once
+#pragma pack(push, 8)
+
+#include <comdef.h>
+
+//
+// Forward references and typedefs
+//
+
+struct __declspec(uuid("d27cdb6c-ae6d-11cf-96b8-444553540000"))
+/* dual interface */ IShockwaveFlash;
+struct __declspec(uuid("d27cdb6d-ae6d-11cf-96b8-444553540000"))
+/* dispinterface */ _IShockwaveFlashEvents;
+struct /* coclass */ ShockwaveFlash;
+struct __declspec(uuid("d27cdb70-ae6d-11cf-96b8-444553540000"))
+/* interface */ IFlashFactory;
+struct __declspec(uuid("d27cdb72-ae6d-11cf-96b8-444553540000"))
+/* interface */ IFlashObjectInterface;
+struct __declspec(uuid("a6ef9860-c720-11d0-9337-00a0c90dcaa9"))
+/* interface */ IDispatchEx;
+struct __declspec(uuid("6d5140c1-7436-11ce-8034-00aa006009fa"))
+/* interface */ IServiceProvider;
+struct /* coclass */ FlashObjectInterface;
+
+//
+// Smart pointer typedef declarations
+//
+
+_COM_SMARTPTR_TYPEDEF(IShockwaveFlash, __uuidof(IShockwaveFlash));
+_COM_SMARTPTR_TYPEDEF(_IShockwaveFlashEvents, __uuidof(IDispatch));
+_COM_SMARTPTR_TYPEDEF(IFlashFactory, __uuidof(IFlashFactory));
+_COM_SMARTPTR_TYPEDEF(IDispatchEx, __uuidof(IDispatchEx));
+_COM_SMARTPTR_TYPEDEF(IFlashObjectInterface, __uuidof(IFlashObjectInterface));
+_COM_SMARTPTR_TYPEDEF(IServiceProvider, __uuidof(IServiceProvider));
+
+//
+// Type library items
+//
+
+struct __declspec(uuid("d27cdb6c-ae6d-11cf-96b8-444553540000"))
+IShockwaveFlash : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+    virtual HRESULT __stdcall get_ReadyState (
+        long * pVal ) = 0;
+    virtual HRESULT __stdcall get_TotalFrames (
+        long * pVal ) = 0;
+    virtual HRESULT __stdcall get_Playing (
+        VARIANT_BOOL * pVal ) = 0;
+    virtual HRESULT __stdcall put_Playing (
+        VARIANT_BOOL pVal ) = 0;
+    virtual HRESULT __stdcall get_Quality (
+        int * pVal ) = 0;
+    virtual HRESULT __stdcall put_Quality (
+        int pVal ) = 0;
+    virtual HRESULT __stdcall get_ScaleMode (
+        int * pVal ) = 0;
+    virtual HRESULT __stdcall put_ScaleMode (
+        int pVal ) = 0;
+    virtual HRESULT __stdcall get_AlignMode (
+        int * pVal ) = 0;
+    virtual HRESULT __stdcall put_AlignMode (
+        int pVal ) = 0;
+    virtual HRESULT __stdcall get_BackgroundColor (
+        long * pVal ) = 0;
+    virtual HRESULT __stdcall put_BackgroundColor (
+        long pVal ) = 0;
+    virtual HRESULT __stdcall get_Loop (
+        VARIANT_BOOL * pVal ) = 0;
+    virtual HRESULT __stdcall put_Loop (
+        VARIANT_BOOL pVal ) = 0;
+    virtual HRESULT __stdcall get_Movie (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_Movie (
+        BSTR pVal ) = 0;
+    virtual HRESULT __stdcall get_FrameNum (
+        long * pVal ) = 0;
+    virtual HRESULT __stdcall put_FrameNum (
+        long pVal ) = 0;
+    virtual HRESULT __stdcall SetZoomRect (
+        long left,
+        long top,
+        long right,
+        long bottom ) = 0;
+    virtual HRESULT __stdcall Zoom (
+        int factor ) = 0;
+    virtual HRESULT __stdcall Pan (
+        long x,
+        long y,
+        int mode ) = 0;
+    virtual HRESULT __stdcall Play ( ) = 0;
+    virtual HRESULT __stdcall Stop ( ) = 0;
+    virtual HRESULT __stdcall Back ( ) = 0;
+    virtual HRESULT __stdcall Forward ( ) = 0;
+    virtual HRESULT __stdcall Rewind ( ) = 0;
+    virtual HRESULT __stdcall StopPlay ( ) = 0;
+    virtual HRESULT __stdcall GotoFrame (
+        long FrameNum ) = 0;
+    virtual HRESULT __stdcall CurrentFrame (
+        long * FrameNum ) = 0;
+    virtual HRESULT __stdcall IsPlaying (
+        VARIANT_BOOL * Playing ) = 0;
+    virtual HRESULT __stdcall PercentLoaded (
+        long * percent ) = 0;
+    virtual HRESULT __stdcall FrameLoaded (
+        long FrameNum,
+        VARIANT_BOOL * loaded ) = 0;
+    virtual HRESULT __stdcall FlashVersion (
+        long * version ) = 0;
+    virtual HRESULT __stdcall get_WMode (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_WMode (
+        BSTR pVal ) = 0;
+    virtual HRESULT __stdcall get_SAlign (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_SAlign (
+        BSTR pVal ) = 0;
+    virtual HRESULT __stdcall get_Menu (
+        VARIANT_BOOL * pVal ) = 0;
+    virtual HRESULT __stdcall put_Menu (
+        VARIANT_BOOL pVal ) = 0;
+    virtual HRESULT __stdcall get_Base (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_Base (
+        BSTR pVal ) = 0;
+    virtual HRESULT __stdcall get_Scale (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_Scale (
+        BSTR pVal ) = 0;
+    virtual HRESULT __stdcall get_DeviceFont (
+        VARIANT_BOOL * pVal ) = 0;
+    virtual HRESULT __stdcall put_DeviceFont (
+        VARIANT_BOOL pVal ) = 0;
+    virtual HRESULT __stdcall get_EmbedMovie (
+        VARIANT_BOOL * pVal ) = 0;
+    virtual HRESULT __stdcall put_EmbedMovie (
+        VARIANT_BOOL pVal ) = 0;
+    virtual HRESULT __stdcall get_BGColor (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_BGColor (
+        BSTR pVal ) = 0;
+    virtual HRESULT __stdcall get_Quality2 (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_Quality2 (
+        BSTR pVal ) = 0;
+    virtual HRESULT __stdcall LoadMovie (
+        int layer,
+        BSTR url ) = 0;
+    virtual HRESULT __stdcall TGotoFrame (
+        BSTR target,
+        long FrameNum ) = 0;
+    virtual HRESULT __stdcall TGotoLabel (
+        BSTR target,
+        BSTR label ) = 0;
+    virtual HRESULT __stdcall TCurrentFrame (
+        BSTR target,
+        long * FrameNum ) = 0;
+    virtual HRESULT __stdcall TCurrentLabel (
+        BSTR target,
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall TPlay (
+        BSTR target ) = 0;
+    virtual HRESULT __stdcall TStopPlay (
+        BSTR target ) = 0;
+    virtual HRESULT __stdcall SetVariable (
+        BSTR name,
+        BSTR value ) = 0;
+    virtual HRESULT __stdcall GetVariable (
+        BSTR name,
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall TSetProperty (
+        BSTR target,
+        int property,
+        BSTR value ) = 0;
+    virtual HRESULT __stdcall TGetProperty (
+        BSTR target,
+        int property,
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall TCallFrame (
+        BSTR target,
+        int FrameNum ) = 0;
+    virtual HRESULT __stdcall TCallLabel (
+        BSTR target,
+        BSTR label ) = 0;
+    virtual HRESULT __stdcall TSetPropertyNum (
+        BSTR target,
+        int property,
+        double value ) = 0;
+    virtual HRESULT __stdcall TGetPropertyNum (
+        BSTR target,
+        int property,
+        double * pVal ) = 0;
+    virtual HRESULT __stdcall TGetPropertyAsNumber (
+        BSTR target,
+        int property,
+        double * pVal ) = 0;
+    virtual HRESULT __stdcall get_SWRemote (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_SWRemote (
+        BSTR pVal ) = 0;
+    virtual HRESULT __stdcall get_FlashVars (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_FlashVars (
+        BSTR pVal ) = 0;
+    virtual HRESULT __stdcall get_AllowScriptAccess (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_AllowScriptAccess (
+        BSTR pVal ) = 0;
+    virtual HRESULT __stdcall get_MovieData (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_MovieData (
+        BSTR pVal ) = 0;
+    virtual HRESULT __stdcall get_InlineData (
+        IUnknown * * ppIUnknown ) = 0;
+    virtual HRESULT __stdcall put_InlineData (
+        IUnknown * ppIUnknown ) = 0;
+    virtual HRESULT __stdcall get_SeamlessTabbing (
+        VARIANT_BOOL * pVal ) = 0;
+    virtual HRESULT __stdcall put_SeamlessTabbing (
+        VARIANT_BOOL pVal ) = 0;
+    virtual HRESULT __stdcall EnforceLocalSecurity ( ) = 0;
+    virtual HRESULT __stdcall get_Profile (
+        VARIANT_BOOL * pVal ) = 0;
+    virtual HRESULT __stdcall put_Profile (
+        VARIANT_BOOL pVal ) = 0;
+    virtual HRESULT __stdcall get_ProfileAddress (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_ProfileAddress (
+        BSTR pVal ) = 0;
+    virtual HRESULT __stdcall get_ProfilePort (
+        long * pVal ) = 0;
+    virtual HRESULT __stdcall put_ProfilePort (
+        long pVal ) = 0;
+    virtual HRESULT __stdcall CallFunction (
+        BSTR request,
+        BSTR * response ) = 0;
+    virtual HRESULT __stdcall SetReturnValue (
+        BSTR returnValue ) = 0;
+    virtual HRESULT __stdcall DisableLocalSecurity ( ) = 0;
+    virtual HRESULT __stdcall get_AllowNetworking (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_AllowNetworking (
+        BSTR pVal ) = 0;
+    virtual HRESULT __stdcall get_AllowFullScreen (
+        BSTR * pVal ) = 0;
+    virtual HRESULT __stdcall put_AllowFullScreen (
+        BSTR pVal ) = 0;
+};
+
+struct __declspec(uuid("d27cdb6d-ae6d-11cf-96b8-444553540000"))
+_IShockwaveFlashEvents : IDispatch
+{};
+
+struct __declspec(uuid("d27cdb6e-ae6d-11cf-96b8-444553540000"))
+ShockwaveFlash;
+    // [ default ] interface IShockwaveFlash
+    // [ default, source ] dispinterface _IShockwaveFlashEvents
+
+struct __declspec(uuid("d27cdb70-ae6d-11cf-96b8-444553540000"))
+IFlashFactory : IUnknown
+{};
+
+struct __declspec(uuid("a6ef9860-c720-11d0-9337-00a0c90dcaa9"))
+IDispatchEx : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+    virtual HRESULT __stdcall GetDispID (
+        BSTR bstrName,
+        unsigned long grfdex,
+        long * pid ) = 0;
+    virtual HRESULT __stdcall RemoteInvokeEx (
+        long id,
+        unsigned long lcid,
+        unsigned long dwFlags,
+        struct DISPPARAMS * pdp,
+        VARIANT * pvarRes,
+        struct EXCEPINFO * pei,
+        struct IServiceProvider * pspCaller,
+        unsigned int cvarRefArg,
+        unsigned int * rgiRefArg,
+        VARIANT * rgvarRefArg ) = 0;
+    virtual HRESULT __stdcall DeleteMemberByName (
+        BSTR bstrName,
+        unsigned long grfdex ) = 0;
+    virtual HRESULT __stdcall DeleteMemberByDispID (
+        long id ) = 0;
+    virtual HRESULT __stdcall GetMemberProperties (
+        long id,
+        unsigned long grfdexFetch,
+        unsigned long * pgrfdex ) = 0;
+    virtual HRESULT __stdcall GetMemberName (
+        long id,
+        BSTR * pbstrName ) = 0;
+    virtual HRESULT __stdcall GetNextDispID (
+        unsigned long grfdex,
+        long id,
+        long * pid ) = 0;
+    virtual HRESULT __stdcall GetNameSpaceParent (
+        IUnknown * * ppunk ) = 0;
+};
+
+struct __declspec(uuid("d27cdb72-ae6d-11cf-96b8-444553540000"))
+IFlashObjectInterface : IDispatchEx
+{};
+
+/*
+struct __declspec(uuid("6d5140c1-7436-11ce-8034-00aa006009fa"))
+IServiceProvider : IUnknown
+{
+    //
+    // Raw methods provided by interface
+    //
+
+    virtual HRESULT __stdcall RemoteQueryService (
+        GUID * guidService,
+        GUID * riid,
+        IUnknown * * ppvObject ) = 0;
+};
+*/
+
+struct __declspec(uuid("d27cdb71-ae6d-11cf-96b8-444553540000"))
+FlashObjectInterface;
+    // [ default ] interface IFlashObjectInterface
+
+#pragma pack(pop)
