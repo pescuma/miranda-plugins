@@ -12,6 +12,253 @@ typedef map<UINT_PTR, OleImage *> ImageTimerMapType;
 
 static ImageTimerMapType timers;
 
+class FlashWrapper : virtual public IOleClientSite,
+					 virtual public IOleInPlaceSiteWindowless,
+					 virtual public IOleInPlaceFrame,
+					 virtual public IStorage
+{
+public:
+	SIZE size;
+	RECT pos;
+	OleImage *owner;
+	IShockwaveFlash *flash;
+	IOleObject *flashOleObject;
+	IViewObjectEx *flashViewObject;
+	IOleInPlaceObjectWindowless *flashInPlaceObjWindowless;
+
+	FlashWrapper(OleImage *anOwner, const char *filename)
+	{
+		flash = NULL;
+		flashOleObject = NULL;
+		flashViewObject = NULL;
+		flashInPlaceObjWindowless = NULL;
+
+		owner = anOwner;
+
+		HRESULT hr;
+		long readyState;
+		double val;
+		
+		hr = OleCreate(__uuidof(ShockwaveFlash), IID_IOleObject, OLERENDER_DRAW, 0, 
+						(IOleClientSite *) this, (IStorage *) this, (void **) &flashOleObject);
+		if (FAILED(hr)) goto err;
+
+		hr = OleSetContainedObject(flashOleObject, TRUE);
+		if (FAILED(hr)) goto err;
+
+		hr = flashOleObject->QueryInterface(__uuidof(IShockwaveFlash), (void **) &flash);
+		if (FAILED(hr)) goto err;
+
+		hr = flashOleObject->QueryInterface(__uuidof(IViewObjectEx), (void **) &flashViewObject);
+		if (FAILED(hr)) goto err;
+
+		hr = flashOleObject->QueryInterface(__uuidof(IOleInPlaceObjectWindowless), (void **) &flashInPlaceObjWindowless);
+		if (FAILED(hr)) goto err;
+
+		flash->put_WMode(L"transparent");
+		//flash->put_Scale(L"showAll");
+		flash->put_ScaleMode(0);
+		flash->put_BackgroundColor(0x00000000);
+		flash->put_EmbedMovie(TRUE);
+		flash->put_Loop(TRUE);
+
+		{
+			WCHAR *tmp = mir_a2u(filename);
+			BSTR url = SysAllocString(tmp);
+
+			hr = flash->LoadMovie(0, url);
+
+			SysFreeString(url);
+			mir_free(tmp);
+		}
+		if (FAILED(hr)) goto err;
+
+		hr = flash->get_ReadyState(&readyState);
+		if (FAILED(hr)) goto err;
+		if (readyState != 3 && readyState != 4) goto err;
+
+		hr = flash->TGetPropertyAsNumber(L"/", 8, &val);
+		if (FAILED(hr)) goto err;
+		size.cx = (long)(val + 0.5);
+
+		hr = flash->TGetPropertyAsNumber(L"/", 9, &val);
+		if (FAILED(hr)) goto err;
+		size.cy = (long)(val + 0.5);
+
+		pos.left = 0;
+		pos.top = 0;
+		pos.right = size.cx;
+		pos.bottom = size.cy;
+
+		flashInPlaceObjWindowless->SetObjectRects(&pos, &pos);
+
+		hr = flash->Play();
+		if (FAILED(hr)) goto err;
+
+		hr = flashOleObject->DoVerb(OLEIVERB_SHOW, NULL, (IOleClientSite *) this, 0, NULL, NULL);
+		if (FAILED(hr)) goto err;
+
+		return;
+
+err: 
+		Destroy();
+	}
+
+	virtual ~FlashWrapper()
+	{
+		Destroy();
+	}
+
+	void Destroy()
+	{
+		if (flashOleObject != NULL)
+			flashOleObject->Close(OLECLOSE_NOSAVE);
+		RELEASE(flashViewObject)
+		RELEASE(flashInPlaceObjWindowless)
+		RELEASE(flashOleObject)
+		RELEASE(flash)
+	}
+
+	BOOL isValid() 
+	{
+		return flash != NULL;
+	}
+
+	void SetPos(const RECT &aPos) 
+	{
+		if (!isValid())
+			return;
+
+		pos = aPos;
+		flashInPlaceObjWindowless->SetObjectRects(&pos, &pos);
+	}
+
+	void Draw(HDC hdc)
+	{
+		if (!isValid())
+			return;
+
+		OleDraw(flashViewObject, DVASPECT_TRANSPARENT, hdc, &pos);
+	}
+
+
+	//interface methods
+
+	//IUnknown 
+	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void ** ppvObject)
+	{
+		if (IsEqualGUID(riid, IID_IUnknown))
+			*ppvObject = (void*)(this);
+		else if (IsEqualGUID(riid, IID_IOleInPlaceSite))
+			*ppvObject = (void*)dynamic_cast<IOleInPlaceSite *>(this);
+		else if (IsEqualGUID(riid, IID_IOleInPlaceSiteEx))
+			*ppvObject = (void*)dynamic_cast<IOleInPlaceSiteEx *>(this);
+		else if (IsEqualGUID(riid, IID_IOleInPlaceSiteWindowless))
+			*ppvObject = (void*)dynamic_cast<IOleInPlaceSiteWindowless *>(this);
+		else if (IsEqualGUID(riid, IID_IStorage))
+			*ppvObject = (void*)dynamic_cast<IStorage *>(this);
+		else if (IsEqualGUID(riid, IID_IOleInPlaceFrame))
+			*ppvObject = (void*)dynamic_cast<IOleInPlaceFrame *>(this);
+		else
+			*ppvObject = 0;
+		if (!(*ppvObject))
+			return E_NOINTERFACE; //if dynamic_cast returned 0
+		return S_OK;
+	}
+	ULONG STDMETHODCALLTYPE AddRef() { return 1; }
+	ULONG STDMETHODCALLTYPE Release() { return 1; }
+	
+
+	//IOleClientSite
+	virtual HRESULT STDMETHODCALLTYPE SaveObject() { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE GetMoniker(DWORD dwAssign, DWORD dwWhichMoniker, IMoniker ** ppmk) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE GetContainer(LPOLECONTAINER FAR* ppContainer) { *ppContainer = 0; return E_NOINTERFACE; }
+	virtual HRESULT STDMETHODCALLTYPE ShowObject() { return S_OK; }
+	virtual HRESULT STDMETHODCALLTYPE OnShowWindow(BOOL fShow) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE RequestNewObjectLayout() { return E_NOTIMPL; }
+
+	//IOleInPlaceSite
+	virtual HRESULT STDMETHODCALLTYPE GetWindow(HWND FAR* lphwnd){ *lphwnd = 0; return S_OK; }
+	virtual HRESULT STDMETHODCALLTYPE ContextSensitiveHelp(BOOL fEnterMode) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE CanInPlaceActivate() { return S_OK; }
+	virtual HRESULT STDMETHODCALLTYPE OnInPlaceActivate() { return S_OK; }
+	virtual HRESULT STDMETHODCALLTYPE OnUIActivate() { return S_OK; }
+	virtual HRESULT STDMETHODCALLTYPE GetWindowContext(LPOLEINPLACEFRAME FAR* lplpFrame,LPOLEINPLACEUIWINDOW FAR* lplpDoc,LPRECT lprcPosRect,LPRECT lprcClipRect,LPOLEINPLACEFRAMEINFO lpFrameInfo)
+	{
+		*lplpFrame = (LPOLEINPLACEFRAME)this;
+
+		*lplpDoc = 0;
+
+		lpFrameInfo->fMDIApp = FALSE;
+		lpFrameInfo->hwndFrame = 0;
+		lpFrameInfo->haccel = 0;
+		lpFrameInfo->cAccelEntries = 0;
+		
+		*lprcPosRect = pos;
+		*lprcClipRect = pos;
+		return S_OK;
+	}
+	virtual HRESULT STDMETHODCALLTYPE Scroll(SIZE scrollExtent) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE OnUIDeactivate(BOOL fUndoable) { return S_OK; }
+	virtual HRESULT STDMETHODCALLTYPE OnInPlaceDeactivate() { return S_OK; }
+	virtual HRESULT STDMETHODCALLTYPE DiscardUndoState() { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE DeactivateAndUndo() { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE OnPosRectChange(LPCRECT lprcPosRect) { return S_OK; }
+
+	//IOleInPlaceSiteEx
+	virtual HRESULT STDMETHODCALLTYPE OnInPlaceActivateEx(BOOL __RPC_FAR *pfNoRedraw, DWORD dwFlags) { if (pfNoRedraw) *pfNoRedraw = FALSE; return S_OK; }
+	virtual HRESULT STDMETHODCALLTYPE OnInPlaceDeactivateEx(BOOL fNoRedraw) { return S_FALSE; }
+	virtual HRESULT STDMETHODCALLTYPE RequestUIActivate(void) { return S_FALSE; }
+
+	//IOleInPlaceSiteWindowless
+    virtual HRESULT STDMETHODCALLTYPE CanWindowlessActivate(void) { return S_OK; }
+    virtual HRESULT STDMETHODCALLTYPE GetCapture(void) { return S_FALSE; }
+    virtual HRESULT STDMETHODCALLTYPE SetCapture(BOOL fCapture) { return S_FALSE; }
+    virtual HRESULT STDMETHODCALLTYPE GetFocus(void) { return S_OK; }
+    virtual HRESULT STDMETHODCALLTYPE SetFocus(BOOL fFocus) { return S_OK; }
+    virtual HRESULT STDMETHODCALLTYPE GetDC(LPCRECT pRect, DWORD grfFlags, HDC __RPC_FAR *phDC) { return S_FALSE; }
+    virtual HRESULT STDMETHODCALLTYPE ReleaseDC(HDC hDC) { return S_FALSE; }
+    virtual HRESULT STDMETHODCALLTYPE InvalidateRect(LPCRECT pRect,BOOL fErase)
+	{
+		owner->OnImageChange();
+		return S_OK;
+	}
+    virtual HRESULT STDMETHODCALLTYPE InvalidateRgn(HRGN hRGN, BOOL fErase) { return S_OK; }
+    virtual HRESULT STDMETHODCALLTYPE ScrollRect(INT dx, INT dy, LPCRECT pRectScroll, LPCRECT pRectClip) { return E_NOTIMPL; }
+    virtual HRESULT STDMETHODCALLTYPE AdjustRect(LPRECT prc) { return S_FALSE; }
+    virtual HRESULT STDMETHODCALLTYPE OnDefWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam, LRESULT __RPC_FAR *plResult) { return S_FALSE; }
+
+	//IOleInPlaceFrame
+	virtual HRESULT STDMETHODCALLTYPE GetBorder(LPRECT lprectBorder) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE RequestBorderSpace(LPCBORDERWIDTHS pborderwidths) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE SetBorderSpace(LPCBORDERWIDTHS pborderwidths) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE SetActiveObject(IOleInPlaceActiveObject *pActiveObject, LPCOLESTR pszObjName) { return S_OK; }
+	virtual HRESULT STDMETHODCALLTYPE InsertMenus(HMENU hmenuShared, LPOLEMENUGROUPWIDTHS lpMenuWidths) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE SetMenu(HMENU hmenuShared, HOLEMENU holemenu, HWND hwndActiveObject) { return S_OK; }
+	virtual HRESULT STDMETHODCALLTYPE RemoveMenus(HMENU hmenuShared) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE SetStatusText(LPCOLESTR pszStatusText) { return S_OK; }
+	virtual HRESULT STDMETHODCALLTYPE EnableModeless(BOOL fEnable) { return S_OK; }
+	virtual HRESULT STDMETHODCALLTYPE TranslateAccelerator(LPMSG lpmsg, WORD wID) { return E_NOTIMPL; }
+
+	//IStorage
+	virtual HRESULT STDMETHODCALLTYPE CreateStream(const WCHAR *pwcsName, DWORD grfMode, DWORD reserved1, DWORD reserved2, IStream **ppstm) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE OpenStream(const WCHAR * pwcsName, void *reserved1, DWORD grfMode, DWORD reserved2, IStream **ppstm) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE CreateStorage(const WCHAR *pwcsName, DWORD grfMode, DWORD reserved1, DWORD reserved2, IStorage **ppstg) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE OpenStorage(const WCHAR * pwcsName, IStorage * pstgPriority, DWORD grfMode, SNB snbExclude, DWORD reserved, IStorage **ppstg) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE CopyTo(DWORD ciidExclude, IID const *rgiidExclude, SNB snbExclude,IStorage *pstgDest) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE MoveElementTo(const OLECHAR *pwcsName,IStorage * pstgDest, const OLECHAR *pwcsNewName, DWORD grfFlags) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE Commit(DWORD grfCommitFlags) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE Revert() { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE EnumElements(DWORD reserved1, void * reserved2, DWORD reserved3, IEnumSTATSTG ** ppenum) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE DestroyElement(const OLECHAR *pwcsName) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE RenameElement(const WCHAR *pwcsOldName, const WCHAR *pwcsNewName) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE SetElementTimes(const WCHAR *pwcsName, FILETIME const *pctime, FILETIME const *patime, FILETIME const *pmtime) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE SetClass(REFCLSID clsid) { return S_OK; }
+	virtual HRESULT STDMETHODCALLTYPE SetStateBits(DWORD grfStateBits, DWORD grfMask) { return E_NOTIMPL; }
+	virtual HRESULT STDMETHODCALLTYPE Stat(STATSTG * pstatstg, DWORD grfStatFlag) { return E_NOTIMPL; }
+
+
+};
 
 
 OleImage::OleImage(const char *aFilename, const TCHAR *aText, const TCHAR *aTooltip)
@@ -23,6 +270,7 @@ OleImage::OleImage(const char *aFilename, const TCHAR *aText, const TCHAR *aTool
 	filename = mir_strdup(aFilename);
 	text = mir_tstrdup(aText);
 	closed = FALSE;
+	animated = FALSE;
 
 	if (aTooltip == NULL)
 		tooltip = NULL;
@@ -37,6 +285,7 @@ OleImage::OleImage(const char *aFilename, const TCHAR *aText, const TCHAR *aTool
 #endif
 	}
 
+	flashWrapper = NULL;
 	clientSite = NULL;
 	oleAdviseHolder = NULL;
 	viewAdviseSink = NULL;
@@ -109,10 +358,13 @@ BOOL OleImage::LoadImages()
 	sizel.cx = 0;
 	sizel.cy = 0;
 
-	animated = LoadAnimatedGif();
-	if (!animated)
-		if (!LoadStaticImage())
-			return FALSE;
+	if (!LoadFlash())
+	{
+		animated = LoadAnimatedGif();
+		if (!animated)
+			if (!LoadStaticImage())
+				return FALSE;
+	}
 
 	return TRUE;
 }
@@ -120,7 +372,11 @@ BOOL OleImage::LoadImages()
 
 void OleImage::DestroyImages()
 {
-	if (animated)
+	if (flashWrapper)
+	{
+		DestroyFlash();
+	}
+	else if (animated)
 	{
 		DestroyAnimatedGif();
 	}
@@ -149,7 +405,7 @@ const TCHAR * OleImage::GetText() const
 
 BOOL OleImage::isValid() const
 {
-	return animated || si.hBmp != NULL;
+	return flashWrapper || animated || si.hBmp != NULL;
 }
 
 
@@ -416,7 +672,13 @@ HRESULT STDMETHODCALLTYPE OleImage::Draw(/* [in] */ DWORD dwDrawAspect, /* [in] 
 	int w = min(lprcBounds->right - lprcBounds->left, width);
 	int h = min(lprcBounds->bottom - lprcBounds->top, height);
 
-	if (animated)
+	if (flashWrapper)
+	{
+		RECT r = { lprcBounds->left, lprcBounds->top, lprcBounds->right, lprcBounds->bottom };
+		flashWrapper->SetPos(r);
+		flashWrapper->Draw(hdcDraw);
+	}
+	else if (animated)
 	{
 		if (!ag.started)
 			AnimatedGifMountFrame();
@@ -865,19 +1127,22 @@ void OleImage::OnTimer()
 {
 	KillTimer();
 
-	// Move to next frame
-	AnimatedGifDispodeFrame();
-
-	int frame = ag.frame.num + 1;
-	if (frame >= ag.frameCount)
+	if (animated)
 	{
-		// Don't need fi data no more
-		AnimatedGifDeleteTmpValues();
-		frame = 0;
-	}
+		// Move to next frame
+		AnimatedGifDispodeFrame();
 
-	ag.frame.num = frame;
-	ag.started = FALSE;
+		int frame = ag.frame.num + 1;
+		if (frame >= ag.frameCount)
+		{
+			// Don't need fi data no more
+			AnimatedGifDeleteTmpValues();
+			frame = 0;
+		}
+
+		ag.frame.num = frame;
+		ag.started = FALSE;
+	}
 
 	OnImageChange();
 }
@@ -915,4 +1180,32 @@ void OleImage::KillTimer()
 		timers.erase(ag.timer);
 		ag.timer = NULL;
 	}
+}
+
+
+BOOL OleImage::LoadFlash()
+{
+	if (strcmp(&filename[strlen(filename)-4], ".swf") != 0)
+		return FALSE;
+
+	flashWrapper = new FlashWrapper(this, filename);
+	if (!flashWrapper->isValid())
+	{
+		DestroyFlash();
+		return FALSE;
+	}
+
+	width = flashWrapper->size.cx;
+	height = flashWrapper->size.cy;
+
+	return TRUE;
+}
+
+BOOL OleImage::DestroyFlash()
+{
+//	delete flashWrapper;
+	flashWrapper->Destroy();
+	flashWrapper = NULL;
+
+	return TRUE;
 }

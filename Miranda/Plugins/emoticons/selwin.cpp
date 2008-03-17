@@ -2,8 +2,9 @@
 
 
 #define MIN_COLS 5
-#define MAX_LINES 5
-#define BORDER 5
+#define MAX_LINES 8
+#define MAX_COLS 12
+#define BORDER 3
 
 
 struct EmoticonSelectionData
@@ -236,7 +237,7 @@ INT_PTR CALLBACK EmoticonSeletionDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
 			ssd->cols = num_emotes / MAX_LINES;
 			if (num_emotes % MAX_LINES != 0)
 				ssd->cols++;
-			ssd->cols = max(ssd->cols, MIN_COLS);
+			ssd->cols = min(max(ssd->cols, MIN_COLS), MAX_COLS);
 
 			ssd->lines = num_emotes / ssd->cols;
 			if (num_emotes % ssd->cols != 0)
@@ -445,6 +446,7 @@ INT_PTR CALLBACK EmoticonSeletionDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
 				// Copy buffer to screen
 				BitBlt(hdc_orig, rc.left, rc.top, rc.right - rc.left, 
 						rc.bottom - rc.top, hdc, rc.left, rc.top, SRCCOPY);
+
 				DeleteDC(hdc);
 				DeleteObject(hBmp);
 

@@ -26,7 +26,7 @@ Creator: <Artist name>
 Updater URL: <URL for updating this pack - not yet implemented>
 
 Also, the mep file can expecify the filename for an emoticon, in a line like:
-"<The unique name of the emoticon>" = "<Relative path from pack foler>"
+"<The unique name of the emoticon>" = "<Relative path from pack foler>", <Frame number, starting in 1 - optional>
 For example:
 "smile" = "01.gif"
 This will affect all protocols. If you want to change the image for a protocol only, you can write:
