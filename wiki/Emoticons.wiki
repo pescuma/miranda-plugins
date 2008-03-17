@@ -33,7 +33,7 @@ The name of the pack is the name of the folder, and a file <Pack name>.mep can e
   Updater URL: <URL for updating this pack - not yet implemented>
 
 Also, the mep file can expecify the filename for an emoticon, in a line like:
-  "<The unique name of the emoticon>" = "<Relative path from pack foler>"
+  "<The unique name of the emoticon>" = "<Relative path from pack foler>", <Frame number, starting in 1 - optional>
 For example:
   "smile" = "01.gif"
 This will affect all protocols. If you want to change the image for a protocol only, you can write:
@@ -72,6 +72,12 @@ http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/emoticons/Docs/emoticons
 
 === Changelog ===
 {{{
+. 0.0.1.6
+  + Allow URLs in emoticon packs
+  + Flash emoticons
+  + Added Skype and Sametime emoticons
+  + Option to select which frame to show in selection window (for animated gif and swf)
+
 . 0.0.1.5
   + Added MySpace and AIM emoticons
   * Fix for smileys after URL (closes issue 11)
