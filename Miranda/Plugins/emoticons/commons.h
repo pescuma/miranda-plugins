@@ -32,6 +32,7 @@ Boston, MA 02111-1307, USA.
 #include <richedit.h>
 #include <tom.h>
 #include <richole.h>
+#include "flash9e.tlh"
 
 
 // Disable "...truncated to '255' characters in the debug information" warnings
@@ -92,8 +93,10 @@ extern PLUGINLINK *pluginLink;
 extern FI_INTERFACE *fei;
 extern HANDLE hChangedEvent;
 
-#define MIR_FREE(_X_) { mir_free(_X_); _X_ = NULL; }
 #define MAX_REGS(_A_) ( sizeof(_A_) / sizeof(_A_[0]) )
+#define MIR_FREE(_X_) if (_X_ != NULL) { mir_free(_X_); _X_ = NULL; }
+#define RELEASE(_X_) if (_X_ != NULL) { _X_->Release(); _X_ = NULL; }
+
 
 struct EmoticonPack;
 
@@ -108,8 +111,9 @@ struct EmoticonImage
 	// For selection window
 	HBITMAP img;
 	BOOL transparent;
+	int selectionFrame;
 
-	EmoticonImage() : name(0), relPath(0), img(0), module(0), url(0) {}
+	EmoticonImage() : name(0), relPath(0), img(0), module(0), url(0), selectionFrame(0) {}
 	~EmoticonImage();
 
 	void Download();
@@ -124,13 +128,14 @@ struct Emoticon
 {
 	char *name;
 	TCHAR *description;
+	char *group;
 	LIST<TCHAR> texts;
 	EmoticonImage *img;
 
 	// For selection window
 	HWND tt;
 
-	Emoticon() : name(0), description(0), texts(20), img(0), tt(0) {}
+	Emoticon() : name(0), description(0), group(0), texts(20), img(0), tt(0) {}
 	~Emoticon();
 };
 

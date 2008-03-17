@@ -164,6 +164,10 @@ SOURCE=.\commons.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\utils\ContactAsyncQueue.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\m_emoticons.h
 # End Source File
 # Begin Source File
@@ -206,6 +210,10 @@ SOURCE=.\resource.rc
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+# Begin Source File
+
+SOURCE=..\utils\ContactAsyncQueue.cpp
+# End Source File
 # Begin Source File
 
 SOURCE=.\emoticons.cpp

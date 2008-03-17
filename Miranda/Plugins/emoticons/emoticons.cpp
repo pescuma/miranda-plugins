@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,1,5),
+	PLUGIN_MAKE_VERSION(0,0,1,6),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -797,7 +797,7 @@ int RestoreInput(RichEditCtrl &rec, int start = 0, int end = -1)
 		ITooltipData *ttd = NULL;
 		hr = reObj.poleobj->QueryInterface(__uuidof(ITooltipData), (void**) &ttd);
 		reObj.poleobj->Release();
-		if (SUCCEEDED(hr) && ttd == NULL)
+		if (FAILED(hr) || ttd == NULL)
 			continue;
 
 		BSTR hint = NULL;
@@ -1276,7 +1276,7 @@ void LoadModules()
 	}
 }
 
-void HandleEmoLine(Module *m, char *tmp)
+void HandleEmoLine(Module *m, char *tmp, char *group)
 {
 	int len = strlen(tmp);
 	int state = 0;
@@ -1328,6 +1328,7 @@ void HandleEmoLine(Module *m, char *tmp)
 				case 1: 
 					e = new Emoticon();
 					e->name = mir_t2a(txt);
+					e->group = group;
 					MIR_FREE(txt);
 					break;
 				case 3: 
@@ -1358,6 +1359,7 @@ BOOL LoadModule(Module *m)
 	char tmp[1024];
 	char c;
 	int pos = 0;
+	char *group = NULL;
 	do
 	{
 		c = fgetc(file);
@@ -1365,7 +1367,24 @@ BOOL LoadModule(Module *m)
 		if (c == '\n' || c == '\r' || c == EOF || pos >= MAX_REGS(tmp) - 1) 
 		{
 			tmp[pos] = 0;
-			HandleEmoLine(m, tmp);
+			strtrim(tmp);
+			size_t len = strlen(tmp);
+
+			if (tmp[0] == '#')
+			{
+				// Do nothing
+			}
+			else if (tmp[0] == '[' && tmp[len-1] == ']')
+			{
+				tmp[len-1] = '\0';
+				strtrim(&tmp[1]);
+				group = mir_strdup(&tmp[1]);
+			}
+			else
+			{
+				HandleEmoLine(m, tmp, group);
+			}
+
 			pos = 0;
 		}
 		else
@@ -1427,7 +1446,7 @@ BOOL isValidExtension(char *name)
 			&& strcmp(p, ".jpeg") != 0
 			&& strcmp(p, ".gif") != 0
 			&& strcmp(p, ".png") != 0
-			/*&& strcmp(p, ".swf") != 0*/)
+			&& strcmp(p, ".swf") != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -1443,7 +1462,7 @@ BOOL isValidExtension(WCHAR *name)
 			&& lstrcmpW(p, L".jpeg") != 0
 			&& lstrcmpW(p, L".gif") != 0
 			&& lstrcmpW(p, L".png") != 0
-			/*&& lstrcmpW(p, L".swf") != 0*/)
+			&& lstrcmpW(p, L".swf") != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -1456,10 +1475,11 @@ EmoticonImage * HandleMepLine(EmoticonPack *p, char *line)
 	int state = 0;
 	int pos;
 	int module_pos = -1;
+	BOOL noDelimiter;
 
 	EmoticonImage *img = NULL;
 
-	for(int i = 0; i < len && state < 4; i++)
+	for(int i = 0; i <= len && state < 6; i++)
 	{
 		char c = line[i];
 		if (c == ' ')
@@ -1467,19 +1487,38 @@ EmoticonImage * HandleMepLine(EmoticonPack *p, char *line)
 
 		if ((state % 2) == 0)
 		{
-			if (c != '"')
+			if (c == '"')
+			{
+				state ++;
+				pos = i+1;
+				noDelimiter = FALSE;
+			}
+			else if (c != '=' && c != ',' && c != ' ' && c != '\t' && c != '\r' && c != '\n')
+			{
+				state ++;
+				pos = i;
+				noDelimiter = TRUE;
+			}
+			else
+			{
 				continue;
-
-			state ++;
-			pos = i+1;
+			}
 		}
 		else
 		{
 			if (state == 1 && c == '\\') // Module name
 				module_pos = i;
 
-			if (c != '"')
-				continue;
+			if (noDelimiter)
+			{
+				if (c != ' ' && c != ',' && c != '=' && c != '\0')
+					continue;
+			}
+			else
+			{
+				if (c != '"')
+					continue;
+			}
 
 			line[i] = 0;
 
@@ -1503,12 +1542,15 @@ EmoticonImage * HandleMepLine(EmoticonPack *p, char *line)
 			switch(state)
 			{
 				case 1: 
+				{
 					img = new EmoticonImage();
 					img->pack = p;
 					img->name = txt;
 					img->module = module;
 					break;
+				}
 				case 3: 
+				{
 					if (!isValidExtension(txt))
 					{
 						delete img;
@@ -1536,6 +1578,13 @@ EmoticonImage * HandleMepLine(EmoticonPack *p, char *line)
 						img->relPath = txt; 
 					}
 					break;
+				}
+				case 5:
+				{
+					img->selectionFrame = max(0, atoi(txt) - 1);
+					mir_free(txt);
+					break;
+				}
 			}
 
 			state++;
@@ -1596,7 +1645,11 @@ BOOL LoadPack(EmoticonPack *pack)
 			tmp[pos] = 0;
 			
 			strtrim(tmp);
-			if (strnicmp("Name:", tmp, 5) == 0)
+			if (tmp[0] == '#')
+			{
+				// Do nothing
+			}
+			else if (strnicmp("Name:", tmp, 5) == 0)
 			{
 				char *name = strtrim(&tmp[5]);
 				if (name[0] != '\0') 
@@ -1770,10 +1823,7 @@ void FillModuleImages(EmoticonPack *pack)
 			if (e->img != NULL)
 				continue;
 
-			TCHAR err[1024];
-			mir_sntprintf(err, MAX_REGS(err), _T("  ***  The pack '%s' does not have the emoticon '") _T(TCHAR_STR_PARAM) _T("' needed by ") _T(TCHAR_STR_PARAM) _T("\n"),
-				pack->description, e->name, m->name);
-			OutputDebugString(err);
+			log("  ***  The pack '" TCHAR_STR_PARAM "' does not have the emoticon '%s' needed by %s\n", pack->description, e->name, m->name);
 		}
 	}
 }
@@ -2015,9 +2065,285 @@ void EmoticonImage::Download()
 	if (FileExists(tmp))
 		return;
 
-	downloadQueue->AddIfDontHave(0, (HANDLE) this);
+	downloadQueue->AddIfDontHave(1000, (HANDLE) this);
 }
 
+struct ANIMATED_GIF_DATA
+{
+	FIMULTIBITMAP *multi;
+	FIBITMAP *dib;
+	int frameCount;
+	RGBQUAD background;
+	int width;
+	int height;
+	BOOL transparent;
+
+	struct {
+		int top;
+		int left;
+		int width;
+		int height;
+		int disposal_method;
+	} frame;
+};
+
+BOOL AnimatedGifGetData(ANIMATED_GIF_DATA &ag)
+{
+	FIBITMAP *page = fei->FI_LockPage(ag.multi, 0);
+	if (page == NULL)
+		return FALSE;
+	
+	// Get info
+	FITAG *tag = NULL;
+	if (!fei->FI_GetMetadata(FIMD_ANIMATION, page, "LogicalWidth", &tag))
+		goto ERR;
+	ag.width = *(WORD *)fei->FI_GetTagValue(tag);
+	
+	if (!fei->FI_GetMetadata(FIMD_ANIMATION, page, "LogicalHeight", &tag))
+		goto ERR;
+	ag.height = *(WORD *)fei->FI_GetTagValue(tag);
+	
+	if (fei->FI_HasBackgroundColor(page))
+		fei->FI_GetBackgroundColor(page, &ag.background);
+
+	fei->FI_UnlockPage(ag.multi, page, FALSE);
+	return TRUE;
+
+ERR:
+	fei->FI_UnlockPage(ag.multi, page, FALSE);
+	return FALSE;
+}
+
+
+void AnimatedGifMountFrame(ANIMATED_GIF_DATA &ag, int page)
+{
+	FIBITMAP *dib = fei->FI_LockPage(ag.multi, page);
+	if (dib == NULL)
+		return;
+
+	FITAG *tag = NULL;
+	if (fei->FI_GetMetadata(FIMD_ANIMATION, dib, "FrameLeft", &tag))
+		ag.frame.left = *(WORD *)fei->FI_GetTagValue(tag);
+	else
+		ag.frame.left = 0;
+
+	if (fei->FI_GetMetadata(FIMD_ANIMATION, dib, "FrameTop", &tag))
+		ag.frame.top = *(WORD *)fei->FI_GetTagValue(tag);
+	else
+		ag.frame.top = 0;
+
+	if (fei->FI_GetMetadata(FIMD_ANIMATION, dib, "DisposalMethod", &tag))
+		ag.frame.disposal_method = *(BYTE *)fei->FI_GetTagValue(tag);
+	else
+		ag.frame.disposal_method = 0;
+
+	ag.frame.width  = fei->FI_GetWidth(dib);
+	ag.frame.height = fei->FI_GetHeight(dib);
+
+
+	//decode page
+	int palSize = fei->FI_GetColorsUsed(dib);
+	RGBQUAD *pal = fei->FI_GetPalette(dib);
+	BOOL have_transparent = FALSE;
+	int transparent_color = -1;
+	if( fei->FI_IsTransparent(dib) ) {
+		int count = fei->FI_GetTransparencyCount(dib);
+		BYTE *table = fei->FI_GetTransparencyTable(dib);
+		for( int i = 0; i < count; i++ ) {
+			if( table[i] == 0 ) {
+				ag.transparent = TRUE;
+				have_transparent = TRUE;
+				transparent_color = i;
+				break;
+			}
+		}
+	}
+
+	//copy page data into logical buffer, with full alpha opaqueness
+	for( int y = 0; y < ag.frame.height; y++ ) {
+		RGBQUAD *scanline = (RGBQUAD *)fei->FI_GetScanLine(ag.dib, ag.height - (y + ag.frame.top) - 1) + ag.frame.left;
+		BYTE *pageline = fei->FI_GetScanLine(dib, ag.frame.height - y - 1);
+		for( int x = 0; x < ag.frame.width; x++ ) {
+			if( !have_transparent || *pageline != transparent_color ) {
+				*scanline = pal[*pageline];
+				scanline->rgbReserved = 255;
+			}
+			scanline++;
+			pageline++;
+		}
+	}
+
+	fei->FI_UnlockPage(ag.multi, dib, FALSE);
+}
+
+
+
+HBITMAP LoadAnimatedGifFrame(char *filename, int frame, DWORD *transp)
+{
+	HBITMAP ret = NULL;
+	ANIMATED_GIF_DATA ag = {0};
+	int x, y, i;
+
+	FREE_IMAGE_FORMAT fif = fei->FI_GetFileType(filename, 0);
+	if(fif == FIF_UNKNOWN)
+		fif = fei->FI_GetFIFFromFilename(filename);
+
+	ag.multi = fei->FI_OpenMultiBitmap(fif, filename, FALSE, TRUE, FALSE, GIF_LOAD256);
+	if (ag.multi == NULL)
+		return NULL;
+
+	ag.frameCount = fei->FI_GetPageCount(ag.multi);
+	if (ag.frameCount <= 1)
+		goto ERR;
+
+	if (!AnimatedGifGetData(ag))
+		goto ERR;
+
+	//allocate entire logical area
+	ag.dib = fei->FI_Allocate(ag.width, ag.height, 32, 0, 0, 0);
+	if (ag.dib == NULL)
+		goto ERR;
+
+	//fill with background color to start
+	for (y = 0; y < ag.height; y++) 
+	{
+		RGBQUAD *scanline = (RGBQUAD *) fei->FI_GetScanLine(ag.dib, y);
+		for (x = 0; x < ag.width; x++)
+			*scanline++ = ag.background;
+	}
+
+	for (i = 0; i <= frame && i < ag.frameCount; i++)
+		AnimatedGifMountFrame(ag, i);
+	
+	ret = fei->FI_CreateHBITMAPFromDIB(ag.dib);
+
+	if (transp != NULL)
+		*transp = ag.transparent;
+
+ERR:
+	if (ag.multi != NULL)
+		fei->FI_CloseMultiBitmap(ag.multi, 0);
+	if (ag.dib != NULL)
+		fei->FI_Unload(ag.dib);
+
+	return ret;
+}
+
+
+HBITMAP LoadFlashBitmap(char *filename, int frame = 0)
+{
+	typedef HRESULT (WINAPI *LPAtlAxAttachControl)(IUnknown* pControl, HWND hWnd, IUnknown** ppUnkContainer);
+	static LPAtlAxAttachControl AtlAxAttachControl3 = NULL;
+
+	if (AtlAxAttachControl3 == (LPAtlAxAttachControl) -1)
+	{
+		return NULL;
+	}
+	else if (AtlAxAttachControl3 == NULL)
+	{
+		HMODULE atl = LoadLibrary(_T("atl"));
+		if (atl == NULL)
+		{
+			AtlAxAttachControl3 = (LPAtlAxAttachControl) -1;
+			return NULL;
+		}
+		void* init = GetProcAddress(atl, "AtlAxWinInit"); 
+		AtlAxAttachControl3 = (LPAtlAxAttachControl) GetProcAddress(atl, "AtlAxAttachControl"); 
+		if (init == NULL || AtlAxAttachControl3 == NULL)
+		{
+			AtlAxAttachControl3 = (LPAtlAxAttachControl) -1;
+			return NULL;
+		}
+		_asm call init;
+	}
+
+	int width = 40;
+	int height = 40;
+	IShockwaveFlash *flash = NULL;
+	IViewObjectEx *viewObject = NULL;
+	HRESULT hr;
+	HWND hWindow = NULL;
+	HBITMAP hBmp = NULL;
+	HDC hdc = NULL;
+	BOOL succeded = FALSE;
+	double val;
+
+	hWindow = CreateWindow(_T("AtlAxWin"), _T(""), WS_POPUP, 0, 0, width, height, NULL, (HMENU) 0, hInst, NULL);
+	if (hWindow == NULL) goto err;
+
+	hr = CoCreateInstance(__uuidof(ShockwaveFlash), 0, CLSCTX_INPROC_SERVER, __uuidof(IShockwaveFlash), (void **) &flash); 
+	if (FAILED(hr)) goto err;
+
+	hr = AtlAxAttachControl3(flash, hWindow, 0);
+	if (FAILED(hr)) goto err;
+
+	{
+		WCHAR *tmp = mir_a2u(filename);
+		BSTR url = SysAllocString(tmp);
+
+		hr = flash->LoadMovie(0, url);
+
+		SysFreeString(url);
+		mir_free(tmp);
+	}
+
+	if (FAILED(hr)) goto err;
+
+	hr = flash->TGetPropertyAsNumber(L"/", 8, &val);
+	if (FAILED(hr)) goto err;
+	width = (int)(val + 0.5);
+
+	hr = flash->TGetPropertyAsNumber(L"/", 9, &val);
+	if (FAILED(hr)) goto err;
+	height = (int)(val + 0.5);
+
+	MoveWindow(hWindow, 0, 0, width, height, FALSE);
+
+	hr = flash->GotoFrame(frame);
+	if (FAILED(hr)) goto err;
+
+	hr = flash->QueryInterface(__uuidof(IViewObjectEx), (void **)&viewObject);
+	if (FAILED(hr)) goto err;
+
+	hBmp = CreateBitmap32(width, height);
+
+	hdc = CreateCompatibleDC(NULL);
+	SelectObject(hdc, hBmp);
+	SetBkMode(hdc, TRANSPARENT);
+
+	{
+		RECTL rectl = { 0, 0, width, height };
+		hr = viewObject->Draw(DVASPECT_CONTENT, -1, NULL, NULL, NULL, hdc, &rectl, &rectl, NULL, NULL); 
+		if (FAILED(hr)) goto err;
+	}
+
+	succeded = TRUE;
+
+err:
+	if (hdc != NULL)
+		DeleteDC(hdc);
+
+	if (viewObject != NULL)
+		viewObject->Release();
+
+	if (flash != NULL)
+		flash->Release();
+
+	if (hWindow != NULL)
+		DestroyWindow(hWindow);
+
+	if (succeded)
+	{
+		return hBmp;
+	}
+	else
+	{
+		if (hBmp != NULL)
+			DeleteObject(hBmp);
+
+		return NULL;
+	}
+}
 
 void EmoticonImage::Load(int &max_height, int &max_width)
 {
@@ -2033,11 +2359,23 @@ void EmoticonImage::Load(int &max_height, int &max_width)
 	}
 
 	DWORD transp;
-
 	char tmp[1024];
 	mir_snprintf(tmp, MAX_REGS(tmp), "%s\\%s", pack->path, relPath);
 
-	img = (HBITMAP) CallService(MS_AV_LOADBITMAP32, (WPARAM) &transp, (LPARAM) tmp);
+	if (strcmp(&tmp[strlen(tmp)-4], ".swf") == 0)
+	{
+		img = LoadFlashBitmap(tmp, selectionFrame);
+		transp = TRUE;
+	}
+	else
+	{
+		// Try to get a frame
+		if (selectionFrame > 1)
+			img = LoadAnimatedGifFrame(tmp, selectionFrame, &transp);
+
+		if (img == NULL)
+			img = (HBITMAP) CallService(MS_AV_LOADBITMAP32, (WPARAM) &transp, (LPARAM) tmp);
+	}
 
 	if (img == NULL)
 		return;

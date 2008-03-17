@@ -72,7 +72,7 @@
 "brb" = "Be right back", "(brb)"
 "rain" = "Storm cloud", "(st)"
 "highfive" = "Hi five!", "(h5)"
-"coins" = "Money", "(mo)"
+"money" = "Money", "(mo)"
 "dont-know" = "", ":^)"
 "thunder" = "", "(li)"
 "console" = "XBox", "(xx)"

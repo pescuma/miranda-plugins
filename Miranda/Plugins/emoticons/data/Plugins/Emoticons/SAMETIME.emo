@@ -1,0 +1,18 @@
+# Sametime protocol
+
+[Sametime]
+
+"angel" = "angel", "0:-)" "0:)"
+"angry" = "angry", ":-@"
+"sad" = "frown", ":-(" ":("
+"laugh" = "grin", ":-D" ":-d"
+"thinking" = "half", ":-/"
+"shock" = "oops", ":-O" ":-0" ":-o" ":O" ":0" ":o"
+"sarcastic" = "eyebrow", "/:)"
+"smile" = "smile", ":-)" ":)"
+"tongue" = "tongue", ":-P" ":P"
+"wink" = "wink", ";)" ";-)"
+"lamp" = "idea", "(i)" "(I)"
+"crying" = "crying", ":'("
+"confused" = "goofy", ":-S" ":-s"
+"embarrassed" = "shy", ":-$"

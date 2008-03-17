@@ -4,6 +4,9 @@ Changelog:
 
 . 0.0.1.6
   + Allow URLs in emoticon packs
+  + Flash emoticons
+  + Added Skype and Sametime emoticons
+  + Option to select which frame to show in selection window (for animated gif and swf)
 
 . 0.0.1.5
   + Added MySpace and AIM emoticons
