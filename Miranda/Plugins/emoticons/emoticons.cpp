@@ -407,8 +407,8 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 		for(int i = 0; i < module->emoticons.getCount(); i++)
 		{
 			Emoticon *e = module->emoticons[i];
-			if (e->img == NULL)
-				continue;
+//			if (e->img == NULL)
+//				continue;
 
 			for(int j = 0; j < e->texts.getCount(); j++)
 			{
@@ -427,7 +427,10 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 						&& !_istspace(text[text_len - len - 1]))
 					continue;
 
-				mir_snprintf(found_path, MAX_REGS(found_path), "%s\\%s", e->img->pack->path, e->img->relPath);
+				if (e->img == NULL)
+					found_path[0] = '\0';
+				else
+					mir_snprintf(found_path, MAX_REGS(found_path), "%s\\%s", e->img->pack->path, e->img->relPath);
 				found_len = len;
 				found_text = txt;
 			}
@@ -460,7 +463,7 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 
 	int ret = 0;
 
-	if (found_len > 0)
+	if (found_len > 0 && found_path[0] != '\0')
 	{
 		// Found ya
 		CHARRANGE sel = { last_pos - found_len, last_pos };
@@ -1555,14 +1558,14 @@ EmoticonImage * HandleMepLine(EmoticonPack *p, char *line)
 					{
 						delete img;
 						img = NULL;
-						break;
+						return img;
 					}
 
 					if (strncmp("http://", txt, 7) == 0)
 					{
 						img->url = txt; 
 
-						char *p = strrchr(txt, '//');
+						char *p = strrchr(txt, '/');
 						p++;
 
 						char tmp[1024];
