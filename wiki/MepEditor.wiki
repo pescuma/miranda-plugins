@@ -1,0 +1,27 @@
+#summary Mep Editor description
+
+= Mep Editor =
+
+This is an editor of mep (Miranda Emoticon Pack) files. Mep files are packs with a list of images to be used for the emoticons.
+
+
+=== Install ===
+
+Donwload it from the Downloads tab, create a folder somewere in your HD and extract the contents of the zip inside it. To run, execute the _MepEditor.bat_ file.
+
+You will need a Java 6 installed on your machine and in your path in order to run it.
+
+Be warned that it is single thread by now, so it is somewhat slow now (it is a concern only when downloading images or opening a lot of images at the same time).
+
+
+=== Using it ===
+
+To use it, follow these steps:
+
+  # Create a folder with the pack name
+  # Copy all images inside that folder. If an image is only for one protocol, create a folder (inside the pack folder) with the protocol name and copy it inside
+  # Run Mep Editor. When it asks for the path, provide the one created in step 1
+  # Select in the _Icon:_ combo the image to be used for the emoticons
+  # If the image is an animated gif, select in _Frame:_ which frame should be used in the selection window
+
+The emoticon show in the left of the emoticon name is the default emoticon (from Tango pack), and can be used as a basis to compare your files.
