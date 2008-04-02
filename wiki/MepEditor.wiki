@@ -25,3 +25,8 @@ To use it, follow these steps:
   # If the image is an animated gif, select in _Frame:_ which frame should be used in the selection window
 
 The emoticon show in the left of the emoticon name is the default emoticon (from Tango pack), and can be used as a basis to compare your files.
+
+
+=== Screenshot ===
+
+http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/emoticons/MepEditor/MepEditor.png
