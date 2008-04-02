@@ -58,6 +58,7 @@ static BOOL InsertAnimatedSmiley(HWND _hwnd, TCHAR * _szFilename, COLORREF _dwBa
 #endif // defined ServiceExists && defined CallService
 
 
+#if !defined(NM_FIREVIEWCHANGE)
 
 /**
 	NM_FIREVIEWCHANGE is WM_NOTIFY Message for notify parent of host window about smiley are going to be repaint
@@ -112,5 +113,7 @@ typedef struct
 
 // Code of WM_NOTIFY message (code)
 #define NM_FIREVIEWCHANGE   NM_FIRST+1;
+
+#endif
 
 #endif // m_anismiley_h__
