@@ -66,9 +66,9 @@ using namespace std;
 #include <m_icolib.h>
 #include <m_avatars.h>
 #include <m_imgsrvc.h>
+#include <m_smileyadd.h>
 #include <m_anismiley.h>
 #include <anismiley.tlh>
-#include <m_smileyadd.h>
 #include <m_netlib.h>
 
 #include "../utils/mir_memory.h"
