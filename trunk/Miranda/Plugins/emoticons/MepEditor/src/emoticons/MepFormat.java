@@ -151,7 +151,7 @@ public class MepFormat
 					case 1:
 					{
 						name = txt;
-						protocol = module;
+						protocol = getProtocol(module);
 						break;
 					}
 					case 3:
@@ -174,6 +174,16 @@ public class MepFormat
 				state++;
 			}
 		}
+	}
+	
+	private String getProtocol(String module)
+	{
+		for (String proto : protocols)
+		{
+			if (proto.equalsIgnoreCase(module))
+				return proto;
+		}
+		return null;
 	}
 	
 	private void addImages(File path, String protocol)

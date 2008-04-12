@@ -1,4 +1,5 @@
 package emoticons;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ public class ImageUtils
 				Image image = new Image(Display.getCurrent(), imageData);
 				fullGifGC.drawImage(image, 0, 0, imageData.width, imageData.height, imageData.x, imageData.y, imageData.width,
 						imageData.height);
+				image.dispose();
 				
 				Image frame = new Image(Display.getCurrent(), loader.logicalScreenWidth, loader.logicalScreenHeight);
 				GC frameGC = new GC(frame);
