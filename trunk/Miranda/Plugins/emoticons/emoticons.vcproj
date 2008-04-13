@@ -431,6 +431,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\EmoticonsSelectionLayout.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GroupListEmoticons.h"
+				>
+			</File>
+			<File
 				RelativePath="m_emoticons.h"
 				>
 			</File>
@@ -460,6 +468,10 @@
 			</File>
 			<File
 				RelativePath=".\selwin.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SingleListEmoticons.h"
 				>
 			</File>
 		</Filter>
@@ -551,6 +563,14 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\EmoticonsSelectionLayout.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GroupListEmoticons.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\utils\mir_icons.cpp"
@@ -754,6 +774,10 @@
 			</File>
 			<File
 				RelativePath=".\selwin.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SingleListEmoticons.cpp"
 				>
 			</File>
 		</Filter>

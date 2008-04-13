@@ -100,6 +100,7 @@ void LoadOptions()
 }
 
 
+#undef BORDER
 #define BORDER 5
 
 
