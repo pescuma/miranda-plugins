@@ -135,7 +135,7 @@ struct Emoticon
 	// For selection window
 	HWND tt;
 
-	Emoticon() : name(0), description(0), group(0), texts(20), img(0), tt(0) {}
+	Emoticon() : name(0), description(0), group(""), texts(20), img(0), tt(0) {}
 	~Emoticon();
 };
 
@@ -225,6 +225,9 @@ void FillModuleImages(EmoticonPack *pack);
 
 
 
+#include "EmoticonsSelectionLayout.h"
+#include "SingleListEmoticons.h"
+#include "GroupListEmoticons.h"
 
 
 #endif // __COMMONS_H__

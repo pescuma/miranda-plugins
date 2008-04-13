@@ -168,6 +168,14 @@ SOURCE=..\utils\ContactAsyncQueue.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\EmoticonsSelectionLayout.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\GroupListEmoticons.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\m_emoticons.h
 # End Source File
 # Begin Source File
@@ -198,6 +206,10 @@ SOURCE=.\resource.h
 
 SOURCE=.\selwin.h
 # End Source File
+# Begin Source File
+
+SOURCE=.\SingleListEmoticons.h
+# End Source File
 # End Group
 # Begin Group "Resource Files"
 
@@ -217,6 +229,14 @@ SOURCE=..\utils\ContactAsyncQueue.cpp
 # Begin Source File
 
 SOURCE=.\emoticons.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\EmoticonsSelectionLayout.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\GroupListEmoticons.cpp
 # End Source File
 # Begin Source File
 
@@ -241,6 +261,10 @@ SOURCE=.\options.cpp
 # Begin Source File
 
 SOURCE=.\selwin.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\SingleListEmoticons.cpp
 # End Source File
 # End Group
 # Begin Group "Docs"

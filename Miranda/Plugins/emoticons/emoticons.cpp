@@ -1362,7 +1362,7 @@ BOOL LoadModule(Module *m)
 	char tmp[1024];
 	char c;
 	int pos = 0;
-	char *group = NULL;
+	char *group = "";
 	do
 	{
 		c = fgetc(file);
