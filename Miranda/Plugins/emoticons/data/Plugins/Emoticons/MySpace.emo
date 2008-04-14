@@ -1,5 +1,7 @@
 # My Space protocol emoticons
 
+[My Space]
+
 "smile-big" = "bigsmile", ":D" ":-D"
 "devilish" = "devil", "}:)" "}:-)"
 "confused" = "frassled", ":Z"
@@ -24,3 +26,8 @@
 "wink" = "wink", ";-)" ";)" 
 "sad" = "worried", ":[" 
 "kiss" = "kiss", ":x" ":X"
+
+
+[Nudge]
+
+"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0>"

@@ -6,6 +6,7 @@
 
 struct EmoticonSelectionData
 {
+	HANDLE hContact;
 	Module *module;
 	COLORREF background;
 
@@ -52,6 +53,9 @@ protected:
 	HFONT GetFont(HDC hdc);
 	void ReleaseFont(HFONT hFont);
 	RECT CalcRect(TCHAR *txt);
+#ifdef UNICODE
+	RECT CalcRect(char *txt);
+#endif
 
 	void GetEmoticonSize(Emoticon *e, int &width, int &height);
 
@@ -64,5 +68,8 @@ protected:
 
 	void DrawEmoticon(HDC hdc, int index, RECT rc);
 	void DrawEmoticonText(HDC hdc, TCHAR *txt, RECT rc);
+#ifdef UNICODE
+	void DrawEmoticonText(HDC hdc, char *txt, RECT rc);
+#endif
 
 };

@@ -1,8 +1,10 @@
 # MSN protocol emoticons
 
+[MSN]
+
 "smile" = "Smile", ":)" ":-)"
 "laugh" = "Open-mouthed smile", ":D" ":-D" ":d" ":-d"
-"wink" = "", ";)" ";-)"
+"wink" = "Winking smile", ";)" ";-)"
 "shock" = "Surprised smile", ":-O" ":o" ":O" ":-o"
 "tongue" = "Smile with tongue out", ":P" ":-P" ":p" ":-p"
 "glass-cool" = "Hot smile", "(H)" "(h)"
@@ -10,15 +12,14 @@
 "confused" = "Confused smile", ":S" ":-S" ":s" ":-s" 
 "embarrassed" = "Embarrassed smile", ":$" ":-$" 
 "sad" = "Sad smile", ":(" ":-(" 
-"crying" = "", ":'("
+"crying" = "Crying face", ":'("
 "neutral" = "Disappointed smile", ":|" ":-|" 
-"devilish" = "Devil", "(6)"
 "angel" = "Angel", "(A)" "(a)"
 "teeth" = "Baring teeth smile", "8o|"
 "glass-nerdy" = "Nerd smile", "8-|"
 "sick" = "Sick smile", "+o("
-"party" = "", "<:o)"
-"sleepy" = "", "|-)"
+"party" = "Party smile", "<:o)"
+"sleepy" = "Sleepy smile", "|-)"
 "thinking" = "Settings", "*-)"
 "quiet" = "Don't tell anyone smile", ":-#" 
 "secret" = "Secret telling smile", ":-*"
@@ -41,6 +42,11 @@
 "rose" = "Red rose", "(F)" "(f)"
 "rose-dead" = "Wilted rose", "(W)" "(w)"
 "clock" = "Clock", "(O)" "(o)"
+
+
+[Hidden]
+
+"devilish" = "Devil", "(6)"
 "film" = "Filmstrip", "(~)"
 "music" = "Note", "(8)"
 "mail" = "E-mail", "(E)" "(e)"
@@ -81,3 +87,8 @@
 "fingers-crossed" = "Cross Fingers", "(yn)"
 "immakingadifference" = "i'm™ initiative", "*red+u" "*bgca" "*naf" "*hsus" "*9mil" "*mssoc" "*sierra" "*unicef" "*help" "*komen"
 "bunny" = "Bunny", "('.')"
+
+
+[Nudge]
+
+"service_nudge" = "Send a nudge to everyone in this conversation", "<Service:/SendNudge:hContact:0>"

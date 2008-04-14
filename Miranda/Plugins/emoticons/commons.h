@@ -131,11 +131,16 @@ struct Emoticon
 	char *group;
 	LIST<TCHAR> texts;
 	EmoticonImage *img;
+	char *service[3];
 
 	// For selection window
 	HWND tt;
 
-	Emoticon() : name(0), description(0), group(""), texts(20), img(0), tt(0) {}
+	Emoticon() : name(0), description(0), group(""), texts(20), img(0), tt(0) {
+		service[0] = NULL;
+		service[1] = NULL;
+		service[2] = NULL;
+	}
 	~Emoticon();
 };
 

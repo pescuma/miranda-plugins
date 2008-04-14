@@ -92,3 +92,8 @@
 "male" = "Hiro / Billy", "o->" "o=>"
 "female" = "April", "o-+"
 "yin-yang" = "Yin yang", "(%)"
+
+
+[Nudge]
+
+"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0>"

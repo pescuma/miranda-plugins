@@ -27,3 +27,8 @@
 "love-over" = "Broken Heart", "</3"
 "kiss" = "Kiss", ":*" ":-x"
 "mustache" = "Mustache", ":{"
+
+
+[Nudge]
+
+"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0>"
