@@ -16,3 +16,8 @@
 "crying" = "crying", ":'("
 "confused" = "goofy", ":-S" ":-s"
 "embarrassed" = "shy", ":-$"
+
+
+[Nudge]
+
+"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0>"

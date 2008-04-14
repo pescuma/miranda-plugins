@@ -1,5 +1,7 @@
 # ICQ protocol emoticons
 
+[ICQ]
+
 "smile" = "Smile", ":-)" ":)" 
 "neutral" = "Nothing to say", ":-$" ":-|" 
 "sad" = "Sad", ":-(" ":(" 
@@ -28,3 +30,24 @@
 "beer" = "Drinking", "*DRINK*" "*drink*"
 "rotfl" = "Laughing out loud (LOL)", ":-D" ":D" ":-d" ":d"
 "in-love" = "In love", "*IN LOVE*" "*in love*"
+
+
+[Nudge]
+
+"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0>"
+
+
+[tZer]
+
+"service_tzer_Gangsta" = "Gangsta'", "<Service:/SendtZer:0:0>"
+"service_tzer_CantHearU" = "Can't Hear U", "<Service:/SendtZer:1:0>"
+"service_tzer_Scratch" = "Scratch", "<Service:/SendtZer:2:0>"
+"service_tzer_Booooo" = "Booooo", "<Service:/SendtZer:3:0>"
+"service_tzer_Kisses" = "Kisses", "<Service:/SendtZer:4:0>"
+"service_tzer_ChillOut" = "Chill Out!", "<Service:/SendtZer:5:0>"
+"service_tzer_Akitaka" = "Akitaka", "<Service:/SendtZer:6:0>"
+"service_tzer_Hilaaarious" = "Hilaaarious", "<Service:/SendtZer:8:0>"
+"service_tzer_LikeDuh" = "Like Duh!", "<Service:/SendtZer:9:0>"
+"service_tzer_L8R" = "L8R", "<Service:/SendtZer:10:0>"
+"service_tzer_LikeU" = "Like U!", "<Service:/SendtZer:11:0>"
+"service_tzer_ImSorry" = "I'm Sorry", "<Service:/SendtZer:7:0>"

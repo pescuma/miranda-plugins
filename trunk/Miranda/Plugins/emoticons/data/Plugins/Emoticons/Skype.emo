@@ -331,3 +331,8 @@
 "flag_YE" = "Yemen", "(flag:YE)" 
 "flag_ZM" = "Zambia", "(flag:ZM)" 
 "flag_ZW" = "Zimbabwe", "(flag:ZW)" 
+
+
+[Nudge]
+
+"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0>"
