@@ -81,6 +81,26 @@ RECT EmoticonsSelectionLayout::CalcRect(TCHAR *txt)
 	return rc;
 }
 
+#ifdef UNICODE
+
+RECT EmoticonsSelectionLayout::CalcRect(char *txt)
+{
+	HDC hdc = GetDC(hwnd);
+	HFONT hFont = GetFont(hdc);
+	HFONT oldFont = (HFONT) SelectObject(hdc, hFont);
+
+	RECT rc = { 0, 0, 0xFFFF, 0xFFFF };
+	DrawTextA(hdc, txt, strlen(txt), &rc, DT_CALCRECT | DT_NOPREFIX);
+
+	SelectObject(hdc, oldFont);
+	ReleaseFont(hFont);
+
+	ReleaseDC(hwnd, hdc);
+	return rc;
+}
+
+#endif
+
 void EmoticonsSelectionLayout::GetEmoticonSize(Emoticon *e, int &width, int &height)
 {
 	width = 0;
@@ -91,9 +111,18 @@ void EmoticonsSelectionLayout::GetEmoticonSize(Emoticon *e, int &width, int &hei
 
 	if (e->img == NULL || e->img->img == NULL)
 	{
-		RECT rc = CalcRect(e->texts[0]);
-		height = rc.bottom - rc.top + 1;
-		width = rc.right - rc.left + 1;
+		if (e->texts.getCount() > 0)
+		{
+			RECT rc = CalcRect(e->texts[0]);
+			height = rc.bottom - rc.top + 1;
+			width = rc.right - rc.left + 1;
+		}
+		else
+		{
+			RECT rc = CalcRect(e->description);
+			height = rc.bottom - rc.top + 1;
+			width = rc.right - rc.left + 1;
+		}
 	}
 }
 
@@ -102,7 +131,7 @@ int EmoticonsSelectionLayout::GetNumOfCols(int num_emotes)
 	int cols = num_emotes / MAX_LINES;
 	if (num_emotes % MAX_LINES != 0)
 		cols++;
-	return min(max(cols, MIN_COLS), MAX_COLS);
+	return min(cols, MAX_COLS);
 }
 
 int EmoticonsSelectionLayout::GetNumOfLines(int num_emotes, int cols)
@@ -220,6 +249,21 @@ void EmoticonsSelectionLayout::DrawEmoticonText(HDC hdc, TCHAR *txt, RECT rc)
 	ReleaseFont(hFont);
 }
 
+#ifdef UNICODE
+
+void EmoticonsSelectionLayout::DrawEmoticonText(HDC hdc, char *txt, RECT rc)
+{
+	HFONT hFont = GetFont(hdc);
+	HFONT oldFont = (HFONT) SelectObject(hdc, hFont);
+
+	DrawTextA(hdc, txt, strlen(txt), &rc, DT_NOPREFIX);
+
+	SelectObject(hdc, oldFont);
+	ReleaseFont(hFont);
+}
+
+#endif
+
 void EmoticonsSelectionLayout::DrawEmoticon(HDC hdc, int index, RECT fullRc)
 {	
 	Emoticon *e = ssd->module->emoticons[index];
@@ -235,7 +279,14 @@ void EmoticonsSelectionLayout::DrawEmoticon(HDC hdc, int index, RECT fullRc)
 
 	if (e->img == NULL || e->img->img == NULL)
 	{
-		DrawEmoticonText(hdc, e->texts[0], rc);
+		if (e->texts.getCount() > 0)
+		{
+			DrawEmoticonText(hdc, e->texts[0], rc);
+		}
+		else
+		{
+			DrawEmoticonText(hdc, e->description, rc);
+		}
 	}
 	else
 	{

@@ -14,3 +14,8 @@
 "devilish" = "Devil", "}:-)" "}:)"
 "angel" = "Angel", "O:-)" "O:)" "0:-)" "0:)"
 "silly" = "Silly", "%)"
+
+
+[Nudge]
+
+"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0>"

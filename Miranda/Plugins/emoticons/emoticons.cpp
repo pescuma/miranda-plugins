@@ -1097,7 +1097,7 @@ void UnloadRichEdit(RichEditCtrl *rec)
 
 HANDLE GetRealContact(HANDLE hContact)
 {
-	if (!ServiceExists(MS_MC_GETMOSTONLINECONTACT))
+	if (hContact == NULL || !ServiceExists(MS_MC_GETMOSTONLINECONTACT))
 		return hContact;
 
 	HANDLE hReal = (HANDLE) CallService(MS_MC_GETMOSTONLINECONTACT, (WPARAM) hContact, 0);
@@ -1279,6 +1279,17 @@ void LoadModules()
 	}
 }
 
+
+// See if a protocol service exists
+__inline int ProtoServiceExists(const char *szModule,const char *szService)
+{
+	char str[MAXMODULELABELLENGTH];
+	strcpy(str,szModule);
+	strcat(str,szService);
+	return ServiceExists(str);
+}
+
+
 void HandleEmoLine(Module *m, char *tmp, char *group)
 {
 	int len = strlen(tmp);
@@ -1315,7 +1326,8 @@ void HandleEmoLine(Module *m, char *tmp, char *group)
 				continue;
 
 			tmp[i] = 0;
-			TCHAR * txt = mir_a2t(&tmp[pos]);
+			TCHAR *txt = mir_a2t(&tmp[pos]);
+			char *atxt = &tmp[pos];
 
 			for(int j = 0, orig = 0; j <= i - pos; j++)
 			{
@@ -1338,7 +1350,46 @@ void HandleEmoLine(Module *m, char *tmp, char *group)
 					e->description = txt; 
 					break;
 				case 5: 
-					e->texts.insert(txt); 
+					if (strncmp(e->name, "service_", 8) == 0)
+					{
+						MIR_FREE(txt); // Not needed
+
+						int len = strlen(atxt);
+
+						// Is a service
+						if (!strncmp(atxt, "<Service:", 9) == 0 || atxt[len-1] != '>')
+						{
+							delete e;
+							e = NULL;
+							return;
+						}
+
+						atxt[len-1] = '\0';
+
+						char *params = &atxt[9];
+						for(int i = 0; i < 3; i++)
+						{
+							char *pos = strchr(params, ':');
+							if (pos != NULL)
+								*pos = '\0';
+
+							e->service[i] = mir_strdup(params);
+
+							if (pos == NULL)
+								break;
+
+							params = pos + 1;
+						}
+
+						if (e->service[0] == NULL || e->service[0][0] == '\0' || !ProtoServiceExists(m->name, e->service[0]))
+						{
+							delete e;
+							e = NULL;
+							return;
+						}
+					}
+					else
+						e->texts.insert(txt); 
 					break;
 			}
 
@@ -1449,6 +1500,7 @@ BOOL isValidExtension(char *name)
 			&& strcmp(p, ".jpeg") != 0
 			&& strcmp(p, ".gif") != 0
 			&& strcmp(p, ".png") != 0
+			&& strcmp(p, ".ico") != 0
 			&& strcmp(p, ".swf") != 0)
 		return FALSE;
 	return TRUE;
@@ -1465,6 +1517,7 @@ BOOL isValidExtension(WCHAR *name)
 			&& lstrcmpW(p, L".jpeg") != 0
 			&& lstrcmpW(p, L".gif") != 0
 			&& lstrcmpW(p, L".png") != 0
+			&& lstrcmpW(p, L".ico") != 0
 			&& lstrcmpW(p, L".swf") != 0)
 		return FALSE;
 	return TRUE;
@@ -2005,6 +2058,9 @@ Emoticon::~Emoticon()
 {
 	MIR_FREE(name);
 	MIR_FREE(description);
+
+	for(int j = 0; j < MAX_REGS(service); j++)
+		MIR_FREE(service[j])
 
 	for(int i = 0; i < texts.getCount(); i++)
 	{

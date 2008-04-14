@@ -1,6 +1,8 @@
 # AIM protocol emoticons
 # http://www.aim.com/emoticons.adp
 
+[AIM]
+
 "smile" = "Smiling", ":-) :)" 
 "wink" = "Winking", ";-) ;)" 
 "sad" = "Frowning", ":-( :(" 
@@ -17,3 +19,9 @@
 "crying" = "Crying", ":'(" 
 "shut-mouth" = "Lips-are-sealed", ":-X"
 "glass-cool" = "Cool", "8-)" 
+
+
+
+[Nudge]
+
+"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0>"

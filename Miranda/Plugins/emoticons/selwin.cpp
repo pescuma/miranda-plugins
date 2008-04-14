@@ -73,6 +73,19 @@ void AssertInsideScreen(RECT &rc)
 }
 
 
+DWORD ConvertServiceParam(EmoticonsSelectionLayout *layout, char *param)
+{
+	DWORD ret;
+	if (param == NULL)
+		ret = 0;
+	else if (stricmp("hContact", param) == 0)
+		ret = (DWORD) layout->ssd->hContact;
+	else
+		ret = atoi(param);
+	return ret;
+}
+
+
 INT_PTR CALLBACK EmoticonSeletionDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 {
 	switch(msg) 
@@ -274,14 +287,22 @@ INT_PTR CALLBACK EmoticonSeletionDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
 			EmoticonsSelectionLayout *layout = (EmoticonsSelectionLayout *) GetWindowLong(hwnd, GWL_USERDATA);
 			if (layout->selection >= 0 && layout->ssd->hwndTarget != NULL)
 			{
-				if (opts.only_replace_isolated)
+				Emoticon *e = layout->ssd->module->emoticons[layout->selection];
+
+				if (e->service[0] != NULL)
 				{
-					TCHAR tmp[16];
-					mir_sntprintf(tmp, MAX_REGS(tmp), _T(" %s "), layout->ssd->module->emoticons[layout->selection]->texts[0]);
+					CallProtoService(layout->ssd->module->name, e->service[0],
+									 ConvertServiceParam(layout, e->service[1]), 
+									 ConvertServiceParam(layout, e->service[2]));
+				}
+				else if (opts.only_replace_isolated)
+				{
+					TCHAR tmp[64];
+					mir_sntprintf(tmp, MAX_REGS(tmp), _T(" %s "), e->texts[0]);
 					SendMessage(layout->ssd->hwndTarget, layout->ssd->targetMessage, layout->ssd->targetWParam, (LPARAM) tmp);
 				}
 				else
-					SendMessage(layout->ssd->hwndTarget, layout->ssd->targetMessage, layout->ssd->targetWParam, (LPARAM) layout->ssd->module->emoticons[layout->selection]->texts[0]);
+					SendMessage(layout->ssd->hwndTarget, layout->ssd->targetMessage, layout->ssd->targetWParam, (LPARAM) e->texts[0]);
 			}
 
 			PostMessage(hwnd, WM_CLOSE, 0, 0);
@@ -314,11 +335,9 @@ int ShowSelectionService(WPARAM wParam, LPARAM lParam)
 		return FALSE;
 
 	const char *proto = NULL;
-	if (sss->hContact != NULL)
-	{
-		HANDLE hReal = GetRealContact(sss->hContact);
-		proto = (char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hReal, 0);
-	}
+	HANDLE hContact = GetRealContact(sss->hContact);
+	if (hContact != NULL)
+		proto = (char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
 	if (proto == NULL)
 		proto = sss->Protocolname;
 	if (proto == NULL)
@@ -332,6 +351,7 @@ int ShowSelectionService(WPARAM wParam, LPARAM lParam)
 
 	EmoticonSelectionData * ssd = new EmoticonSelectionData();
 	ssd->module = m;
+	ssd->hContact = hContact;
 
 	ssd->xPosition = sss->xPosition;
 	ssd->yPosition = sss->yPosition;
