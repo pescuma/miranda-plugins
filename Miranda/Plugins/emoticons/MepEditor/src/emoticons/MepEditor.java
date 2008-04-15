@@ -187,7 +187,7 @@ public class MepEditor
 			if (icon == null)
 				continue;
 			
-			createEmoticonNameLabel(emoticonsComposite, emo);
+			createEmoticonNameLabel(emoticonsComposite, emo, icon);
 			
 			createIconCombo(icon, emoticonsComposite, emo, protocol);
 			createFramesHolder(emo, icon, emoticonsComposite);
@@ -209,7 +209,7 @@ public class MepEditor
 		emoticonsScroll.setMinSize(emoticonsComposite.computeSize(SWT.DEFAULT, SWT.DEFAULT, false));
 	}
 	
-	private static void createEmoticonNameLabel(final Composite parent, final Emoticon emo)
+	private static void createEmoticonNameLabel(final Composite parent, final Emoticon emo, EmoticonImage icon)
 	{
 		File defImage = new File("data/Defaults/" + emo.name + ".png");
 		if (defImage.exists())
@@ -217,12 +217,23 @@ public class MepEditor
 			Label label = new Label(parent, SWT.NONE);
 			label.setLayoutData(gridData(1, 2));
 			label.setImage(Images.get(defImage));
-			createBoldLabel(parent, emo.name, gridData(1, 2));
+			
+			createBoldLabel(parent, getEmoLabelText(emo, icon), gridData(1, 2));
 		}
 		else
 		{
-			createBoldLabel(parent, emo.name, gridData(2, 2));
+			createBoldLabel(parent, getEmoLabelText(emo, icon), gridData(2, 2));
 		}
+	}
+	
+	private static String getEmoLabelText(final Emoticon emo, EmoticonImage icon)
+	{
+		if (icon.description == null)
+			return emo.name;
+		if (icon.description.equalsIgnoreCase(emo.name))
+			return icon.description;
+		
+		return icon.description + "\n[" + emo.name + "]";
 	}
 	
 	private static void createProtoCombo(final Composite parent, String protocol, final Composite main, final Group group)
@@ -341,8 +352,11 @@ public class MepEditor
 			delayedListeners.remove(this);
 			((Control) event.widget).setBackground(bkg);
 			listener.handleEvent(event);
-			color.dispose();
-			color = null;
+			if (color != null)
+			{
+				color.dispose();
+				color = null;
+			}
 		}
 		
 		private void start(Event e)
