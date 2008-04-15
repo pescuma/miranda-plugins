@@ -21,15 +21,14 @@ public:
 	int num_groups;
 	Group *groups;
 
-	virtual void Load();
+	HFONT groupFont;
+	HFONT emoticonFont;
+	COLORREF groupBkgColor;
+	COLORREF emoticonColor;
+	COLORREF groupColor;
 
-	void SetGroupName(Group &group, char *name);
-
-	int CountGroups();
-
-	void GetMaxEmoticonSize(Group &group);
-
-	RECT GetEmoticonRect(Group &group, int index);
+	GroupListEmoticons(HWND hwnd, EmoticonSelectionData *ssd);
+	virtual ~GroupListEmoticons();
 
 	virtual void CreateToolTips();
 
@@ -45,4 +44,22 @@ public:
 	virtual void OnRight(HWND hwnd);
 
 	virtual void Draw(HDC hdc);
+
+protected:
+
+	void Load();
+
+	RECT CalcRect(TCHAR *txt, HFONT hFont);
+	void DrawEmoticonText(HDC hdc, TCHAR *txt, RECT rc, HFONT hFont);
+
+	virtual HFONT GetFont(HDC hdc);
+	virtual void ReleaseFont(HFONT hFont);
+
+	void SetGroupName(Group &group, char *name);
+
+	int CountGroups();
+
+	void GetMaxEmoticonSize(Group &group);
+
+	RECT GetEmoticonRect(Group &group, int index);
 };

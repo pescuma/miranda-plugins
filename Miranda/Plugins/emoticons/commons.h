@@ -70,6 +70,7 @@ using namespace std;
 #include <m_anismiley.h>
 #include <anismiley.tlh>
 #include <m_netlib.h>
+#include <m_fontservice.h>
 
 #include "../utils/mir_memory.h"
 #include "../utils/mir_options.h"

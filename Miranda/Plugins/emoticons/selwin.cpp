@@ -103,12 +103,8 @@ INT_PTR CALLBACK EmoticonSeletionDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
 			}
 
 			// Create positioning object
-			EmoticonsSelectionLayout *layout = new GroupListEmoticons();
-			layout->ssd = ssd;
-			layout->hwnd = hwnd;
+			EmoticonsSelectionLayout *layout = new GroupListEmoticons(hwnd, ssd);
 			SetWindowLong(hwnd, GWL_USERDATA, (LONG) layout);
-
-			layout->Load();
 
 			// Calc position
 
