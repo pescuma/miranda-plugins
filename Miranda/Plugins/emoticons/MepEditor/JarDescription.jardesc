@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <jardesc>
-    <jar path="C:/Desenvolvimento/Java/MepEditor/ZIP/MepEditor.jar"/>
+    <jar path="C:/Desenvolvimento/Miranda/plugins/emoticons/MepEditor/ZIP/MepEditor.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/MepEditor/JarDescription.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
@@ -13,4 +13,5 @@
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
         <javaElement handleIdentifier="=MepEditor/src"/>
     </selectedElements>
+    <fatjar builder="org.eclipse.jdt.ui.plain_jar_builder" launchConfig=""/>
 </jardesc>

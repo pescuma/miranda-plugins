@@ -215,7 +215,7 @@ public class MepFormat
 	public void save() throws IOException
 	{
 		mep.path.mkdirs();
-		FileWriter out = new FileWriter(new File(mep.path, mep.path.getName() + ".mep"));
+		FileWriter out = new FileWriter(new File(mep.path, mep.path.getName() + ".mep"), false);
 		
 		if (!mep.name.isEmpty() && !mep.name.equals(mep.path.getName()))
 			out.write("Name: " + mep.name + "\r\n");
