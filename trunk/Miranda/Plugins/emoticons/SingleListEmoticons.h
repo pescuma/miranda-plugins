@@ -9,11 +9,8 @@ public:
 		int cols;
 	} emoticons;
 
-	virtual void Load();
-
-	void GetMaxEmoticonSize();
-
-	int GetEmoticonCountRoundedByCols();
+	SingleListEmoticons(HWND hwnd, EmoticonSelectionData *ssd);
+	virtual ~SingleListEmoticons();
 
 	virtual void CreateToolTips();
 
@@ -26,6 +23,14 @@ public:
 
 	virtual void Draw(HDC hdc);
 
+protected:
+
+	void Load();
+
 	RECT GetEmoticonRect(int line, int col);
+
+	void GetMaxEmoticonSize();
+
+	int GetEmoticonCountRoundedByCols();
 
 };

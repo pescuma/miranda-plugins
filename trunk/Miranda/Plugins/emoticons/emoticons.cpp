@@ -225,6 +225,92 @@ extern "C" int __declspec(dllexport) Unload(void)
 	return 0;
 }
 
+COLORREF GetSRMMColor(char *tabsrmm, char *scriver, COLORREF def)
+{
+	COLORREF colour = (COLORREF) DBGetContactSettingDword(NULL, "TabSRMM_Fonts", tabsrmm, -1); // TabSRMM
+	if (colour == -1)
+		colour = (COLORREF) DBGetContactSettingDword(NULL, "SRMM", scriver, -1); // Scriver / SRMM
+	if (colour == -1)
+		colour = def; // Default
+	return colour;
+}
+
+BYTE GetSRMMByte(char *tabsrmm, char *scriver, BYTE def)
+{
+	BYTE ret = (BYTE) DBGetContactSettingByte(NULL, "TabSRMM_Fonts", tabsrmm, -1); // TabSRMM
+	if (ret == -1)
+		ret = (BYTE) DBGetContactSettingByte(NULL, "SRMM", scriver, -1); // Scriver / SRMM
+	if (ret == -1)
+		ret = def; // Default
+	return ret;
+}
+
+void GetSRMMTString(TCHAR *out, size_t out_size, char *tabsrmm, char *scriver, TCHAR *def)
+{
+	DBVARIANT dbv;
+	if (!DBGetContactSettingTString(NULL, "TabSRMM_Fonts", tabsrmm, &dbv)) 
+	{
+		lstrcpyn(out, dbv.ptszVal, out_size);
+		DBFreeVariant(&dbv);
+	}
+	else if (!DBGetContactSettingTString(NULL, "SRMM", scriver, &dbv)) 
+	{
+		lstrcpyn(out, dbv.ptszVal, out_size);
+		DBFreeVariant(&dbv);
+	}
+	else
+	{
+		lstrcpyn(out, def, out_size);
+	}
+}
+
+void InitFonts()
+{
+	FontIDT font = {0};
+	font.cbSize = sizeof(font);
+	lstrcpyn(font.group, _T("Emoticons"), MAX_REGS(font.group));
+	lstrcpyn(font.backgroundGroup, _T("Emoticons"), MAX_REGS(font.group));
+	strncpy(font.dbSettingsGroup, MODULE_NAME, MAX_REGS(font.dbSettingsGroup));
+	font.order = 0;
+	font.flags = FIDF_DEFAULTVALID | FIDF_ALLOWEFFECTS;
+
+	font.deffontsettings.colour = GetSRMMColor("Font16Col", "SRMFont8Col", RGB(0, 0, 0));
+	font.deffontsettings.size = GetSRMMByte("Font16Size", "SRMFont8Size", -12);
+	font.deffontsettings.style = GetSRMMByte("Font16Sty", "SRMFont8Sty", 0);
+	font.deffontsettings.charset = GetSRMMByte("Font16Set", "SRMFont8Set", DEFAULT_CHARSET);
+	GetSRMMTString(font.deffontsettings.szFace, MAX_REGS(font.deffontsettings.szFace), "Font16", "SRMFont8", _T("Tahoma"));
+
+	lstrcpyn(font.name, _T("Group Name"), MAX_REGS(font.name));
+	strncpy(font.prefix, "GroupName", MAX_REGS(font.prefix));
+	lstrcpyn(font.backgroundName, _T("Group Background"), MAX_REGS(font.backgroundName));
+	CallService(MS_FONT_REGISTERT, (WPARAM)&font, 0);
+
+	lstrcpyn(font.name, _T("Emoticons Text"), MAX_REGS(font.name));
+	strncpy(font.prefix, "EmoticonsText", MAX_REGS(font.prefix));
+	lstrcpyn(font.backgroundName, _T("Emoticons Background"), MAX_REGS(font.backgroundName));
+	CallService(MS_FONT_REGISTERT, (WPARAM)&font, 0);
+
+	COLORREF bkg = GetSRMMColor("inputbg", "InputBkgColour", GetSysColor(COLOR_WINDOW));
+
+	ColourIDT cid = {0};
+	cid.cbSize = sizeof(ColourID);
+	lstrcpyn(cid.group, _T("Emoticons"), MAX_REGS(cid.group));
+	strncpy(cid.dbSettingsGroup, MODULE_NAME, MAX_REGS(cid.dbSettingsGroup));
+	cid.order = 0;
+	cid.flags = 0;
+
+	lstrcpyn(cid.name, _T("Emoticons Background"), MAX_REGS(cid.name));
+	strncpy(cid.setting, "EmoticonsBackground", MAX_REGS(cid.setting));
+	cid.defcolour = bkg;
+	CallService(MS_COLOUR_REGISTERT, (WPARAM)&cid, 0);
+
+	lstrcpyn(cid.name, _T("Group Background"), MAX_REGS(cid.name));
+	strncpy(cid.setting, "GroupBackground", MAX_REGS(cid.setting));
+	cid.defcolour = RGB(GetRValue(bkg) > 120 ? GetRValue(bkg) - 30 : GetRValue(bkg) + 30,
+						GetGValue(bkg) > 120 ? GetGValue(bkg) - 30 : GetGValue(bkg) + 30,
+						GetBValue(bkg) > 120 ? GetBValue(bkg) - 30 : GetBValue(bkg) + 30);
+	CallService(MS_COLOUR_REGISTERT, (WPARAM)&cid, 0);
+}
 
 // Called when all the modules are loaded
 int ModulesLoaded(WPARAM wParam, LPARAM lParam) 
@@ -290,6 +376,9 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		mir_sntprintf(protocolsFolder, MAX_REGS(protocolsFolder), _T("%s\\Plugins\\Emoticons"), mirandaFolder);
 		mir_sntprintf(emoticonPacksFolder, MAX_REGS(emoticonPacksFolder), _T("%s\\Customize\\Emoticons"), mirandaFolder);
 	}
+
+	// Fonts support
+	InitFonts();
 
 	InitOptions();
 	

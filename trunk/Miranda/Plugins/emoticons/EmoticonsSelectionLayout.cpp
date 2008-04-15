@@ -131,7 +131,7 @@ int EmoticonsSelectionLayout::GetNumOfCols(int num_emotes)
 	int cols = num_emotes / MAX_LINES;
 	if (num_emotes % MAX_LINES != 0)
 		cols++;
-	return min(cols, MAX_COLS);
+	return min(max(MIN_COLS, min(cols, MAX_COLS)), num_emotes);
 }
 
 int EmoticonsSelectionLayout::GetNumOfLines(int num_emotes, int cols)
