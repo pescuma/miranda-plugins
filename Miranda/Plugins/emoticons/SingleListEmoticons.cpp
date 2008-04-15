@@ -1,5 +1,18 @@
 #include "commons.h"
 
+SingleListEmoticons::SingleListEmoticons(HWND hwnd, EmoticonSelectionData *ssd)
+{
+	this->hwnd = hwnd;
+	this->ssd = ssd;
+	Load();
+}
+
+
+SingleListEmoticons::~SingleListEmoticons()
+{
+}
+
+
 void SingleListEmoticons::GetMaxEmoticonSize()
 {
 	emoticons.max_height = 4;

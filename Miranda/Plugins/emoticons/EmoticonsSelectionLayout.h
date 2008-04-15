@@ -1,4 +1,4 @@
-#define MIN_COLS 5
+#define MIN_COLS 6
 #define MAX_LINES 8
 #define MAX_COLS 12
 #define BORDER 3
@@ -31,7 +31,8 @@ public:
 		int height;
 	} window;
 
-	virtual void Load() = 0;
+	EmoticonsSelectionLayout() {}
+	virtual ~EmoticonsSelectionLayout() {}
 
 	virtual void OnUp(HWND hwnd) = 0;
 	virtual void OnDown(HWND hwnd) = 0;
@@ -50,8 +51,9 @@ public:
 
 protected:
 
-	HFONT GetFont(HDC hdc);
-	void ReleaseFont(HFONT hFont);
+	virtual HFONT GetFont(HDC hdc);
+	virtual void ReleaseFont(HFONT hFont);
+
 	RECT CalcRect(TCHAR *txt);
 #ifdef UNICODE
 	RECT CalcRect(char *txt);
