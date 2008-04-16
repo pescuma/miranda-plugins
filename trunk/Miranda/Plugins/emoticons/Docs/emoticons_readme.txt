@@ -14,8 +14,8 @@ The format of the emo file, it is like this:
   "smile" = "Small smile", "/wx" "/:)" "/small_smile"
 field 1 -> "smile" -> The unique name of the emoticon (as the Tango pack has it)
 field 2 -> "Small smile" -> A text description for the emoticon, as the protocol uses it. This should be in english (so all users can 'understand' it), and is translatable via language pack
-field 3 -> "/wx" -> Default emoticon text (used when using the selection window)
-fields 4 ... -> "/:)" "/small_smile" -> Other possible texts. Please, try get all possible texts. Also, note that this is case sensitive, so if the protocol is not you have to type all possible combinations.
+field 3 -> "/wx" -> Default emoticon text (used when using the selection window). It also can be a service call, in the format "<Service:/ServiceName:hContact:0>"
+fields 4 ... -> "/:)" "/small_smile" -> Other possible texts (only if not a service call). Please, try get all possible texts. Also, note that this is case sensitive, so if the protocol is not you have to type all possible combinations.
 
 2. Emoticon packs, containing the emoticons to show, only contain the images and a .mep file describing the creator. 
 Each one must be a folder inside Customize\Emoticons, with the images beeing the pre-configured name of the smiley. 
