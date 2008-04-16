@@ -2,6 +2,12 @@ Emoticons
 
 Changelog:
 
+. 0.0.2.0
+  + New selection window layout
+  + Support for service calls in .emo
+  + Added nudge
+  + Added tZers (need ICQJ Plus mod)
+
 . 0.0.1.6
   + Allow URLs in emoticon packs
   + Flash emoticons

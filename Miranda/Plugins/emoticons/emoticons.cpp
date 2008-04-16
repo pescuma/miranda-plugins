@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,1,6),
+	PLUGIN_MAKE_VERSION(0,0,2,0),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
