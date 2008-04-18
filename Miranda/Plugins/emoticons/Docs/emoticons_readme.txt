@@ -1,7 +1,7 @@
 Emoticons plugin
 ----------------
 
-CAUTION: THIS IS AN ALPHA STAGE PLUGIN. IT CAN DO VERY BAD THINGS. USE AT YOUR OWN RISK.
+CAUTION: THIS IS A BETA STAGE PLUGIN. IT CAN DO VERY BAD THINGS. USE AT YOUR OWN RISK.
 
 This is a plugin to replace emoticons in message windows. It support replacement in the log and in message entry area. Animated gifs are supported in both areas. For that AniSmiley plugin is supported and advised.
 
