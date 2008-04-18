@@ -40,7 +40,7 @@
 [tZer]
 
 "service_tzer_Gangsta" = "Gangsta'", "<Service:/SendtZer:hContact:0>"
-"service_tzer_CantHearU" = "Can't Hear U", "<Service:/SendtZer:hContact:hContact:1>"
+"service_tzer_CantHearU" = "Can't Hear U", "<Service:/SendtZer:hContact:1>"
 "service_tzer_Scratch" = "Scratch", "<Service:/SendtZer:hContact:2>"
 "service_tzer_Booooo" = "Booooo", "<Service:/SendtZer:hContact:3>"
 "service_tzer_Kisses" = "Kisses", "<Service:/SendtZer:hContact:4>"
