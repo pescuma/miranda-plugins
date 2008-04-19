@@ -23,7 +23,7 @@ public class Mep
 		{
 			Emoticon emo = new Emoticon();
 			emo.name = emoName;
-			emo.icons.put(null, new EmoticonImage());
+			emo.icons.put(null, new EmoticonImage(emo, null));
 			emoticons.add(emo);
 			return emo;
 		}
@@ -92,19 +92,9 @@ public class Mep
 		if (emo == null)
 			return;
 		
-		if (protocol == null)
-		{
-			for (EmoticonImage icon : emo.icons.values())
-			{
-				icon.image = image;
-			}
-		}
-		else
-		{
-			EmoticonImage icon = emo.icons.get(protocol);
-			if (icon == null)
-				return;
-			icon.image = image;
-		}
+		EmoticonImage icon = emo.icons.get(protocol);
+		if (icon == null)
+			return;
+		icon.image = image;
 	}
 }

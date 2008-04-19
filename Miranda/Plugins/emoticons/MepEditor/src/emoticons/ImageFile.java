@@ -31,13 +31,18 @@ public class ImageFile
 		if (path == null || realPath == null)
 			return;
 		
-		if (path.startsWith("http://") && !realPath.exists())
+		if (haveToDownload())
 			downloadFile();
 		
 		if (realPath == null || !realPath.exists())
 			return;
 		
 		frames = ImageUtils.getFrames(realPath);
+	}
+	
+	public boolean haveToDownload()
+	{
+		return path.startsWith("http://") && !realPath.exists();
 	}
 	
 	private void downloadFile()

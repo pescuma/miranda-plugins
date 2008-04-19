@@ -19,6 +19,9 @@ public class ImageUtils
 	
 	public static Image[] getFrames(File file)
 	{
+		if (file.getName().endsWith(".swf"))
+			return null;
+		
 		List<Image> frames = new ArrayList<Image>();
 		
 		try
