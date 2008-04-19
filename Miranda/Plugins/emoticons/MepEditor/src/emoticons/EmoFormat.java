@@ -45,14 +45,14 @@ public class EmoFormat
 						continue;
 					
 					String name = removeSeparators(line.substring(0, pos));
-					Emoticon emoticon = getEmoticon(name);
+					Emoticon emo = getEmoticon(name);
 					
 					String description = null;
 					int endPos = line.indexOf(',', pos + 1);
 					if (endPos >= 0)
 						description = removeSeparators(line.substring(pos + 1, endPos));
 					
-					emoticon.icons.put(protocol, new EmoticonImage(description));
+					emo.icons.put(protocol, new EmoticonImage(emo, protocol, description));
 				}
 			}
 			catch (IOException e)
@@ -91,7 +91,7 @@ public class EmoFormat
 		}
 		Emoticon emo = new Emoticon();
 		emo.name = name;
-		emo.icons.put(null, new EmoticonImage());
+		emo.icons.put(null, new EmoticonImage(emo, null));
 		emoticons.add(emo);
 		return emo;
 	}
