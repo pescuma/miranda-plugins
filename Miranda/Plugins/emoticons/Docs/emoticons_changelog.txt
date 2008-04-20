@@ -2,6 +2,14 @@ Emoticons
 
 Changelog:
 
+. 0.0.2.2
+  + Support for accounts and jabber transports
+  * Fix for frame in selection window
+
+. 0.0.2.1
+  * Fix for guessing fonts of Scriver
+  * Show less flags in options dialog
+
 . 0.0.2.0
   + New selection window layout
   + Support for service calls in .emo
