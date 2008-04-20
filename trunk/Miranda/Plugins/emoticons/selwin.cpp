@@ -330,16 +330,7 @@ int ShowSelectionService(WPARAM wParam, LPARAM lParam)
 	if (sss == NULL || sss->cbSize < sizeof(SMADD_SHOWSEL3)) 
 		return FALSE;
 
-	const char *proto = NULL;
-	HANDLE hContact = GetRealContact(sss->hContact);
-	if (hContact != NULL)
-		proto = (char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
-	if (proto == NULL)
-		proto = sss->Protocolname;
-	if (proto == NULL)
-		return FALSE;
-
-	Module *m = GetModule(proto);
+	Module *m = GetContactModule(sss->hContact, sss->Protocolname);
 	if (m == NULL)
 		return FALSE;
 	else if (m->emoticons.getCount() <= 0)
@@ -347,7 +338,8 @@ int ShowSelectionService(WPARAM wParam, LPARAM lParam)
 
 	EmoticonSelectionData * ssd = new EmoticonSelectionData();
 	ssd->module = m;
-	ssd->hContact = hContact;
+	ssd->hContact = GetRealContact(sss->hContact);
+	ssd->proto = (char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) ssd->hContact, 0);
 
 	ssd->xPosition = sss->xPosition;
 	ssd->yPosition = sss->yPosition;

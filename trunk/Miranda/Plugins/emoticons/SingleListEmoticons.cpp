@@ -22,6 +22,9 @@ void SingleListEmoticons::GetMaxEmoticonSize()
 	{
 		Emoticon *e = ssd->module->emoticons[i];
 
+		if (e->service[0] != NULL && !ProtoServiceExists(ssd->proto, e->service[0]))
+			continue;
+
 		int height, width;
 		GetEmoticonSize(e, width, height);
 
@@ -49,6 +52,10 @@ void SingleListEmoticons::CreateToolTips()
 				break;
 
 			Emoticon *e = ssd->module->emoticons[index];
+
+			if (e->service[0] != NULL && !ProtoServiceExists(ssd->proto, e->service[0]))
+				continue;
+
 			CreateEmoticonToolTip(e, GetEmoticonRect(line, col));
 		}
 	}
@@ -192,6 +199,10 @@ void SingleListEmoticons::Draw(HDC hdc)
 			int index = line * emoticons.cols + col;
 			if (index >= emoticons.count)
 				break;
+
+			Emoticon *e = ssd->module->emoticons[index];
+			if (e->service[0] != NULL && !ProtoServiceExists(ssd->proto, e->service[0]))
+				continue;
 
 			DrawEmoticon(hdc, index, GetEmoticonRect(line, col));
 		}

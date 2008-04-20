@@ -93,6 +93,9 @@ void GroupListEmoticons::Load()
 	{
 		Emoticon *e = ssd->module->emoticons[i];
 
+		if (e->service[0] != NULL && !ProtoServiceExists(ssd->proto, e->service[0]))
+			continue;
+
 		if (stricmp(e->group, current_group) != 0 || i == 0)
 		{
 			if (i != 0)
@@ -103,6 +106,11 @@ void GroupListEmoticons::Load()
 
 			SetGroupName(groups[current_id], current_group);
 			groups[current_id].start = i;
+			groups[current_id].count = 1;
+		}
+		else 
+		{
+			groups[current_id].count++;
 		}
 	}
 	groups[current_id].end = i - 1;
@@ -112,7 +120,6 @@ void GroupListEmoticons::Load()
 	for(i = 0; i < num_groups; i++)
 	{
 		Group &group = groups[i];
-		group.count = group.end - group.start + 1;
 		GetMaxEmoticonSize(group);
 		group.cols = GetNumOfCols(group.count);
 
@@ -160,6 +167,9 @@ int GroupListEmoticons::CountGroups()
 	{
 		Emoticon *e = ssd->module->emoticons[i];
 
+		if (e->service[0] != NULL && !ProtoServiceExists(ssd->proto, e->service[0]))
+			continue;
+
 		if (stricmp(e->group, current_group) != 0)
 		{
 			current_group = e->group;
@@ -187,6 +197,9 @@ void GroupListEmoticons::GetMaxEmoticonSize(Group &group)
 	{
 		Emoticon *e = ssd->module->emoticons[i];
 
+		if (e->service[0] != NULL && !ProtoServiceExists(ssd->proto, e->service[0]))
+			continue;
+
 		int height, width;
 		GetEmoticonSize(e, width, height);
 
@@ -198,7 +211,7 @@ void GroupListEmoticons::GetMaxEmoticonSize(Group &group)
 
 RECT GroupListEmoticons::GetEmoticonRect(Group &group, int index)
 {
-	int pos = index - group.start;
+	int pos = index;
 	int line = pos / group.cols;
 	int col = pos % group.cols;
 
@@ -225,14 +238,19 @@ void GroupListEmoticons::CreateToolTips()
 			top += HeightWithBorders(rc);
 		}
 
+		int index = 0;
 		for (int j = group.start; j <= group.end; j++)
 		{
 			Emoticon *e = ssd->module->emoticons[j];
 
-			RECT rc = GetEmoticonRect(group, j);
+			if (e->service[0] != NULL && !ProtoServiceExists(ssd->proto, e->service[0]))
+				continue;
+
+			RECT rc = GetEmoticonRect(group, index);
 			rc.top += top;
 			rc.bottom += top;
 			CreateEmoticonToolTip(e, rc);
+			index++;
 		}
 
 		top += group.max_height * group.lines + (group.lines + 1) * BORDER;
@@ -246,7 +264,20 @@ int GroupListEmoticons::HeightWithBorders(RECT rc)
 
 int GroupListEmoticons::GetIndex(Group &group, int line, int col)
 {
-	return line * group.cols + col + group.start;
+	int desired = line * group.cols + col;
+	int index = 0;
+	for (int j = group.start; j <= group.end; j++)
+	{	
+		Emoticon *e = ssd->module->emoticons[j];
+		if (e->service[0] != NULL && !ProtoServiceExists(ssd->proto, e->service[0]))
+			continue;
+
+		if (index == desired)
+			return j;
+
+		index++;
+	}
+	return -1;
 }
 
 void GroupListEmoticons::SetSelection(HWND hwnd, POINT p)
@@ -284,7 +315,7 @@ void GroupListEmoticons::SetSelection(HWND hwnd, POINT p)
 
 	int index = GetIndex(group, line, col);
 
-	if (col >= 0 && line >= 0 && index <= group.end)
+	if (col >= 0 && col < group.cols && line >= 0 && line < group.lines && index <= group.end)
 	{
 		EmoticonsSelectionLayout::SetSelection(hwnd, index);
 	}
@@ -462,13 +493,20 @@ void GroupListEmoticons::Draw(HDC hdc)
 			top += HeightWithBorders(rc);
 		}
 
+		int index = 0;
 		for (int j = group.start; j <= group.end; j++)
-		{
-			RECT rc = GetEmoticonRect(group, j);
+		{	
+			Emoticon *e = ssd->module->emoticons[j];
+			if (e->service[0] != NULL && !ProtoServiceExists(ssd->proto, e->service[0]))
+				continue;
+
+			RECT rc = GetEmoticonRect(group, index);
 			rc.top += top;
 			rc.bottom += top;
 
 			DrawEmoticon(hdc, j, rc);
+
+			index++;
 		}
 
 		top += group.max_height * group.lines + (group.lines + 1) * BORDER;

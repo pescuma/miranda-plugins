@@ -130,11 +130,15 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 				pd->max_height = 0;
 				pd->max_width = 0;
 				srand((unsigned int) time(NULL));
-				int prob = (pd->pack->images.getCount() - 15) / 30 + 1;
+				int prob = (pd->pack->images.getCount() - 15) / 10 + 1;
 				for(int j = 0, count = 0; j < pd->pack->images.getCount() && count < 15; j++) {
 					if (rand() % prob != 0)
 						continue;
-					pd->pack->images[j]->Load(pd->max_height, pd->max_width);
+					EmoticonImage *img = pd->pack->images[j];
+					if (strncmp(img->name, "flag_", 5) == 0)
+						if (rand() % 10 != 0)
+							continue;
+					img->Load(pd->max_height, pd->max_width);
 					count++;
 				}
 
