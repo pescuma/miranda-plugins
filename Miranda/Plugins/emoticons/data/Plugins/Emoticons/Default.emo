@@ -1,5 +1,7 @@
 # Default emoticons
 
+[Default]
+
 "smile" = "Smile", ":-)" ":)"
 "laugh" = "Laught", ":-D" ":D"
 "wink" = "Wink", ";-)" ";)"

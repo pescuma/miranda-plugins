@@ -1,5 +1,8 @@
 # Google Talk protocol emoticons
 
+Derived: JABBER : ManualHost=atalk.google.com
+
+
 [Google Talk]
 
 "smile" = "Smile", ":)" ":-)" "=)"
@@ -28,7 +31,3 @@
 "kiss" = "Kiss", ":*" ":-x"
 "mustache" = "Mustache", ":{"
 
-
-[Nudge]
-
-"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0>"

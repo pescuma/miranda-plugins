@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,2,0),
+	PLUGIN_MAKE_VERSION(0,0,2,2),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -91,7 +91,8 @@ void log(const char *fmt, ...);
 void FillModuleImages(EmoticonPack *pack);
 
 EmoticonPack *GetPack(char *name);
-Module *GetModule(const char *name);
+Module * GetContactModule(HANDLE hContact, const char *proto);
+Module * GetModule(const char *name);
 Contact * GetContact(HANDLE hContact);
 CustomEmoticon *GetCustomEmoticon(Contact *c, TCHAR *text);
 EmoticonImage * GetModuleImage(EmoticonImage *img, Module *m);
@@ -227,20 +228,24 @@ extern "C" int __declspec(dllexport) Unload(void)
 
 COLORREF GetSRMMColor(char *tabsrmm, char *scriver, COLORREF def)
 {
-	COLORREF colour = (COLORREF) DBGetContactSettingDword(NULL, "TabSRMM_Fonts", tabsrmm, -1); // TabSRMM
-	if (colour == -1)
+	COLORREF colour = (COLORREF) -1;
+	if (ServiceExists("SRMsg_MOD/SetUserPrefs"))
+		colour = (COLORREF) DBGetContactSettingDword(NULL, "TabSRMM_Fonts", tabsrmm, -1); // TabSRMM
+	if (colour == (COLORREF) -1)
 		colour = (COLORREF) DBGetContactSettingDword(NULL, "SRMM", scriver, -1); // Scriver / SRMM
-	if (colour == -1)
+	if (colour == (COLORREF) -1)
 		colour = def; // Default
 	return colour;
 }
 
 BYTE GetSRMMByte(char *tabsrmm, char *scriver, BYTE def)
 {
-	BYTE ret = (BYTE) DBGetContactSettingByte(NULL, "TabSRMM_Fonts", tabsrmm, -1); // TabSRMM
-	if (ret == -1)
+	BYTE ret = (BYTE) -1;
+	if (ServiceExists("SRMsg_MOD/SetUserPrefs"))
+		ret = (BYTE) DBGetContactSettingByte(NULL, "TabSRMM_Fonts", tabsrmm, -1); // TabSRMM
+	if (ret == (BYTE) -1)
 		ret = (BYTE) DBGetContactSettingByte(NULL, "SRMM", scriver, -1); // Scriver / SRMM
-	if (ret == -1)
+	if (ret == (BYTE) -1)
 		ret = def; // Default
 	return ret;
 }
@@ -248,7 +253,7 @@ BYTE GetSRMMByte(char *tabsrmm, char *scriver, BYTE def)
 void GetSRMMTString(TCHAR *out, size_t out_size, char *tabsrmm, char *scriver, TCHAR *def)
 {
 	DBVARIANT dbv;
-	if (!DBGetContactSettingTString(NULL, "TabSRMM_Fonts", tabsrmm, &dbv)) 
+	if (ServiceExists("SRMsg_MOD/SetUserPrefs") && !DBGetContactSettingTString(NULL, "TabSRMM_Fonts", tabsrmm, &dbv)) 
 	{
 		lstrcpyn(out, dbv.ptszVal, out_size);
 		DBFreeVariant(&dbv);
@@ -496,8 +501,6 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 		for(int i = 0; i < module->emoticons.getCount(); i++)
 		{
 			Emoticon *e = module->emoticons[i];
-//			if (e->img == NULL)
-//				continue;
 
 			for(int j = 0; j < e->texts.getCount(); j++)
 			{
@@ -1207,13 +1210,7 @@ int MsgWindowEvent(WPARAM wParam, LPARAM lParam)
 
 	if (event->uType == MSG_WINDOW_EVT_OPEN)
 	{
-		HANDLE hReal = GetRealContact(event->hContact);
-
-		char *proto = (char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hReal, 0);
-		if (proto == NULL)
-			return 0;
-
-		Module *m = GetModule(proto);
+		Module *m = GetContactModule(event->hContact);
 		if (m == NULL)
 			return 0;
 
@@ -1311,17 +1308,19 @@ BOOL HasProto(char *proto)
 {
 	PROTOCOLDESCRIPTOR **protos;
 	int count;
-	CallService(MS_PROTO_ENUMPROTOCOLS, (WPARAM)&count, (LPARAM)&protos);
+	CallService(MS_PROTO_ENUMPROTOS, (WPARAM)&count, (LPARAM)&protos);
 
 	for (int i = 0; i < count; i++)
 	{
-		if (protos[i]->type != PROTOTYPE_PROTOCOL)
+		PROTOCOLDESCRIPTOR *p = protos[i];
+
+		if (p->type != PROTOTYPE_PROTOCOL)
 			continue;
 
-		if (protos[i]->szName == NULL || protos[i]->szName[0] == '\0')
+		if (p->szName == NULL || p->szName[0] == '\0')
 			continue;
 
-		if (stricmp(proto, protos[i]->szName) == 0)
+		if (stricmp(proto, p->szName) == 0)
 			return TRUE;
 	}
 
@@ -1349,12 +1348,6 @@ void LoadModules()
 			char *name = mir_t2a(ffd.cFileName);
 			name[strlen(name) - 4] = 0;
 
-			if (stricmp("Default", name) != 0 && !HasProto(name))
-			{
-				mir_free(name);
-				continue;
-			}
-
 			Module *m = new Module();
 			m->name = name;
 			m->path = mir_tstrdup(file);
@@ -1366,16 +1359,6 @@ void LoadModules()
 
 		FindClose(hFFD);
 	}
-}
-
-
-// See if a protocol service exists
-__inline int ProtoServiceExists(const char *szModule,const char *szService)
-{
-	char str[MAXMODULELABELLENGTH];
-	strcpy(str,szModule);
-	strcat(str,szService);
-	return ServiceExists(str);
 }
 
 
@@ -1470,12 +1453,12 @@ void HandleEmoLine(Module *m, char *tmp, char *group)
 							params = pos + 1;
 						}
 
-						if (e->service[0] == NULL || e->service[0][0] == '\0' || !ProtoServiceExists(m->name, e->service[0]))
-						{
-							delete e;
-							e = NULL;
-							return;
-						}
+//						if (e->service[0] == NULL || e->service[0][0] == '\0' || !ProtoServiceExists(m->name, e->service[0]))
+//						{
+//							delete e;
+//							e = NULL;
+//							return;
+//						}
 					}
 					else
 						e->texts.insert(txt); 
@@ -1490,6 +1473,46 @@ void HandleEmoLine(Module *m, char *tmp, char *group)
 
 	if (e != NULL)
 		m->emoticons.insert(e);
+}
+
+
+void HandleDerived(Module *m, char *derived)
+{
+	char *db_key = strchr(derived, ':');
+	if (db_key == NULL) 
+	{
+		log("Invalid derived line '%s' in module %s", derived, m->name);
+		return;
+	}
+
+	*db_key = '\0';
+	db_key++;
+
+	char *db_val = strchr(db_key, '=');
+	if (db_val == NULL)
+	{
+		log("Invalid db string '%s' in derived line in module %s", db_key, m->name);
+		return;
+	}
+
+	*db_val = '\0';
+	db_val++;
+
+	if (db_val[0] != 'a')
+	{
+		log("Invalid db val '%s' (should start with a for ASCII) in derived line in module %s", db_val, m->name);
+		return;
+	}
+
+	db_val++;
+
+	strtrim(derived);
+	strtrim(db_key);
+	strtrim(db_val);
+
+	m->derived.proto_name = mir_strdup(derived);
+	m->derived.db_key = mir_strdup(db_key);
+	m->derived.db_val = mir_strdup(db_val);
 }
 
 
@@ -1522,6 +1545,10 @@ BOOL LoadModule(Module *m)
 				tmp[len-1] = '\0';
 				strtrim(&tmp[1]);
 				group = mir_strdup(&tmp[1]);
+			}
+			else if (strnicmp("Derived:", tmp, 8) == 0)
+			{
+				HandleDerived(m, &tmp[8]);
 			}
 			else
 			{
@@ -2004,6 +2031,70 @@ Module *GetModuleByName(const char *name)
 }
 
 
+Module * GetContactModule(HANDLE hContact, const char *proto)
+{
+	if (hContact == NULL)
+	{
+		if (proto == NULL)
+			return NULL;
+		return GetModule(proto);
+	}
+
+	hContact = GetRealContact(hContact);
+
+	proto = (char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
+	if (proto == NULL)
+		return NULL;
+
+	PROTOACCOUNT *acc = ProtoGetAccount(proto);
+	if (acc == NULL)
+		return NULL;
+
+	proto = acc->szProtoName;
+
+	// Check for transports
+	if (stricmp("JABBER", proto) == 0)
+	{
+		DBVARIANT dbv = {0};
+		if (DBGetContactSettingString(hContact, acc->szModuleName, "Transport", &dbv) == 0)
+		{
+			Module *ret = GetModule(dbv.pszVal);
+
+			DBFreeVariant(&dbv);
+
+			return ret;
+		}
+	}
+
+	// Check if there is some derivation
+	for(int i = 0; i < modules.getCount(); i++) 
+	{
+		Module *m = modules[i];
+		
+		if (m->derived.proto_name == NULL)
+			continue;
+
+		if (stricmp(m->derived.proto_name, proto) != 0)
+			continue;
+		
+		DBVARIANT dbv = {0};
+		if (DBGetContactSettingString(NULL, acc->szModuleName, m->derived.db_key, &dbv) != 0)
+			continue;
+
+		Module *ret = NULL;
+		if (stricmp(dbv.pszVal, m->derived.db_val) == 0)
+			ret = m;
+
+		DBFreeVariant(&dbv);
+
+		if (ret != NULL)
+			return ret;
+	}
+
+	return GetModule(proto);
+}
+
+
 Module *GetModule(const char *name)
 {
 	Module *ret = GetModuleByName(name);
@@ -2032,18 +2123,7 @@ int ReplaceEmoticonsService(WPARAM wParam, LPARAM lParam)
 	}
 	else
 	{
-		const char *proto = NULL;
-		if (sre->hContact != NULL)
-		{
-			HANDLE hReal = GetRealContact(sre->hContact);
-			proto = (char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hReal, 0);
-		}
-		if (proto == NULL)
-			proto = sre->Protocolname;
-		if (proto == NULL)
-			return FALSE;
-
-		Module *m = GetModule(proto);
+		Module *m = GetContactModule(sre->hContact, sre->Protocolname);
 		if (m == NULL)
 			return FALSE;
 
@@ -2063,18 +2143,7 @@ int GetInfo2Service(WPARAM wParam, LPARAM lParam)
 	if (si == NULL || si->cbSize < sizeof(SMADD_INFO2))
 		return FALSE;
 
-	const char *proto = NULL;
-	if (si->hContact != NULL)
-	{
-		HANDLE hReal = GetRealContact(si->hContact);
-		proto = (char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hReal, 0);
-	}
-	if (proto == NULL)
-		proto = si->Protocolname;
-	if (proto == NULL)
-		return FALSE;
-
-	Module *m = GetModule(proto);
+	Module *m = GetContactModule(si->hContact, si->Protocolname);
 	if (m == NULL)
 		return FALSE;
 
@@ -2561,6 +2630,8 @@ Contact * GetContact(HANDLE hContact)
 {
 	if (hContact == NULL)
 		return NULL;
+	
+	hContact = GetRealContact(hContact);
 
 	// Check if already loaded
 	for(int i = 0; i < contacts.getCount(); i++)

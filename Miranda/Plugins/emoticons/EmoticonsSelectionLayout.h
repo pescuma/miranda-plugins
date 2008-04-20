@@ -1,5 +1,5 @@
 #define MIN_COLS 6
-#define MAX_LINES 8
+#define MAX_LINES 6
 #define MAX_COLS 12
 #define BORDER 3
 
@@ -8,6 +8,7 @@ struct EmoticonSelectionData
 {
 	HANDLE hContact;
 	Module *module;
+	const char *proto;
 	COLORREF background;
 
     int xPosition;

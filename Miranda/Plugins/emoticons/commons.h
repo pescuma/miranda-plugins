@@ -44,7 +44,7 @@ using namespace std;
 
 
 // Miranda headers
-#define MIRANDA_VER 0x0700
+#define MIRANDA_VER 0x0800
 #include <win2k.h>
 #include <newpluginapi.h>
 #include <m_system.h>
@@ -162,7 +162,13 @@ struct Module
 	TCHAR *path;
 	LIST<Emoticon> emoticons;
 
-	Module() : name(0), path(0), emoticons(20) {}
+	struct {
+		char *proto_name;
+		char *db_key;
+		char *db_val;
+	} derived;
+
+	Module() : name(0), path(0), emoticons(20)  { derived.proto_name=0; derived.db_key=0; derived.db_val=0; }
 	~Module();
 };
 
@@ -225,7 +231,7 @@ extern TCHAR emoticonPacksFolder[1024];
 
 
 HANDLE GetRealContact(HANDLE hContact);
-Module *GetModule(const char *name);
+Module * GetContactModule(HANDLE hContact, const char *proto = NULL);
 
 void FillModuleImages(EmoticonPack *pack);
 
@@ -234,6 +240,16 @@ void FillModuleImages(EmoticonPack *pack);
 #include "EmoticonsSelectionLayout.h"
 #include "SingleListEmoticons.h"
 #include "GroupListEmoticons.h"
+
+
+// See if a protocol service exists
+static __inline int ProtoServiceExists(const char *szModule,const char *szService)
+{
+	char str[MAXMODULELABELLENGTH];
+	strcpy(str,szModule);
+	strcat(str,szService);
+	return ServiceExists(str);
+}
 
 
 #endif // __COMMONS_H__
