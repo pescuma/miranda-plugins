@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,2,2),
+	PLUGIN_MAKE_VERSION(0,0,2,4),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -49,7 +49,7 @@ PLUGININFOEX pluginInfo={
 HINSTANCE hInst;
 PLUGINLINK *pluginLink;
 
-HANDLE hHooks[3] = {0};
+HANDLE hHooks[4] = {0};
 HANDLE hServices[4] = {0};
 HANDLE hChangedEvent;
 HANDLE hNetlibUser = 0;
@@ -101,6 +101,7 @@ void ReleaseModuleImage(EmoticonImage *img);
 int ModulesLoaded(WPARAM wParam, LPARAM lParam);
 int PreShutdown(WPARAM wParam, LPARAM lParam);
 int MsgWindowEvent(WPARAM wParam, LPARAM lParam);
+int DefaultMetaChanged(WPARAM wParam, LPARAM lParam);
 
 int ReplaceEmoticonsService(WPARAM wParam, LPARAM lParam);
 int GetInfo2Service(WPARAM wParam, LPARAM lParam);
@@ -108,6 +109,7 @@ int ShowSelectionService(WPARAM wParam, LPARAM lParam);
 int LoadContactSmileysService(WPARAM wParam, LPARAM lParam);
 
 TCHAR *GetText(RichEditCtrl &rec, int start, int end);
+const char * GetProtoID(const char *proto);
 
 
 LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -321,7 +323,10 @@ void InitFonts()
 int ModulesLoaded(WPARAM wParam, LPARAM lParam) 
 {
 	if (ServiceExists(MS_MC_GETPROTOCOLNAME))
+	{
 		metacontacts_proto = (char *) CallService(MS_MC_GETPROTOCOLNAME, 0, 0);
+		hHooks[3] = HookEvent(ME_MC_DEFAULTTCHANGED, &DefaultMetaChanged);
+	}
 
 	has_anismiley = ServiceExists(MS_INSERTANISMILEY);
 
@@ -1201,28 +1206,29 @@ HANDLE GetRealContact(HANDLE hContact)
 
 int MsgWindowEvent(WPARAM wParam, LPARAM lParam)
 {
-	MessageWindowEventData *event = (MessageWindowEventData *)lParam;
-	if (event == NULL)
+	MessageWindowEventData *evt = (MessageWindowEventData *)lParam;
+	if (evt == NULL)
 		return 0;
 
-	if (event->cbSize < sizeof(MessageWindowEventData))
+	if (evt->cbSize < sizeof(MessageWindowEventData))
 		return 0;
 
-	if (event->uType == MSG_WINDOW_EVT_OPEN)
+	if (evt->uType == MSG_WINDOW_EVT_OPEN)
 	{
-		Module *m = GetContactModule(event->hContact);
+		Module *m = GetContactModule(evt->hContact);
 		if (m == NULL)
 			return 0;
 
 		Dialog *dlg = (Dialog *) malloc(sizeof(Dialog));
 		ZeroMemory(dlg, sizeof(Dialog));
 
-		dlg->contact = GetContact(event->hContact);
+		dlg->hOriginalContact = evt->hContact;
+		dlg->contact = GetContact(evt->hContact);
 		dlg->module = m;
-		dlg->hwnd_owner = event->hwndWindow;
+		dlg->hwnd_owner = evt->hwndWindow;
 
-		LoadRichEdit(&dlg->input, event->hwndInput);
-		LoadRichEdit(&dlg->log, event->hwndLog);
+		LoadRichEdit(&dlg->input, evt->hwndInput);
+		LoadRichEdit(&dlg->log, evt->hwndLog);
 
 		if (opts.replace_in_input)
 		{
@@ -1236,9 +1242,9 @@ int MsgWindowEvent(WPARAM wParam, LPARAM lParam)
 //		dlg->log.old_edit_proc = (WNDPROC) SetWindowLong(dlg->log.hwnd, GWL_WNDPROC, (LONG) LogProc);
 		dialogData[dlg->log.hwnd] = dlg;
 	}
-	else if (event->uType == MSG_WINDOW_EVT_CLOSING)
+	else if (evt->uType == MSG_WINDOW_EVT_CLOSING)
 	{
-		DialogMapType::iterator dlgit = dialogData.find(event->hwndWindow);
+		DialogMapType::iterator dlgit = dialogData.find(evt->hwndWindow);
 		if (dlgit != dialogData.end())
 		{
 			Dialog *dlg = dlgit->second;
@@ -1253,9 +1259,9 @@ int MsgWindowEvent(WPARAM wParam, LPARAM lParam)
 			free(dlg);
 		}
 
-		dialogData.erase(event->hwndInput);
-		dialogData.erase(event->hwndLog);
-		dialogData.erase(event->hwndWindow);
+		dialogData.erase(evt->hwndInput);
+		dialogData.erase(evt->hwndLog);
+		dialogData.erase(evt->hwndWindow);
 	}
 
 	return 0;
@@ -1303,7 +1309,7 @@ char *strtrim(char *str)
 	return str;
 }
 
-
+/*
 BOOL HasProto(char *proto)
 {
 	PROTOCOLDESCRIPTOR **protos;
@@ -1326,7 +1332,7 @@ BOOL HasProto(char *proto)
 
 	return FALSE;
 }
-
+*/
 
 void LoadModules()
 {
@@ -1429,7 +1435,7 @@ void HandleEmoLine(Module *m, char *tmp, char *group)
 						int len = strlen(atxt);
 
 						// Is a service
-						if (!strncmp(atxt, "<Service:", 9) == 0 || atxt[len-1] != '>')
+						if (strncmp(atxt, "<Service:", 9) != 0 || atxt[len-1] != '>')
 						{
 							delete e;
 							e = NULL;
@@ -1448,17 +1454,31 @@ void HandleEmoLine(Module *m, char *tmp, char *group)
 							e->service[i] = mir_strdup(params);
 
 							if (pos == NULL)
+							{
+								params = NULL;
 								break;
+							}
 
 							params = pos + 1;
 						}
 
-//						if (e->service[0] == NULL || e->service[0][0] == '\0' || !ProtoServiceExists(m->name, e->service[0]))
-//						{
-//							delete e;
-//							e = NULL;
-//							return;
-//						}
+						if (params != NULL && strncmp(params, "Wrapper:", 8) == 0)
+						{
+							params += 8;
+							for(int i = 3; i < 6; i++)
+							{
+								char *pos = strchr(params, ':');
+								if (pos != NULL)
+									*pos = '\0';
+
+								e->service[i] = mir_strdup(params);
+
+								if (pos == NULL)
+									break;
+
+								params = pos + 1;
+							}
+						}
 					}
 					else
 						e->texts.insert(txt); 
@@ -2031,32 +2051,41 @@ Module *GetModuleByName(const char *name)
 }
 
 
+const char * GetProtoID(const char *proto)
+{
+	if (!ServiceExists(MS_PROTO_GETACCOUNT))
+		return proto;
+
+	PROTOACCOUNT *acc = ProtoGetAccount(proto);
+	if (acc == NULL)
+		return proto;
+
+	return acc->szProtoName;
+}
+
+
 Module * GetContactModule(HANDLE hContact, const char *proto)
 {
 	if (hContact == NULL)
 	{
 		if (proto == NULL)
 			return NULL;
-		return GetModule(proto);
+		return GetModule(GetProtoID(proto));
 	}
 
 	hContact = GetRealContact(hContact);
 
-	proto = (char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
+	proto = (const char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
 	if (proto == NULL)
 		return NULL;
 
-	PROTOACCOUNT *acc = ProtoGetAccount(proto);
-	if (acc == NULL)
-		return NULL;
-
-	proto = acc->szProtoName;
+	const char *protoID = GetProtoID(proto);
 
 	// Check for transports
-	if (stricmp("JABBER", proto) == 0)
+	if (stricmp("JABBER", protoID) == 0)
 	{
 		DBVARIANT dbv = {0};
-		if (DBGetContactSettingString(hContact, acc->szModuleName, "Transport", &dbv) == 0)
+		if (DBGetContactSettingString(hContact, proto, "Transport", &dbv) == 0)
 		{
 			Module *ret = GetModule(dbv.pszVal);
 
@@ -2074,11 +2103,11 @@ Module * GetContactModule(HANDLE hContact, const char *proto)
 		if (m->derived.proto_name == NULL)
 			continue;
 
-		if (stricmp(m->derived.proto_name, proto) != 0)
+		if (stricmp(m->derived.proto_name, protoID) != 0)
 			continue;
 		
 		DBVARIANT dbv = {0};
-		if (DBGetContactSettingString(NULL, acc->szModuleName, m->derived.db_key, &dbv) != 0)
+		if (DBGetContactSettingString(NULL, proto, m->derived.db_key, &dbv) != 0)
 			continue;
 
 		Module *ret = NULL;
@@ -2091,7 +2120,7 @@ Module * GetContactModule(HANDLE hContact, const char *proto)
 			return ret;
 	}
 
-	return GetModule(proto);
+	return GetModule(protoID);
 }
 
 
@@ -2225,6 +2254,11 @@ Emoticon::~Emoticon()
 		mir_free(texts[i]);
 	}
 	texts.destroy();
+}
+
+BOOL Emoticon::IgnoreFor(Module *m)
+{
+	return service[0] != NULL && !EmoticonServiceExists(m->name, service[0]);
 }
 
 
@@ -3013,4 +3047,58 @@ void log(const char *fmt, ...)
     va_end(va);
 
 	CallService(MS_NETLIB_LOG, (WPARAM) hNetlibUser, (LPARAM) text);
+}
+
+DWORD ConvertServiceParam(char *param, char *proto, HANDLE hContact)
+{
+	DWORD ret;
+	if (param == NULL)
+		ret = 0;
+	else if (stricmp("hContact", param) == 0)
+		ret = (DWORD) hContact;
+	else if (stricmp("protocol", param) == 0)
+		ret = (DWORD) proto;
+	else
+		ret = atoi(param);
+	return ret;
+}
+
+int CallEmoticonService(char *proto, HANDLE hContact, char *service, char *wparam, char *lparam)
+{
+	if (service[0] == '/')
+		return CallProtoService(proto, service, ConvertServiceParam(wparam, proto, hContact), ConvertServiceParam(lparam, proto, hContact));
+	else
+		return CallService(service, ConvertServiceParam(wparam, proto, hContact), ConvertServiceParam(lparam, proto, hContact));
+}
+
+
+BOOL EmoticonServiceExists(char *proto, char *service)
+{
+	if (service[0] == '/')
+		return ProtoServiceExists(proto, service);
+	else
+		return ServiceExists(service);
+}
+
+
+int DefaultMetaChanged(WPARAM wParam, LPARAM lParam)
+{
+	HANDLE hMetaContact = (HANDLE) wParam;
+	HANDLE hDefaultContact = (HANDLE) lParam;
+
+	Module *m = GetContactModule(hDefaultContact);
+	if (m == NULL)
+		return 0;
+
+	for(DialogMapType::iterator it = dialogData.begin(); it != dialogData.begin(); it++)
+	{
+		Dialog *dlg = it->second;
+		if (dlg->hOriginalContact != hMetaContact)
+			continue;
+		
+		dlg->contact = GetContact(hDefaultContact);
+		dlg->module = m;
+	}
+
+	return 0;
 }

@@ -44,7 +44,7 @@ using namespace std;
 
 
 // Miranda headers
-#define MIRANDA_VER 0x0800
+#define MIRANDA_VER 0x0700
 #include <win2k.h>
 #include <newpluginapi.h>
 #include <m_system.h>
@@ -100,6 +100,7 @@ extern HANDLE hChangedEvent;
 
 
 struct EmoticonPack;
+struct Module;
 
 struct EmoticonImage
 {
@@ -132,7 +133,7 @@ struct Emoticon
 	char *group;
 	LIST<TCHAR> texts;
 	EmoticonImage *img;
-	char *service[3];
+	char *service[6];
 
 	// For selection window
 	HWND tt;
@@ -141,8 +142,14 @@ struct Emoticon
 		service[0] = NULL;
 		service[1] = NULL;
 		service[2] = NULL;
+		service[3] = NULL;
+		service[4] = NULL;
+		service[5] = NULL;
 	}
 	~Emoticon();
+
+	BOOL IgnoreFor(Module *m);
+
 };
 
 
@@ -209,6 +216,7 @@ struct Contact
 
 struct Dialog 
 {
+	HANDLE hOriginalContact;
 	Contact *contact;
 	Module *module;
 
@@ -234,6 +242,8 @@ HANDLE GetRealContact(HANDLE hContact);
 Module * GetContactModule(HANDLE hContact, const char *proto = NULL);
 
 void FillModuleImages(EmoticonPack *pack);
+int CallEmoticonService(char *proto, HANDLE hContact, char *service, char *wparam, char *lparam);
+BOOL EmoticonServiceExists(char *proto, char *service);
 
 
 

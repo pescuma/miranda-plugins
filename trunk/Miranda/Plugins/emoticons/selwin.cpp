@@ -73,19 +73,6 @@ void AssertInsideScreen(RECT &rc)
 }
 
 
-DWORD ConvertServiceParam(EmoticonsSelectionLayout *layout, char *param)
-{
-	DWORD ret;
-	if (param == NULL)
-		ret = 0;
-	else if (stricmp("hContact", param) == 0)
-		ret = (DWORD) layout->ssd->hContact;
-	else
-		ret = atoi(param);
-	return ret;
-}
-
-
 INT_PTR CALLBACK EmoticonSeletionDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 {
 	switch(msg) 
@@ -284,12 +271,12 @@ INT_PTR CALLBACK EmoticonSeletionDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
 			if (layout->selection >= 0 && layout->ssd->hwndTarget != NULL)
 			{
 				Emoticon *e = layout->ssd->module->emoticons[layout->selection];
-
 				if (e->service[0] != NULL)
 				{
-					CallProtoService(layout->ssd->module->name, e->service[0],
-									 ConvertServiceParam(layout, e->service[1]), 
-									 ConvertServiceParam(layout, e->service[2]));
+					if (e->service[3] != NULL && EmoticonServiceExists(layout->ssd->module->name, e->service[3]))
+						CallEmoticonService(layout->ssd->module->name, layout->ssd->hContact, e->service[3], e->service[4], e->service[5]);
+					else
+						CallEmoticonService(layout->ssd->module->name, layout->ssd->hContact, e->service[0], e->service[1], e->service[2]);
 				}
 				else if (opts.only_replace_isolated)
 				{
