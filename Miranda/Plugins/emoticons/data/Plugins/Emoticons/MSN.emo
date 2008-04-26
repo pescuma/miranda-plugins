@@ -91,4 +91,4 @@
 
 [Nudge]
 
-"service_nudge" = "Send a nudge to everyone in this conversation", "<Service:/SendNudge:hContact:0>"
+"service_nudge" = "Send a nudge to everyone in this conversation", "<Service:/SendNudge:hContact:0:Wrapper:NUDGE/Send:hContact:0>"

@@ -20,4 +20,4 @@
 
 [Nudge]
 
-"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0>"
+"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0:Wrapper:NUDGE/Send:hContact:0>"
