@@ -2,6 +2,14 @@ Emoticons
 
 Changelog:
 
+. 0.0.2.4
+  * Handle metacontact change in the middle of chat
+  * Works with miranda 0.7
+  
+. 0.0.2.3
+  + Send nudges throught nudge plugin (if possible)
+  * Better guess of number of columns in selection window
+
 . 0.0.2.2
   + Support for accounts and jabber transports
   * Fix for frame in selection window
