@@ -52,6 +52,8 @@ del /Q *.*
 copy ..\..\..\sdk\*.*
 cd ..
 cd ..
+copy ..\Release\%name%.pdb
+copy "..\Unicode_Release\%name%W.pdb"
 
 pause 
 
@@ -70,7 +72,10 @@ cd ..
 "C:\Program Files\Filzip\Filzip.exe" -a -rp %name%.zip Plugins Docs Customize
 
 "C:\Program Files\Filzip\Filzip.exe" -a -rp %name%_src.zip src\*.*
+"C:\Program Files\Filzip\Filzip.exe" -a -rp %name%.pdb.zip %name%.pdb
+"C:\Program Files\Filzip\Filzip.exe" -a -rp %name%W.pdb.zip %name%W.pdb
 
+del *.pdb
 rd /S /Q Plugins
 rd /S /Q Docs
 rd /S /Q Customize
@@ -83,6 +88,8 @@ pause
 
 "C:\Program Files\FileZilla\FileZilla.exe" -u .\%name%.zip %ftp% -overwrite -close 
 "C:\Program Files\FileZilla\FileZilla.exe" -u .\%name%W.zip %ftp% -overwrite -close 
+"C:\Program Files\FileZilla\FileZilla.exe" -u .\%name%.pdb.zip %ftp% -overwrite -close 
+"C:\Program Files\FileZilla\FileZilla.exe" -u .\%name%W.pdb.zip %ftp% -overwrite -close 
 "C:\Program Files\FileZilla\FileZilla.exe" -u .\%name%_changelog.txt %ftp% -overwrite -close 
 "C:\Program Files\FileZilla\FileZilla.exe" -u .\%name%_version.txt %ftp% -overwrite -close 
 "C:\Program Files\FileZilla\FileZilla.exe" -u .\%name%_readme.txt %ftp% -overwrite -close 

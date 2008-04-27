@@ -2,6 +2,9 @@ Emoticons
 
 Changelog:
 
+. 0.0.2.5
+  + Support for SRMM (but no button)
+
 . 0.0.2.4
   * Handle metacontact change in the middle of chat
   * Works with miranda 0.7

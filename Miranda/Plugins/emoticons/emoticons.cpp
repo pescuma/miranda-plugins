@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,2,4),
+	PLUGIN_MAKE_VERSION(0,0,2,5),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -1044,7 +1044,7 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return ret;
 }
 
-/*
+
 LRESULT CALLBACK LogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	DialogMapType::iterator dlgit = dialogData.find(hwnd);
@@ -1053,73 +1053,18 @@ LRESULT CALLBACK LogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	Dialog *dlg = dlgit->second;
 
-	switch(msg)
-	{
-		case WM_SETREDRAW:
-		{
-			if (wParam == FALSE)
-			{
-				dlg->log.received_stream_in = FALSE;
-			}
-			else
-			{
-				if (dlg->log.received_stream_in)
-				{
-					RichEditCtrl &rec = dlg->log;
-					SUSPEND_UNDO(rec);															\
-					POINT __old_scroll_pos;														\
-					SendMessage(rec.hwnd, EM_GETSCROLLPOS, 0, (LPARAM) &__old_scroll_pos);		\
-					CHARRANGE __old_sel;														\
-					SendMessage(rec.hwnd, EM_EXGETSEL, 0, (LPARAM) &__old_sel);					\
-					POINT __caretPos;															\
-					GetCaretPos(&__caretPos);													\
-					DWORD __old_mask = SendMessage(rec.hwnd, EM_GETEVENTMASK, 0, 0);			\
-					SendMessage(rec.hwnd, EM_SETEVENTMASK, 0, __old_mask & ~ENM_CHANGE);		\
-					BOOL __inverse = (__old_sel.cpMin >= LOWORD(SendMessage(rec.hwnd, EM_CHARFROMPOS, 0, (LPARAM) &__caretPos)));
-
-					CHARRANGE sel = { dlg->log.stream_in_pos, GetWindowTextLength(dlg->log.hwnd) };
-					SendMessage(dlg->log.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
-
-					int len = sel.cpMax - sel.cpMin;
-					TCHAR *text = (TCHAR *) malloc((len + 1) * sizeof(TCHAR));
-					SendMessage(dlg->log.hwnd, EM_GETSELTEXT, 0, (LPARAM) text);
-
-					for(int i = len; i > 0; i--)
-					{
-						int dif = ReplaceEmoticonBackwards(dlg->log.hwnd, text, i, sel.cpMin + i, dlg->module);
-
-						FixSelection(__old_sel.cpMax, i, dif);
-						FixSelection(__old_sel.cpMin, i, dif);
-					}
-
-					if (__inverse)																\
-					{																			\
-						LONG __tmp = __old_sel.cpMin;											\
-						__old_sel.cpMin = __old_sel.cpMax;										\
-						__old_sel.cpMax = __tmp;												\
-					}																			\
-					SendMessage(rec.hwnd, EM_SETEVENTMASK, 0, __old_mask);						\
-					SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &__old_sel);				\
-					SendMessage(rec.hwnd, EM_SETSCROLLPOS, 0, (LPARAM) &__old_scroll_pos);		\
-					InvalidateRect(rec.hwnd, NULL, FALSE);										\
-					RESUME_UNDO(rec);
-				}
-			}
-			break;
-		}
-		case EM_STREAMIN:
-		{
-			dlg->log.received_stream_in = TRUE;
-			dlg->log.stream_in_pos = GetWindowTextLength(dlg->log.hwnd);
-			break;
-		}
-	}
+	int stream_in_pos;
+	if (msg == EM_STREAMIN)
+		stream_in_pos = GetWindowTextLength(dlg->log.hwnd);
 
 	LRESULT ret = CallWindowProc(dlg->log.old_edit_proc, hwnd, msg, wParam, lParam);
 
+	if (msg == EM_STREAMIN)
+		ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, stream_in_pos, -1);
+
 	return ret;
 }
-*/
+
 
 
 LRESULT CALLBACK OwnerProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -1130,7 +1075,7 @@ LRESULT CALLBACK OwnerProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	Dialog *dlg = dlgit->second;
 
-	if (msg == WM_COMMAND && (LOWORD(wParam) == IDOK || LOWORD(wParam) == 1624) && dlg->input.old_edit_proc != NULL)
+	if (msg == WM_COMMAND && (LOWORD(wParam) == IDOK || LOWORD(wParam) == 1624))
 	{
 		dlg->log.sending = TRUE;
 
@@ -1163,13 +1108,27 @@ LRESULT CALLBACK OwnerProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 
+void UnloadRichEdit(RichEditCtrl *rec) 
+{
+	if (rec->textDocument != NULL)
+	{
+		rec->textDocument->Release();
+		rec->textDocument = NULL;
+	}
+	if (rec->ole != NULL)
+	{
+		rec->ole->Release();
+		rec->ole = NULL;
+	}
+}
+
+
 int LoadRichEdit(RichEditCtrl *rec, HWND hwnd) 
 {
 	rec->hwnd = hwnd;
 	rec->ole = NULL;
 	rec->textDocument = NULL;
 	rec->old_edit_proc = NULL;
-	rec->received_stream_in = FALSE;
 	rec->sending = FALSE;
 
 	SendMessage(hwnd, EM_GETOLEINTERFACE, 0, (LPARAM)&rec->ole);
@@ -1177,18 +1136,13 @@ int LoadRichEdit(RichEditCtrl *rec, HWND hwnd)
 		return 0;
 
 	if (rec->ole->QueryInterface(IID_ITextDocument, (void**)&rec->textDocument) != S_OK)
+	{
 		rec->textDocument = NULL;
+		UnloadRichEdit(rec);
+		return 0;
+	}
 
 	return 1;
-}
-
-
-void UnloadRichEdit(RichEditCtrl *rec) 
-{
-	if (rec->textDocument != NULL)
-		rec->textDocument->Release();
-	if (rec->ole != NULL)
-		rec->ole->Release();
 }
 
 
@@ -1201,6 +1155,17 @@ HANDLE GetRealContact(HANDLE hContact)
 	if (hReal == NULL)
 		hReal = hContact;
 	return hReal;
+}
+
+
+BOOL isSRMM()
+{
+	if (!ServiceExists(MS_MSG_GETWINDOWCLASS))
+		return FALSE;
+
+	char cls[256];
+	CallService(MS_MSG_GETWINDOWCLASS, (WPARAM) cls, (LPARAM) MAX_REGS(cls));
+	return strcmp(cls, "SRMM") == 0;
 }
 
 
@@ -1227,20 +1192,33 @@ int MsgWindowEvent(WPARAM wParam, LPARAM lParam)
 		dlg->module = m;
 		dlg->hwnd_owner = evt->hwndWindow;
 
-		LoadRichEdit(&dlg->input, evt->hwndInput);
-		LoadRichEdit(&dlg->log, evt->hwndLog);
+		int loaded = LoadRichEdit(&dlg->input, evt->hwndInput);
+		loaded |= LoadRichEdit(&dlg->log, evt->hwndLog);
 
-		if (opts.replace_in_input)
+		if (!loaded)
+		{
+			free(dlg);
+			return 0;
+		}
+
+		if (opts.replace_in_input && dlg->input.isLoaded())
 		{
 			dlg->input.old_edit_proc = (WNDPROC) SetWindowLong(dlg->input.hwnd, GWL_WNDPROC, (LONG) EditProc);
 			dialogData[dlg->input.hwnd] = dlg;
+
+			dlg->owner_old_edit_proc = (WNDPROC) SetWindowLong(dlg->hwnd_owner, GWL_WNDPROC, (LONG) OwnerProc);
 		}
 
-		dlg->owner_old_edit_proc = (WNDPROC) SetWindowLong(dlg->hwnd_owner, GWL_WNDPROC, (LONG) OwnerProc);
 		dialogData[dlg->hwnd_owner] = dlg;
 
-//		dlg->log.old_edit_proc = (WNDPROC) SetWindowLong(dlg->log.hwnd, GWL_WNDPROC, (LONG) LogProc);
 		dialogData[dlg->log.hwnd] = dlg;
+
+		if (isSRMM())
+		{
+			ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, 0, -1);
+
+			dlg->log.old_edit_proc = (WNDPROC) SetWindowLong(dlg->log.hwnd, GWL_WNDPROC, (LONG) LogProc);
+		}
 	}
 	else if (evt->uType == MSG_WINDOW_EVT_CLOSING)
 	{
@@ -1254,7 +1232,8 @@ int MsgWindowEvent(WPARAM wParam, LPARAM lParam)
 
 			if (dlg->input.old_edit_proc != NULL)
 				SetWindowLong(dlg->input.hwnd, GWL_WNDPROC, (LONG) dlg->input.old_edit_proc);
-			SetWindowLong(dlg->hwnd_owner, GWL_WNDPROC, (LONG) dlg->owner_old_edit_proc);
+			if (dlg->owner_old_edit_proc != NULL)
+				SetWindowLong(dlg->hwnd_owner, GWL_WNDPROC, (LONG) dlg->owner_old_edit_proc);
 
 			free(dlg);
 		}
@@ -1309,30 +1288,6 @@ char *strtrim(char *str)
 	return str;
 }
 
-/*
-BOOL HasProto(char *proto)
-{
-	PROTOCOLDESCRIPTOR **protos;
-	int count;
-	CallService(MS_PROTO_ENUMPROTOS, (WPARAM)&count, (LPARAM)&protos);
-
-	for (int i = 0; i < count; i++)
-	{
-		PROTOCOLDESCRIPTOR *p = protos[i];
-
-		if (p->type != PROTOTYPE_PROTOCOL)
-			continue;
-
-		if (p->szName == NULL || p->szName[0] == '\0')
-			continue;
-
-		if (stricmp(proto, p->szName) == 0)
-			return TRUE;
-	}
-
-	return FALSE;
-}
-*/
 
 void LoadModules()
 {
