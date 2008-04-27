@@ -200,9 +200,12 @@ struct RichEditCtrl
 	IRichEditOle *ole;
 	ITextDocument *textDocument;
 	WNDPROC old_edit_proc;
-	BOOL received_stream_in;
-	int stream_in_pos;
 	BOOL sending;
+
+	BOOL isLoaded()
+	{
+		return ole != NULL;
+	}
 };
 
 struct Contact
