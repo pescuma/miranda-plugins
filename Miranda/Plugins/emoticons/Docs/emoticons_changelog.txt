@@ -2,6 +2,9 @@ Emoticons
 
 Changelog:
 
+. 0.0.2.6
+  * Fix for jabber transports
+
 . 0.0.2.5
   + Support for SRMM (but no button)
 
