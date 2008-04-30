@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,2,5),
+	PLUGIN_MAKE_VERSION(0,0,2,6),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -2019,6 +2019,131 @@ const char * GetProtoID(const char *proto)
 }
 
 
+/*
+Code block copied from Jabber sources (with small modifications)
+
+Copyright ( C ) 2002-04  Santithorn Bunchua
+Copyright ( C ) 2005-08  George Hazan
+
+Idea & portions of code by Artem Shpynov
+*/
+struct
+{
+	TCHAR *mask;
+	const char *proto;
+}
+static TransportProtoTable[] =
+{
+	{ _T("|icq*|jit*"),      "ICQ"},
+	{ _T("msn*"),            "MSN"},
+	{ _T("yahoo*"),          "YAHOO"},
+	{ _T("mrim*"),           "MRA"},
+	{ _T("aim*"),            "AIM"},
+	//request #3094
+	{ _T("|gg*|gadu*"),      "GaduGadu"},
+	{ _T("tv*"),             "TV"},
+	{ _T("dict*"),           "Dictionary"},
+	{ _T("weather*"),        "Weather"},
+	{ _T("sms*"),            "SMS"},
+	{ _T("smtp*"),           "SMTP"},
+	//j2j
+	{ _T("gtalk.*.*"),       "JGMAIL"},
+	{ _T("xmpp.*.*"),        "Jabber"},
+	//jabbim.cz - services
+	{ _T("disk*"),           "Jabber Disk"},
+	{ _T("irc*"),            "IRC"},
+	{ _T("rss*"),            "RSS"},
+	{ _T("tlen*"),           "Tlen"}
+};
+
+
+static inline TCHAR qtoupper( TCHAR c )
+{
+	return ( c >= 'a' && c <= 'z' ) ? c - 'a' + 'A' : c;
+}
+
+static BOOL WildComparei( const TCHAR* name, const TCHAR* mask )
+{
+	const TCHAR* last='\0';
+	for ( ;; mask++, name++) {
+		if ( *mask != '?' && qtoupper( *mask ) != qtoupper( *name ))
+			break;
+		if ( *name == '\0' )
+			return ((BOOL)!*mask);
+	}
+
+	if ( *mask != '*' )
+		return FALSE;
+
+	for (;; mask++, name++ ) {
+		while( *mask == '*' ) {
+			last = mask++;
+			if ( *mask == '\0' )
+				return ((BOOL)!*mask);   /* true */
+		}
+
+		if ( *name == '\0' )
+			return ((BOOL)!*mask);      /* *mask == EOS */
+		if ( *mask != '?' && qtoupper( *mask ) != qtoupper( *name ))
+			name -= (size_t)(mask - last) - 1, mask = last;
+}	}
+
+#define NEWTSTR_ALLOCA(A) (A==NULL)?NULL:_tcscpy((TCHAR*)alloca(sizeof(TCHAR)*(_tcslen(A)+1)),A)
+
+static BOOL MatchMask( const TCHAR* name, const TCHAR* mask)
+{
+	if ( !mask || !name )
+		return mask == name;
+
+	if ( *mask != '|' )
+		return WildComparei( name, mask );
+
+	TCHAR* temp = NEWTSTR_ALLOCA(mask);
+	for ( int e=1; mask[e] != '\0'; e++ ) {
+		int s = e;
+		while ( mask[e] != '\0' && mask[e] != '|')
+			e++;
+
+		temp[e]= _T('\0');
+		if ( WildComparei( name, temp+s ))
+			return TRUE;
+
+		if ( mask[e] == 0 )
+			return FALSE;
+	}
+
+	return FALSE;
+}
+/*
+End of code block copied from Jabber sources
+*/
+
+const char *GetTransport(HANDLE hContact, const char *proto)
+{
+	if (!DBGetContactSettingByte(hContact, proto, "IsTransported", 0))
+		return NULL;
+
+	DBVARIANT dbv = {0};
+	if (DBGetContactSettingTString(hContact, proto, "Transport", &dbv) != 0)
+		return NULL;
+
+	const TCHAR *domain = dbv.ptszVal;
+	const char *transport = NULL;
+
+	for (int i = 0 ; i < MAX_REGS(TransportProtoTable); i++)
+	{
+		if (MatchMask(domain, TransportProtoTable[i].mask))
+		{
+			transport = TransportProtoTable[i].proto;
+			break;
+		}
+	}
+
+	DBFreeVariant(&dbv);
+	return transport;
+}
+
+
 Module * GetContactModule(HANDLE hContact, const char *proto)
 {
 	if (hContact == NULL)
@@ -2039,14 +2164,10 @@ Module * GetContactModule(HANDLE hContact, const char *proto)
 	// Check for transports
 	if (stricmp("JABBER", protoID) == 0)
 	{
-		DBVARIANT dbv = {0};
-		if (DBGetContactSettingString(hContact, proto, "Transport", &dbv) == 0)
+		const char *transport = GetTransport(hContact, proto);
+		if (transport != NULL)
 		{
-			Module *ret = GetModule(dbv.pszVal);
-
-			DBFreeVariant(&dbv);
-
-			return ret;
+			return GetModule(transport);
 		}
 	}
 
