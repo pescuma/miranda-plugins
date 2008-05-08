@@ -51,7 +51,9 @@ copy ..\..\..\sdk\*.*
 cd ..
 cd ..
 copy ..\Release\%name%.pdb
-copy ..\Unicode_Release\%name%W.pdb
+copy "..\Unicode_Release\%name%W.pdb"
+
+mkdir Plugins
 
 cd Plugins
 copy "..\..\..\..\bin\release unicode\Plugins\%name%W.dll"
