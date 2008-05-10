@@ -2,5 +2,11 @@ History Log
 
 Changelog:
 
+. 0.0.0.2
+  * Fix for multi-line messages (closes #41)
+  + Added new variables to filename (closes #44)
+  + Added option to ident multi-line messages (closes #43)
+  * Fix for invalid chars in msgs filename
+
 . 0.0.0.1
   + Initial version
