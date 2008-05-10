@@ -28,6 +28,7 @@ Boston, MA 02111-1307, USA.
 typedef struct 
 {
 	TCHAR filename_pattern[1024];
+	BYTE ident_multiline_msgs;
 
 } Options;
 
