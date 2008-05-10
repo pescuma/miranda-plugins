@@ -34,9 +34,10 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     LTEXT           "Filename pattern:",IDC_STATIC,5,5,76,11
     EDITTEXT        IDC_FILENAME,87,3,193,14,ES_AUTOHSCROLL
-    LTEXT           "Only log for these protocols:",IDC_STATIC,5,26,282,9
-    CONTROL         "",IDC_PROTOCOLS,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_SORTASCENDING | LVS_NOCOLUMNHEADER | LVS_NOSORTHEADER | WS_BORDER | WS_TABSTOP,13,38,142,55
-    LTEXT           "Only these event types:",IDC_EVENT_TYPES,5,104,272,10
+    LTEXT           "Only log for these protocols:",IDC_STATIC,5,42,275,9
+    CONTROL         "",IDC_PROTOCOLS,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_SORTASCENDING | LVS_NOCOLUMNHEADER | LVS_NOSORTHEADER | WS_BORDER | WS_TABSTOP,13,54,142,55
+    LTEXT           "Only these event types:",IDC_EVENT_TYPES,5,120,275,10
+    CONTROL         "Ident multi-line messages",IDC_IDENT_MULTILINE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,23,275,12
 END
 
 

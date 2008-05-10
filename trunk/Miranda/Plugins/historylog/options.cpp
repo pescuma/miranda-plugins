@@ -1,5 +1,5 @@
 /* 
-Copyright (C) 2006 Ricardo Pescuma Domenecci
+Copyright (C) 2008 Ricardo Pescuma Domenecci
 
 This is free software; you can redistribute it and/or
 modify it under the terms of the GNU Library General Public
@@ -41,8 +41,9 @@ BOOL AllowProtocol(const char *proto)
 
 
 static OptPageControl optionsControls[] = { 
-	{ &opts.filename_pattern,		CONTROL_TEXT,			IDC_FILENAME,	"FilenamePattern",	(DWORD) _T("Log\\%group%\\%contact%.msgs") },
-	{ NULL,							CONTROL_PROTOCOL_LIST,	IDC_PROTOCOLS,	"Enable%s",			TRUE, (int)AllowProtocol }
+	{ &opts.filename_pattern,		CONTROL_TEXT,			IDC_FILENAME,		"FilenamePattern", (DWORD) _T("Log\\%group%\\%contact%.msgs") },
+	{ &opts.ident_multiline_msgs,	CONTROL_CHECKBOX,		IDC_IDENT_MULTILINE,"IdentMultilineMsgs", TRUE },
+	{ NULL,							CONTROL_PROTOCOL_LIST,	IDC_PROTOCOLS,		"Enable%s", TRUE, (int)AllowProtocol }
 };
 
 

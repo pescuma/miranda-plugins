@@ -1,5 +1,5 @@
 /* 
-Copyright (C) 2006 Ricardo Pescuma Domenecci
+Copyright (C) 2008 Ricardo Pescuma Domenecci
 
 This is free software; you can redistribute it and/or
 modify it under the terms of the GNU Library General Public
@@ -31,7 +31,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"History Log",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,0,1),
+	PLUGIN_MAKE_VERSION(0,0,0,2),
 	"Logs history events to disk on the fly",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -252,6 +252,105 @@ int DbEventAdded(WPARAM wParam, LPARAM lParam)
 }
 
 
+int GetUIDFromHContact(HANDLE contact, TCHAR* uinout, size_t uinout_len)
+{
+	CONTACTINFO cinfo;
+
+	ZeroMemory(&cinfo,sizeof(CONTACTINFO));
+	cinfo.cbSize = sizeof(CONTACTINFO);
+	cinfo.hContact = contact;
+	cinfo.dwFlag = CNF_UNIQUEID;
+#ifdef UNICODE
+	cinfo.dwFlag |= CNF_UNICODE;
+#endif
+
+	BOOL found = TRUE;
+	if(CallService(MS_CONTACT_GETCONTACTINFO,0,(LPARAM)&cinfo)==0)
+	{
+		if(cinfo.type == CNFT_ASCIIZ)
+		{
+			lstrcpyn(uinout, cinfo.pszVal, uinout_len);
+			mir_free(cinfo.pszVal);
+		}
+		else if(cinfo.type == CNFT_DWORD)
+		{
+			_itot(cinfo.dVal,uinout,10);
+		}
+		else if(cinfo.type == CNFT_WORD)
+		{
+			_itot(cinfo.wVal,uinout,10);
+		}
+		else found = FALSE;
+	}
+	else found = FALSE;
+
+	if (!found)
+	{
+#ifdef UNICODE
+		// Try non unicode ver
+		cinfo.dwFlag = CNF_UNIQUEID;
+
+		found = TRUE;
+		if(CallService(MS_CONTACT_GETCONTACTINFO,0,(LPARAM)&cinfo)==0)
+		{
+			if(cinfo.type == CNFT_ASCIIZ)
+			{
+				MultiByteToWideChar(CP_ACP, 0, (char *) cinfo.pszVal, -1, uinout, uinout_len);
+				mir_free(cinfo.pszVal);
+			}
+			else if(cinfo.type == CNFT_DWORD)
+			{
+				_itot(cinfo.dVal,uinout,10);
+			}
+			else if(cinfo.type == CNFT_WORD)
+			{
+				_itot(cinfo.wVal,uinout,10);
+			}
+			else found = FALSE;
+		}
+		else found = FALSE;
+
+		if (!found)
+#endif
+			lstrcpy(uinout, TranslateT("Unknown UIN"));
+	}
+	return 0;
+}
+
+
+void GetDateTexts(DWORD timestamp, TCHAR year[16], TCHAR month[16], TCHAR month_name[32], TCHAR day[16])
+{
+	LARGE_INTEGER liFiletime;
+	FILETIME filetime;
+	SYSTEMTIME st;
+	liFiletime.QuadPart=((__int64)11644473600+(__int64)(DWORD)CallService(MS_DB_TIME_TIMESTAMPTOLOCAL, timestamp, 0))*10000000;
+	filetime.dwHighDateTime=liFiletime.HighPart;
+	filetime.dwLowDateTime=liFiletime.LowPart;
+	FileTimeToSystemTime(&filetime,&st);
+
+	GetDateFormat(LOCALE_USER_DEFAULT, 0, &st, _T("yyyy"), year, MAX_REGS(year));
+	GetDateFormat(LOCALE_USER_DEFAULT, 0, &st, _T("MM"), month, MAX_REGS(month));
+	GetDateFormat(LOCALE_USER_DEFAULT, 0, &st, _T("MMMM"), month_name, MAX_REGS(month_name));
+	GetDateFormat(LOCALE_USER_DEFAULT, 0, &st, _T("dd"), day, MAX_REGS(day));
+}
+
+
+TCHAR * GetContactGroup(HANDLE hContact)
+{
+	TCHAR *group = NULL;
+
+	DBVARIANT db = {0};
+	if (DBGetContactSettingTString(hContact, "CList", "Group", &db) == 0)
+	{
+		if (db.ptszVal != NULL)
+			group = mir_tstrdup(db.ptszVal);
+		DBFreeVariant(&db);
+	}
+
+	return group;
+}
+
+
 void ProcessEvent(HANDLE hDbEvent, void *param)
 {
 	HANDLE hContact = (HANDLE) param;
@@ -321,7 +420,28 @@ void ProcessEvent(HANDLE hDbEvent, void *param)
 		text.append(_T(": "));
 	}
 
-	text.append(eventText);
+	size_t spaces = text.len;
+	for(TCHAR *c = eventText; *c != NULL; c++)
+	{
+		if (*c == _T('\r'))
+		{
+			if (*(c+1) == _T('\n'))
+				continue;
+			else
+				*c = _T('\n');
+		}
+		if (*c == _T('\n'))
+		{
+			text.append(_T("\r\n"));
+			if (opts.ident_multiline_msgs)
+				text.appendn(spaces, _T(' '));
+		}
+		else
+		{
+			text.append(*c);
+		}
+	}
+//	text.append(eventText);
 	text.pack();
 
 	char path[1024];
@@ -331,22 +451,40 @@ void ProcessEvent(HANDLE hDbEvent, void *param)
 	filename.append(path);
 	filename.append(_T("\\"));
 
+	TCHAR year[16];
+	TCHAR month[16];
+	TCHAR month_name[32];
+	TCHAR day[16];
+	GetDateTexts(dbe.timestamp, year, month, month_name, day);
+
 	TCHAR *protocol = mir_a2t(proto);
-	TCHAR *group = NULL;
-	DBVARIANT db = {0};
-	if (DBGetContactSettingTString(hContact, "CList", "Group", &db) == 0)
-	{
-		if (db.ptszVal != NULL)
-			group = mir_tstrdup(db.ptszVal);
-		DBFreeVariant(&db);
-	}
+	TCHAR *group = GetContactGroup(hContact);
+
+	TCHAR cid[512];
+	GetUIDFromHContact(hContact, cid, MAX_REGS(cid));
 
 	TCHAR *vars[] = { 
 		_T("group"), group == NULL ? _T("") : group, 
-		_T("protocol"), protocol
+		_T("protocol"), protocol,
+		_T("year"), year,
+		_T("month"), month,
+		_T("month_name"), month_name, 
+		_T("day"), day,
+		_T("contact_id"), cid
 	};
 
 	ReplaceTemplate(&filename, hContact, opts.filename_pattern, vars, MAX_REGS(vars));
+
+	filename.replaceAll(_T('\\'), _T('_'));
+	filename.replaceAll(_T('/'), _T('_'));
+	filename.replaceAll(_T(':'), _T('_'));
+	filename.replaceAll(_T('*'), _T('_'));
+	filename.replaceAll(_T('?'), _T('_'));
+	filename.replaceAll(_T('"'), _T('_'));
+	filename.replaceAll(_T('<'), _T('_'));
+	filename.replaceAll(_T('>'), _T('_'));
+	filename.replaceAll(_T('|'), _T('_'));
+
 	filename.pack();
 
 	// Assert folder exists
@@ -361,11 +499,11 @@ void ProcessEvent(HANDLE hDbEvent, void *param)
 		p = _tcschr(p+1, _T('\\'));
 	}
 
-	FILE *out = _tfopen(filename.str, _T("a"));
+	FILE *out = _tfopen(filename.str, _T("ab"));
 	if (out != NULL)
 	{
 		char *utf = mir_utf8encodeT(text.str);
-		fprintf(out, "%s\n", utf);
+		fprintf(out, "%s\r\n", utf);
 		mir_free(utf);
 		fclose(out);
 	}
