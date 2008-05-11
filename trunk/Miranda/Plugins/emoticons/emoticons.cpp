@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,2,6),
+	PLUGIN_MAKE_VERSION(0,0,2,7),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -141,9 +141,14 @@ DEFINE_GUIDXXX(IID_ITextDocument,0x8CC497C0,0xA1DF,0x11CE,0x80,0x98,
 	GetCaretPos(&__caretPos);													\
     DWORD __old_mask = SendMessage(rec.hwnd, EM_GETEVENTMASK, 0, 0);			\
 	SendMessage(rec.hwnd, EM_SETEVENTMASK, 0, __old_mask & ~ENM_CHANGE);		\
-	BOOL __inverse = (__old_sel.cpMin >= LOWORD(SendMessage(rec.hwnd, EM_CHARFROMPOS, 0, (LPARAM) &__caretPos)))
+	BOOL __inverse = (__old_sel.cpMin >= LOWORD(SendMessage(rec.hwnd, EM_CHARFROMPOS, 0, (LPARAM) &__caretPos)));	\
+	BOOL __ready_only = (GetWindowLong(rec.hwnd, GWL_STYLE) & ES_READONLY);		\
+	if (__ready_only)															\
+		SendMessage(rec.hwnd, EM_SETREADONLY, FALSE, 0)
 
 #define START_RICHEDIT(rec)														\
+	if (__ready_only)															\
+		SendMessage(rec.hwnd, EM_SETREADONLY, TRUE, 0);							\
 	if (__inverse)																\
 	{																			\
 		LONG __tmp = __old_sel.cpMin;											\
@@ -723,8 +728,8 @@ int ReplaceAllEmoticonsBackwards(RichEditCtrl &rec, Contact *contact, Module *mo
 		int dif = ReplaceEmoticonBackwards(rec, contact, module, text, i, start + i, i == len ? next_char : text[i]);
 		if (dif != 0)
 		{
-			FixSelection(__old_sel.cpMax, i, dif);
-			FixSelection(__old_sel.cpMin, i, dif);
+			FixSelection(__old_sel.cpMax, start + i, dif);
+			FixSelection(__old_sel.cpMin, start + i, dif);
 
 			i += dif;
 			ret += dif;
@@ -874,7 +879,7 @@ void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, in
 }
 
 
-int RestoreInput(RichEditCtrl &rec, int start = 0, int end = -1)
+int RestoreRichEdit(RichEditCtrl &rec, int start = 0, int end = -1)
 {
 	int ret = 0;
 
@@ -942,7 +947,7 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_COPY:
 		{
 			STOP_RICHEDIT(dlg->input);
-			__old_sel.cpMax += RestoreInput(dlg->input, __old_sel.cpMin, __old_sel.cpMax);
+			__old_sel.cpMax += RestoreRichEdit(dlg->input, __old_sel.cpMin, __old_sel.cpMax);
 			START_RICHEDIT(dlg->input);
 
 			rebuild = TRUE;
@@ -983,7 +988,7 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			int min = max(0, sel.cpMax - 10);
 
-			int dif = RestoreInput(dlg->input, min, sel.cpMax);
+			int dif = RestoreRichEdit(dlg->input, min, sel.cpMax);
 			if (dif != 0)
 			{
 				FixSelection(__old_sel.cpMax, sel.cpMax, dif);
@@ -1053,18 +1058,70 @@ LRESULT CALLBACK LogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	Dialog *dlg = dlgit->second;
 
+	int rebuild = 0;
+	switch(msg)
+	{
+		case EM_STREAMOUT:
+			if (wParam & SFF_SELECTION)
+				rebuild = 1;
+			else
+				rebuild = 2;
+			break;
+
+		case WM_KEYDOWN:
+			if ((!(GetKeyState(VK_CONTROL) & 0x8000) || (wParam != 'C' && wParam != 'X' && wParam != VK_INSERT))
+				&& (!(GetKeyState(VK_SHIFT) & 0x8000) || wParam != VK_DELETE))
+				break;
+		case WM_CUT:
+		case WM_COPY:
+		{
+			rebuild = 1;
+			break;
+		}
+	}
+
+	CHARRANGE sel = {0, -1};
+	if (rebuild)
+	{
+		STOP_RICHEDIT(dlg->log);
+		if (rebuild == 1)
+		{
+			sel = __old_sel;
+			__old_sel.cpMax += RestoreRichEdit(dlg->log, __old_sel.cpMin, __old_sel.cpMax);
+		}
+		else
+			RestoreRichEdit(dlg->log);
+		START_RICHEDIT(dlg->log);
+	}
+
+	LRESULT ret = CallWindowProc(dlg->log.old_edit_proc, hwnd, msg, wParam, lParam);
+
+	if (rebuild)
+		ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, sel.cpMin, sel.cpMax);
+
+	return ret;
+}
+
+
+LRESULT CALLBACK SRMMLogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	DialogMapType::iterator dlgit = dialogData.find(hwnd);
+	if (dlgit == dialogData.end())
+		return -1;
+
+	Dialog *dlg = dlgit->second;
+
 	int stream_in_pos;
 	if (msg == EM_STREAMIN)
 		stream_in_pos = GetWindowTextLength(dlg->log.hwnd);
 
-	LRESULT ret = CallWindowProc(dlg->log.old_edit_proc, hwnd, msg, wParam, lParam);
+	LRESULT ret = LogProc(hwnd, msg, wParam, lParam);
 
 	if (msg == EM_STREAMIN)
 		ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, stream_in_pos, -1);
 
 	return ret;
 }
-
 
 
 LRESULT CALLBACK OwnerProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -1081,7 +1138,7 @@ LRESULT CALLBACK OwnerProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		STOP_RICHEDIT(dlg->input);
 
-		RestoreInput(dlg->input);
+		RestoreRichEdit(dlg->input);
 
 		START_RICHEDIT(dlg->input);
 	}
@@ -1217,6 +1274,10 @@ int MsgWindowEvent(WPARAM wParam, LPARAM lParam)
 		{
 			ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, 0, -1);
 
+			dlg->log.old_edit_proc = (WNDPROC) SetWindowLong(dlg->log.hwnd, GWL_WNDPROC, (LONG) SRMMLogProc);
+		}
+		else
+		{
 			dlg->log.old_edit_proc = (WNDPROC) SetWindowLong(dlg->log.hwnd, GWL_WNDPROC, (LONG) LogProc);
 		}
 	}
@@ -1232,6 +1293,8 @@ int MsgWindowEvent(WPARAM wParam, LPARAM lParam)
 
 			if (dlg->input.old_edit_proc != NULL)
 				SetWindowLong(dlg->input.hwnd, GWL_WNDPROC, (LONG) dlg->input.old_edit_proc);
+			if (dlg->log.old_edit_proc != NULL)
+				SetWindowLong(dlg->log.hwnd, GWL_WNDPROC, (LONG) dlg->log.old_edit_proc);
 			if (dlg->owner_old_edit_proc != NULL)
 				SetWindowLong(dlg->hwnd_owner, GWL_WNDPROC, (LONG) dlg->owner_old_edit_proc);
 
