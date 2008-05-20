@@ -1,5 +1,5 @@
 /* 
-Copyright (C) 2006 Ricardo Pescuma Domenecci
+Copyright (C) 2008 Ricardo Pescuma Domenecci
 
 This is free software; you can redistribute it and/or
 modify it under the terms of the GNU Library General Public
@@ -48,6 +48,7 @@ Boston, MA 02111-1307, USA.
 #include <m_historyevents.h>
 #include <m_protocols.h>
 #include <m_protosvc.h>
+#include <m_chat.h>
 
 #include "../utils/mir_memory.h"
 #include "../utils/mir_options.h"
@@ -57,6 +58,16 @@ Boston, MA 02111-1307, USA.
 
 #include "resource.h"
 #include "options.h"
+
+
+#define GC_EVENT_HIGHLIGHT		0x1000
+
+
+#define MS_GC_GETEVENTPTR  "GChat/GetNewEventPtr"
+typedef int (*GETEVENTFUNC)(WPARAM wParam, LPARAM lParam);
+typedef struct  {
+	GETEVENTFUNC pfnAddEvent;
+}GCPTRS;
 
 
 #define MODULE_NAME		"HistoryLog"
@@ -75,6 +86,9 @@ extern PLUGINLINK *pluginLink;
 
 BOOL IsEventEnabled(WORD eventType);
 void SetEventEnabled(WORD eventType, BOOL enable);
+
+BOOL IsChatEventEnabled(WORD type);
+void SetChatEventEnabled(WORD type, BOOL enable);
 
 
 #endif // __COMMONS_H__
