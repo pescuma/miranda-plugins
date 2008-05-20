@@ -50,28 +50,28 @@ del /Q *.*
 copy ..\..\..\sdk\*.*
 cd ..
 cd ..
-copy ..\Release\%name%.pdb
-copy "..\Unicode_Release\%name%W.pdb"
+copy ..\Release\aa_%name%.pdb
+copy "..\Unicode_Release\aa_%name%W.pdb"
 
 mkdir Plugins
 
 cd Plugins
-copy "..\..\..\..\bin\release unicode\Plugins\%name%W.dll"
+copy "..\..\..\..\bin\release unicode\Plugins\aa_%name%W.dll"
 cd ..
 
 "C:\Program Files\Filzip\Filzip.exe" -a -rp %name%W.zip Plugins Docs
 
 
 cd Plugins
-del /Q %name%W.dll
-copy "..\..\..\..\bin\release\Plugins\%name%.dll"
+del /Q aa_%name%W.dll
+copy "..\..\..\..\bin\release\Plugins\aa_%name%.dll"
 cd ..
 
 "C:\Program Files\Filzip\Filzip.exe" -a -rp %name%.zip Plugins Docs
 
 "C:\Program Files\Filzip\Filzip.exe" -a -rp %name%_src.zip src\*.*
-"C:\Program Files\Filzip\Filzip.exe" -a -rp %name%.pdb.zip %name%.pdb
-"C:\Program Files\Filzip\Filzip.exe" -a -rp %name%W.pdb.zip %name%W.pdb
+"C:\Program Files\Filzip\Filzip.exe" -a -rp %name%.pdb.zip aa_%name%.pdb
+"C:\Program Files\Filzip\Filzip.exe" -a -rp %name%W.pdb.zip aa_%name%W.pdb
 
 del *.pdb
 rd /S /Q Plugins

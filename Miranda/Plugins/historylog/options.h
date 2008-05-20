@@ -1,5 +1,5 @@
 /* 
-Copyright (C) 2006 Ricardo Pescuma Domenecci
+Copyright (C) 2008 Ricardo Pescuma Domenecci
 
 This is free software; you can redistribute it and/or
 modify it under the terms of the GNU Library General Public
@@ -29,6 +29,9 @@ typedef struct
 {
 	TCHAR filename_pattern[1024];
 	BYTE ident_multiline_msgs;
+
+	TCHAR chat_filename_pattern[1024];
+	BYTE chat_ident_multiline_msgs;
 
 } Options;
 
