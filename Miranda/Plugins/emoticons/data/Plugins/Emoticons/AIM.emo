@@ -3,9 +3,9 @@
 
 [AIM]
 
-"smile" = "Smiling", ":-) :)" 
-"wink" = "Winking", ";-) ;)" 
-"sad" = "Frowning", ":-( :(" 
+"smile" = "Smiling", ":-)" ":)" 
+"wink" = "Winking", ";-)" ";)" 
+"sad" = "Frowning", ":-(" ":(" 
 "tongue" = "Sticking-out-tongue", ":-P" ":-p"
 "shock" = "Surprised", "=-O"
 "kiss" = "Kissing", ":-*", 
