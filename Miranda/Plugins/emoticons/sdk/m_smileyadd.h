@@ -158,6 +158,58 @@ typedef struct
 //lParam = (LPARAM) (SMADD_BATCHPARSERES*) &smgp;  //pointer to SMADD_BATCHPARSERES
 #define MS_SMILEYADD_BATCHFREE "SmileyAdd/BatchFree"
 
+//find smiley in text, API could be called iterativly, on each iteration the remainder 
+//of the string after last smiley processed  
+//wParam = (WPARAM) 0; not used
+//lParam = (LPARAM) (SMADD_PARSE*) &smgp;  //pointer to SMADD_PARSE
+typedef struct 
+{
+	int cbSize;                 //size of the structure
+	const char* Protocolname;	//protocol to use... if you have defined a protocol, u can 
+								//use your own protocol name. Smiley add wil automatically 
+								//select the smileypack that is defined for your protocol.
+								//Or, use "Standard" for standard smiley set. Or "ICQ", "MSN"
+								//if you prefer those icons. 
+								//If not found or NULL: "Standard" will be used
+	char* str;                  //String to parse 
+	HICON SmileyIcon;           //RETURN VALUE: the Icon handle is responsibility of the reciever 
+							    //it must be destroyed with DestroyIcon when not needed.
+	unsigned startChar;         //Starting smiley character 
+								//Because of iterative nature of the API caller should set this 
+								//parameter to correct value
+	unsigned size;              //Number of characters in smiley (0 if not found)
+								//Because of iterative nature of the API caller should set this 
+								//parameter to correct value 
+} SMADD_PARSE;
+
+#define MS_SMILEYADD_PARSE "SmileyAdd/Parse"
+
+//find smiley in text, API could be called iterativly, on each iteration the remainder 
+//of the string after last smiley processed  
+//wParam = (WPARAM) 0; not used
+//lParam = (LPARAM) (SMADD_PARSE*) &smgp;  //pointer to SMADD_PARSE
+typedef struct 
+{
+	int cbSize;                 //size of the structure
+	const char* Protocolname;	//protocol to use... if you have defined a protocol, u can 
+								//use your own protocol name. Smiley add wil automatically 
+								//select the smileypack that is defined for your protocol.
+								//Or, use "Standard" for standard smiley set. Or "ICQ", "MSN"
+								//if you prefer those icons. 
+								//If not found or NULL: "Standard" will be used
+	wchar_t* str;                  //String to parse 
+	HICON SmileyIcon;           //RETURN VALUE: the Icon handle is responsibility of the reciever 
+							    //it must be destroyed with DestroyIcon when not needed.
+	unsigned startChar;         //Starting smiley character 
+								//Because of iterative nature of the API caller should set this 
+								//parameter to correct value
+	unsigned size;              //Number of characters in smiley (0 if not found)
+								//Because of iterative nature of the API caller should set this 
+								//parameter to correct value 
+} SMADD_PARSEW;
+
+#define MS_SMILEYADD_PARSEW "SmileyAdd/ParseW"
+
 typedef struct 
 {
     unsigned cbSize;            //size of the structure

@@ -5,22 +5,22 @@
 
 HBITMAP CreateBitmap32(int cx, int cy)
 {
-   BITMAPINFO RGB32BitsBITMAPINFO; 
-    UINT * ptPixels;
-    HBITMAP DirectBitmap;
+	BITMAPINFO RGB32BitsBITMAPINFO; 
+	UINT * ptPixels;
+	HBITMAP DirectBitmap;
 
-    ZeroMemory(&RGB32BitsBITMAPINFO,sizeof(BITMAPINFO));
-    RGB32BitsBITMAPINFO.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);
-    RGB32BitsBITMAPINFO.bmiHeader.biWidth=cx;//bm.bmWidth;
-    RGB32BitsBITMAPINFO.bmiHeader.biHeight=cy;//bm.bmHeight;
-    RGB32BitsBITMAPINFO.bmiHeader.biPlanes=1;
-    RGB32BitsBITMAPINFO.bmiHeader.biBitCount=32;
+	ZeroMemory(&RGB32BitsBITMAPINFO,sizeof(BITMAPINFO));
+	RGB32BitsBITMAPINFO.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);
+	RGB32BitsBITMAPINFO.bmiHeader.biWidth=cx;//bm.bmWidth;
+	RGB32BitsBITMAPINFO.bmiHeader.biHeight=cy;//bm.bmHeight;
+	RGB32BitsBITMAPINFO.bmiHeader.biPlanes=1;
+	RGB32BitsBITMAPINFO.bmiHeader.biBitCount=32;
 
-    DirectBitmap = CreateDIBSection(NULL, 
-                                    (BITMAPINFO *)&RGB32BitsBITMAPINFO, 
-                                    DIB_RGB_COLORS,
-                                    (void **)&ptPixels, 
-                                    NULL, 0);
+	DirectBitmap = CreateDIBSection(NULL, 
+									(BITMAPINFO *)&RGB32BitsBITMAPINFO, 
+									DIB_RGB_COLORS,
+									(void **)&ptPixels, 
+									NULL, 0);
     return DirectBitmap;
 }
 
