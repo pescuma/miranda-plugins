@@ -50,7 +50,7 @@ HINSTANCE hInst;
 PLUGINLINK *pluginLink;
 
 HANDLE hHooks[4] = {0};
-HANDLE hServices[4] = {0};
+HANDLE hServices[8] = {0};
 HANDLE hChangedEvent;
 HANDLE hNetlibUser = 0;
 
@@ -107,6 +107,10 @@ int ReplaceEmoticonsService(WPARAM wParam, LPARAM lParam);
 int GetInfo2Service(WPARAM wParam, LPARAM lParam);
 int ShowSelectionService(WPARAM wParam, LPARAM lParam);
 int LoadContactSmileysService(WPARAM wParam, LPARAM lParam);
+int BatchParseService(WPARAM wParam, LPARAM lParam);
+int BatchFreeService(WPARAM wParam, LPARAM lParam);
+int ParseService(WPARAM wParam, LPARAM lParam);
+int ParseWService(WPARAM wParam, LPARAM lParam);
 
 TCHAR *GetText(RichEditCtrl &rec, int start, int end);
 const char * GetProtoID(const char *proto);
@@ -415,6 +419,10 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 	hServices[1] = CreateServiceFunction(MS_SMILEYADD_REPLACESMILEYS, ReplaceEmoticonsService);
 	hServices[2] = CreateServiceFunction(MS_SMILEYADD_GETINFO2, GetInfo2Service);
 	hServices[3] = CreateServiceFunction(MS_SMILEYADD_SHOWSELECTION, ShowSelectionService);
+	hServices[4] = CreateServiceFunction(MS_SMILEYADD_BATCHPARSE, BatchParseService);
+	hServices[5] = CreateServiceFunction(MS_SMILEYADD_BATCHFREE, BatchFreeService);
+	hServices[6] = CreateServiceFunction(MS_SMILEYADD_PARSE, ParseService);
+	hServices[7] = CreateServiceFunction(MS_SMILEYADD_PARSEW, ParseWService);
 
 	NETLIBUSER nl_user = {0};
 	nl_user.cbSize = sizeof(nl_user);
@@ -485,9 +493,22 @@ BOOL FileExists(const WCHAR *filename)
 #endif
 
 
-// Return the size difference with the original text
-int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module, TCHAR *text, int text_len, int last_pos, TCHAR next_char)
+struct EmoticonFound
 {
+	char path[1024];
+	int len;
+	TCHAR *text;
+	HBITMAP img;
+};
+
+
+BOOL FindEmoticonBackwards(EmoticonFound &found, Contact *contact, Module *module, TCHAR *text, int text_len, int last_pos, TCHAR next_char)
+{
+	found.path[0] = 0;
+	found.len = -1;
+	found.text = NULL;
+	found.img = NULL;
+
 	// Check if it is an URL
 	for (int j = 0; j < MAX_REGS(webs); j++)
 	{
@@ -497,13 +518,10 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 			continue;
 
 		if (_tcsncmp(&text[text_len - len], txt, len) == 0) 
-			return 0;
+			return FALSE;
 	}
 
 	// This are needed to allow 2 different emoticons that end the same way
-	char found_path[1024];
-	int found_len = -1;
-	TCHAR *found_text;
 
 	// Replace normal emoticons
 	if (!opts.only_replace_isolated || next_char == _T('\0') || _istspace(next_char))
@@ -519,7 +537,7 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 				if (last_pos < len || text_len < len)
 					continue;
 
-				if (len <= found_len)
+				if (len <= found.len)
 					continue;
 
 				if (_tcsncmp(&text[text_len - len], txt, len) != 0)
@@ -530,11 +548,18 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 					continue;
 
 				if (e->img == NULL)
-					found_path[0] = '\0';
+					found.path[0] = '\0';
 				else
-					mir_snprintf(found_path, MAX_REGS(found_path), "%s\\%s", e->img->pack->path, e->img->relPath);
-				found_len = len;
-				found_text = txt;
+					mir_snprintf(found.path, MAX_REGS(found.path), "%s\\%s", e->img->pack->path, e->img->relPath);
+
+				found.len = len;
+				found.text = txt;
+
+				if (e->img != NULL)
+				{
+					e->img->Load();
+					found.img = e->img->img;
+				}
 			}
 		}
 	}
@@ -551,76 +576,184 @@ int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module
 			if (last_pos < len || text_len < len)
 				continue;
 
-			if (len <= found_len)
+			if (len <= found.len)
 				continue;
 
 			if (_tcsncmp(&text[text_len - len], txt, len) != 0)
 				continue;
 
-			mir_snprintf(found_path, MAX_REGS(found_path), "%s", e->path);
-			found_len = len;
-			found_text = txt;
+			mir_snprintf(found.path, MAX_REGS(found.path), "%s", e->path);
+			found.len = len;
+			found.text = txt;
 		}
 	}
 
+	return (found.len > 0 && found.path[0] != '\0');
+}
+
+
+BOOL FindEmoticonForwards(EmoticonFound &found, Contact *contact, Module *module, TCHAR *text, int text_len, int pos)
+{
+	if (pos >= text_len)
+		return FALSE;
+
+	found.path[0] = 0;
+	found.len = -1;
+	found.text = NULL;
+	found.img = NULL;
+
+	// Check if it is an URL
+	for (int j = 0; j < MAX_REGS(webs); j++)
+	{
+		TCHAR *txt = webs[j];
+		int len = lstrlen(txt);
+		if (pos + 2 >= len)
+			if (_tcsncmp(&text[pos + 2 - len], txt, len) == 0) 
+				return FALSE;
+		if (pos + 1 >= len)
+			if (_tcsncmp(&text[pos + 1 - len], txt, len) == 0) 
+				return FALSE;
+	}
+
+	// Lets shit text to current pos
+	TCHAR prev_char = (pos == 0 ? _T('\0') : text[pos - 1]);
+	text = &text[pos];
+	text_len -= pos;
+
+	// This are needed to allow 2 different emoticons that end the same way
+
+	// Replace normal emoticons
+	if (!opts.only_replace_isolated || prev_char == _T('\0') || _istspace(prev_char))
+	{	
+		for(int i = 0; i < module->emoticons.getCount(); i++)
+		{
+			Emoticon *e = module->emoticons[i];
+
+			for(int j = 0; j < e->texts.getCount(); j++)
+			{
+				TCHAR *txt = e->texts[j];
+				int len = lstrlen(txt);
+				if (text_len < len)
+					continue;
+
+				if (len <= found.len)
+					continue;
+
+				if (_tcsncmp(text, txt, len) != 0)
+					continue;
+
+				if (opts.only_replace_isolated && text_len > len && !_istspace(text[len]))
+					continue;
+
+				if (e->img == NULL)
+					found.path[0] = '\0';
+				else
+					mir_snprintf(found.path, MAX_REGS(found.path), "%s\\%s", e->img->pack->path, e->img->relPath);
+
+				found.len = len;
+				found.text = txt;
+
+				if (e->img != NULL)
+				{
+					e->img->Load();
+					found.img = e->img->img;
+				}
+			}
+		}
+	}
+
+	// Replace custom smileys
+	if (contact != NULL && opts.enable_custom_smileys)
+	{
+		for(int i = 0; i < contact->emoticons.getCount(); i++)
+		{
+			CustomEmoticon *e = contact->emoticons[i];
+
+			TCHAR *txt = e->text;
+			int len = lstrlen(txt);
+			if (text_len < len)
+				continue;
+
+			if (len <= found.len)
+				continue;
+
+			if (_tcsncmp(text, txt, len) != 0)
+				continue;
+
+			mir_snprintf(found.path, MAX_REGS(found.path), "%s", e->path);
+			found.len = len;
+			found.text = txt;
+		}
+	}
+
+	return (found.len > 0 && found.path[0] != '\0');
+}
+
+
+// Return the size difference with the original text
+int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module, TCHAR *text, int text_len, int last_pos, TCHAR next_char)
+{
+	EmoticonFound found;
+
+	if (!FindEmoticonBackwards(found, contact, module, text, text_len, last_pos, next_char))
+		return 0;
+
+
 	int ret = 0;
 
-	if (found_len > 0 && found_path[0] != '\0')
+	// Found ya
+	CHARRANGE sel = { last_pos - found.len, last_pos };
+	SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
+
+	if (has_anismiley)
 	{
-		// Found ya
-		CHARRANGE sel = { last_pos - found_len, last_pos };
-		SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
+		CHARFORMAT2 cf;
+		memset(&cf, 0, sizeof(CHARFORMAT2));
+		cf.cbSize = sizeof(CHARFORMAT2);
+		cf.dwMask = CFM_BACKCOLOR;
+		SendMessage(rec.hwnd, EM_GETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf);
 
-		if (has_anismiley)
+		if (cf.dwEffects & CFE_AUTOBACKCOLOR)
 		{
-			CHARFORMAT2 cf;
-			memset(&cf, 0, sizeof(CHARFORMAT2));
-			cf.cbSize = sizeof(CHARFORMAT2);
-			cf.dwMask = CFM_BACKCOLOR;
-			SendMessage(rec.hwnd, EM_GETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf);
-
-			if (cf.dwEffects & CFE_AUTOBACKCOLOR)
-			{
-				cf.crBackColor = SendMessage(rec.hwnd, EM_SETBKGNDCOLOR, 0, GetSysColor(COLOR_WINDOW));
-				SendMessage(rec.hwnd, EM_SETBKGNDCOLOR, 0, cf.crBackColor);
-			}
-
-			TCHAR *path = mir_a2t(found_path);
-			if (InsertAnimatedSmiley(rec.hwnd, path, cf.crBackColor, 0 , found_text))
-			{
-				ret = - found_len + 1;
-			}
-			MIR_FREE(path);
+			cf.crBackColor = SendMessage(rec.hwnd, EM_SETBKGNDCOLOR, 0, GetSysColor(COLOR_WINDOW));
+			SendMessage(rec.hwnd, EM_SETBKGNDCOLOR, 0, cf.crBackColor);
 		}
-		else
+
+		TCHAR *path = mir_a2t(found.path);
+		if (InsertAnimatedSmiley(rec.hwnd, path, cf.crBackColor, 0 , found.text))
 		{
-			OleImage *img = new OleImage(found_path, found_text, found_text);
-			if (!img->isValid())
-			{
-				delete img;
-				return 0;
-			}
-
-			IOleClientSite *clientSite; 
-			rec.ole->GetClientSite(&clientSite);
-
-			REOBJECT reobject = {0};
-			reobject.cbStruct = sizeof(REOBJECT);
-			reobject.cp = REO_CP_SELECTION;
-			reobject.dvaspect = DVASPECT_CONTENT;
-			reobject.poleobj = img;
-			reobject.polesite = clientSite;
-			reobject.dwFlags = REO_BELOWBASELINE; // | REO_DYNAMICSIZE;
-
-			if (rec.ole->InsertObject(&reobject) == S_OK)
-			{
-				img->SetClientSite(clientSite);
-				ret = - found_len + 1;
-			}
-
-			clientSite->Release();
-			img->Release();
+			ret = - found.len + 1;
 		}
+		MIR_FREE(path);
+	}
+	else
+	{
+		OleImage *img = new OleImage(found.path, found.text, found.text);
+		if (!img->isValid())
+		{
+			delete img;
+			return 0;
+		}
+
+		IOleClientSite *clientSite; 
+		rec.ole->GetClientSite(&clientSite);
+
+		REOBJECT reobject = {0};
+		reobject.cbStruct = sizeof(REOBJECT);
+		reobject.cp = REO_CP_SELECTION;
+		reobject.dvaspect = DVASPECT_CONTENT;
+		reobject.poleobj = img;
+		reobject.polesite = clientSite;
+		reobject.dwFlags = REO_BELOWBASELINE; // | REO_DYNAMICSIZE;
+
+		if (rec.ole->InsertObject(&reobject) == S_OK)
+		{
+			img->SetClientSite(clientSite);
+			ret = - found.len + 1;
+		}
+
+		clientSite->Release();
+		img->Release();
 	}
 
 	return ret;
@@ -1386,9 +1519,9 @@ void LoadModules()
 }
 
 
-void HandleEmoLine(Module *m, char *tmp, char *group)
+void HandleEmoLine(Module *m, TCHAR *line, char *group)
 {
-	int len = strlen(tmp);
+	int len = lstrlen(line);
 	int state = 0;
 	int pos;
 
@@ -1396,16 +1529,16 @@ void HandleEmoLine(Module *m, char *tmp, char *group)
 
 	for(int i = 0; i < len; i++)
 	{
-		char c = tmp[i];
-		if (c == ' ')
+		TCHAR c = line[i];
+		if (c == _T(' '))
 			continue;
 
 		if ((state % 2) == 0)
 		{
-			if (c == '#')
+			if (c == _T('#'))
 				break;
 
-			if (c != '"')
+			if (c != _T('"'))
 				continue;
 
 			state ++;
@@ -1413,21 +1546,20 @@ void HandleEmoLine(Module *m, char *tmp, char *group)
 		}
 		else
 		{
-			if (c == '\\')
+			if (c == _T('\\'))
 			{
 				i++;
 				continue;
 			}
-			if (c != '"')
+			if (c != _T('"'))
 				continue;
 
-			tmp[i] = 0;
-			TCHAR *txt = mir_a2t(&tmp[pos]);
-			char *atxt = &tmp[pos];
+			line[i] = 0;
+			TCHAR *txt = &line[pos];
 
 			for(int j = 0, orig = 0; j <= i - pos; j++)
 			{
-				if (txt[j] == '\\')
+				if (txt[j] == _T('\\'))
 					j++;
 				txt[orig] = txt[j];
 				orig++;
@@ -1440,16 +1572,14 @@ void HandleEmoLine(Module *m, char *tmp, char *group)
 					e = new Emoticon();
 					e->name = mir_t2a(txt);
 					e->group = group;
-					MIR_FREE(txt);
 					break;
 				case 3: 
-					e->description = txt; 
+					e->description = mir_tstrdup(txt); 
 					break;
 				case 5: 
 					if (strncmp(e->name, "service_", 8) == 0)
 					{
-						MIR_FREE(txt); // Not needed
-
+						char *atxt = mir_t2a(txt);
 						int len = strlen(atxt);
 
 						// Is a service
@@ -1497,9 +1627,11 @@ void HandleEmoLine(Module *m, char *tmp, char *group)
 								params = pos + 1;
 							}
 						}
+
+						MIR_FREE(atxt)
 					}
 					else
-						e->texts.insert(txt); 
+						e->texts.insert(mir_tstrdup(txt)); 
 					break;
 			}
 
@@ -1590,7 +1722,17 @@ BOOL LoadModule(Module *m)
 			}
 			else
 			{
-				HandleEmoLine(m, tmp, group);
+#ifdef _UNICODE
+				TCHAR *text = mir_utf8decodeW(tmp);
+#else
+				TCHAR *text = mir_utf8decode(tmp, NULL);
+#endif
+
+				HandleEmoLine(m, text, group);
+
+#ifdef _UNICODE
+				mir_free(text);
+#endif
 			}
 
 			pos = 0;
@@ -2735,6 +2877,14 @@ err:
 	}
 }
 
+
+void EmoticonImage::Load()
+{
+	int max_height, max_width;
+	Load(max_height, max_width);
+}
+
+
 void EmoticonImage::Load(int &max_height, int &max_width)
 {
 	if (img != NULL)
@@ -3241,3 +3391,322 @@ int DefaultMetaChanged(WPARAM wParam, LPARAM lParam)
 
 	return 0;
 }
+
+
+HBITMAP CopyBitmapTo32(HBITMAP hBitmap)
+{
+	BITMAPINFO RGB32BitsBITMAPINFO; 
+	BYTE * ptPixels;
+	HBITMAP hDirectBitmap;
+
+	BITMAP bmp;
+	DWORD dwLen;
+	BYTE *p;
+
+	GetObject(hBitmap, sizeof(bmp), &bmp);
+
+	dwLen = bmp.bmWidth * bmp.bmHeight * 4;
+	p = (BYTE *)malloc(dwLen);
+	if (p == NULL)
+		return NULL;
+
+	// Create bitmap
+	ZeroMemory(&RGB32BitsBITMAPINFO, sizeof(BITMAPINFO));
+	RGB32BitsBITMAPINFO.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	RGB32BitsBITMAPINFO.bmiHeader.biWidth = bmp.bmWidth;
+	RGB32BitsBITMAPINFO.bmiHeader.biHeight = bmp.bmHeight;
+	RGB32BitsBITMAPINFO.bmiHeader.biPlanes = 1;
+	RGB32BitsBITMAPINFO.bmiHeader.biBitCount = 32;
+
+	hDirectBitmap = CreateDIBSection(NULL, 
+									(BITMAPINFO *)&RGB32BitsBITMAPINFO, 
+									DIB_RGB_COLORS,
+									(void **)&ptPixels, 
+									NULL, 0);
+
+	// Copy data
+	if (bmp.bmBitsPixel != 32)
+	{
+		HDC hdcOrig, hdcDest;
+		HBITMAP oldOrig, oldDest;
+		
+		hdcOrig = CreateCompatibleDC(NULL);
+		oldOrig = (HBITMAP) SelectObject(hdcOrig, hBitmap);
+
+		hdcDest = CreateCompatibleDC(NULL);
+		oldDest = (HBITMAP) SelectObject(hdcDest, hDirectBitmap);
+
+		BitBlt(hdcDest, 0, 0, bmp.bmWidth, bmp.bmHeight, hdcOrig, 0, 0, SRCCOPY);
+
+		SelectObject(hdcDest, oldDest);
+		DeleteObject(hdcDest);
+		SelectObject(hdcOrig, oldOrig);
+		DeleteObject(hdcOrig);
+
+		// Set alpha
+		fei->FI_CorrectBitmap32Alpha(hDirectBitmap, FALSE);
+	}
+	else
+	{
+		GetBitmapBits(hBitmap, dwLen, p);
+		SetBitmapBits(hDirectBitmap, dwLen, p);
+	}
+
+	free(p);
+
+	return hDirectBitmap;
+}
+
+
+HICON CopyToIcon(HBITMAP hOrigBitmap)
+{
+	HICON hIcon = NULL;
+	HBITMAP hColor = NULL;
+	HBITMAP hMask = NULL;
+	DWORD dwLen;
+	BYTE *p = NULL;
+	BYTE *maskBits = NULL;
+	BYTE *colorBits = NULL;
+
+	BITMAP bmp;
+	GetObject(hOrigBitmap, sizeof(bmp), &bmp);
+
+	HBITMAP hBitmap;
+	BOOL transp;
+	if (bmp.bmBitsPixel == 32)
+	{
+		hBitmap = hOrigBitmap;
+		transp = TRUE;
+	}
+	else
+	{
+		hBitmap = CopyBitmapTo32(hOrigBitmap);
+		GetObject(hBitmap, sizeof(bmp), &bmp);
+		transp = FALSE;
+	}
+
+
+	hColor = CreateBitmap32(bmp.bmWidth, bmp.bmHeight);
+	if (hColor == NULL)
+		goto ERR;
+
+	hMask = CreateBitmap32(bmp.bmWidth, bmp.bmHeight);
+	if (hMask == NULL)
+		goto ERR;
+
+	dwLen = bmp.bmWidth * bmp.bmHeight * 4;
+
+	p = (BYTE *)malloc(dwLen);
+	if (p == NULL)
+		goto ERR;
+	maskBits = (BYTE *)malloc(dwLen);
+	if (maskBits == NULL)
+		goto ERR;
+	colorBits = (BYTE *)malloc(dwLen);
+	if (colorBits == NULL)
+		goto ERR;
+	
+	{
+		GetBitmapBits(hBitmap, dwLen, p);
+		GetBitmapBits(hColor, dwLen, maskBits);
+		GetBitmapBits(hMask, dwLen, colorBits);
+
+		for (int y = 0; y < bmp.bmHeight; ++y) 
+		{
+			int shift = bmp.bmWidth * 4 * y;
+			BYTE *px = p + shift;
+			BYTE *mask = maskBits + shift;
+			BYTE *color = colorBits + shift;
+
+			for (int x = 0; x < bmp.bmWidth; ++x) 
+			{
+				if (transp)
+				{
+					for(int i = 0; i < 4; i++)
+					{
+						mask[i] = px[3];
+						color[i] = px[i];
+					}
+				}
+				else
+				{
+					for(int i = 0; i < 3; i++)
+					{
+						mask[i] = 255;
+						color[i] = px[i];
+					}
+					mask[3] = color[3] = 255;
+				}
+
+				px += 4;
+				mask += 4;
+				color += 4;
+			}
+		}
+
+		SetBitmapBits(hColor, dwLen, colorBits);
+		SetBitmapBits(hMask, dwLen, maskBits);
+
+
+		ICONINFO ii = {0};
+		ii.fIcon = TRUE;
+		ii.hbmColor = hColor;
+		ii.hbmMask = hMask;
+
+		hIcon = CreateIconIndirect(&ii);
+	}
+
+ERR:
+	if (hMask != NULL)
+		DeleteObject(hMask);
+	if (hColor != NULL)
+		DeleteObject(hColor);
+
+	if (p != NULL)
+		free(p);
+	if (maskBits != NULL)
+		free(maskBits);
+	if (colorBits != NULL)
+		free(colorBits);
+
+	if (hBitmap != hOrigBitmap)
+		DeleteObject(hBitmap);
+
+	return hIcon;
+}
+
+
+int ParseService(SMADD_PARSE *sp, BOOL unicode)
+{
+	int start = sp->startChar + sp->size;
+
+	sp->size = 0;
+
+	TCHAR *text;
+	if (unicode)
+		text = mir_u2t((WCHAR *) sp->str);
+	else
+		text = mir_a2t(sp->str);
+	int len = lstrlen(text);
+
+	Module *module = GetModule(sp->Protocolname);
+
+	if (start >= len || start < 0)
+		return -1;
+
+	EmoticonFound found;
+	for(int i = start; i < len; i++)
+	{
+		if (!FindEmoticonForwards(found, NULL, module, text, len, i))
+			continue;
+
+		if (found.img == NULL)
+			continue; // TODO
+
+		sp->SmileyIcon = CopyToIcon(found.img);
+		if (sp->SmileyIcon == NULL)
+			continue;
+
+		sp->startChar = i;
+		sp->size = found.len;
+
+		break;
+	}
+
+	mir_free(text);
+
+	return 0;
+}
+
+
+int ParseService(WPARAM wParam, LPARAM lParam)
+{
+	SMADD_PARSE *sp = (SMADD_PARSE *) lParam;
+	if (sp == NULL || sp->cbSize < sizeof(SMADD_PARSE) || sp->str == NULL)
+		return -1;
+
+	return ParseService(sp, FALSE);
+}
+
+
+int ParseWService(WPARAM wParam, LPARAM lParam)
+{
+	SMADD_PARSEW *sp = (SMADD_PARSEW *) lParam;
+	if (sp == NULL || sp->cbSize < sizeof(SMADD_PARSEW) || sp->str == NULL)
+		return -1;
+
+	return ParseService((SMADD_PARSE *) sp, TRUE);
+}
+
+
+
+int BatchParseService(WPARAM wParam, LPARAM lParam)
+{
+	SMADD_BATCHPARSE2 *bp = (SMADD_BATCHPARSE2 *) lParam;
+	if (bp == NULL || bp->cbSize < sizeof(SMADD_BATCHPARSE2) || bp->str == NULL)
+		return NULL;
+
+	Buffer<SMADD_BATCHPARSERES> ret;
+
+	BOOL path = (bp->flag & SAFL_PATH);
+	BOOL unicode = (bp->flag & SAFL_UNICODE);
+
+	TCHAR *text;
+	if (unicode)
+		text = mir_u2t(bp->wstr);
+	else
+		text = mir_a2t(bp->astr);
+	int len = lstrlen(text);
+
+	Contact *contact = GetContact(bp->hContact);
+	Module *module = GetContactModule(bp->hContact, bp->Protocolname);
+
+	EmoticonFound found;
+	int count = 0;
+	for(int i = 0; i < len; i++)
+	{
+		if (!FindEmoticonForwards(found, contact, module, text, len, i))
+			continue;
+
+		SMADD_BATCHPARSERES res = {0};
+		res.startChar = i;
+		res.size = found.len;
+
+		if (path)
+		{
+			if (unicode)
+				res.wfilepath = mir_a2u(found.path);
+			else
+				res.afilepath = mir_strdup(found.path);
+		}
+		else
+		{
+			if (found.img == NULL)
+				continue; // TODO
+
+			res.hIcon = CopyToIcon(found.img);
+
+			if (res.hIcon == NULL)
+				continue;
+		}
+
+		ret.append(res);
+	}
+
+	bp->numSmileys = ret.len;
+	bp->oflag = bp->flag;
+
+	mir_free(text);
+
+	return (int) ret.detach();
+}
+
+
+int BatchFreeService(WPARAM wParam, LPARAM lParam)
+{
+	mir_free((void *) lParam);
+
+	return 0;
+}
+
+
