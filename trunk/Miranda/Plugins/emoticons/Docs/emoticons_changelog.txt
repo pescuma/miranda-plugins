@@ -2,6 +2,10 @@ Emoticons
 
 Changelog:
 
+. 0.0.2.8
+  * Fix for AIM smileys
+  + Added support for IEView and Clist Modern
+
 . 0.0.2.7
   * Fix to copy emoticons from message log (closes issue 39)
 

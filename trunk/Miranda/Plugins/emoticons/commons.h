@@ -119,6 +119,7 @@ struct EmoticonImage
 	~EmoticonImage();
 
 	void Download();
+	void Load();
 	void Load(int &max_height, int &max_width);
 	void Release();
 	BOOL isAvaiable();
