@@ -2,6 +2,9 @@ Emoticons
 
 Changelog:
 
+. 0.0.2.9
+  * Fix for crash
+
 . 0.0.2.8
   * Fix for AIM smileys
   + Added support for IEView and Clist Modern
