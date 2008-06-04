@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,2,7),
+	PLUGIN_MAKE_VERSION(0,0,2,9),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -2198,6 +2198,9 @@ EmoticonPack *GetPack(char *name)
 
 Module *GetModuleByName(const char *name)
 {
+	if (name == NULL)
+		return NULL;
+
 	Module *ret = NULL;
 	for(int i = 0; i < modules.getCount(); i++) 
 	{
@@ -3591,7 +3594,7 @@ int ParseService(SMADD_PARSE *sp, BOOL unicode)
 
 	Module *module = GetModule(sp->Protocolname);
 
-	if (start >= len || start < 0)
+	if (start >= len || start < 0 || module == NULL)
 		return -1;
 
 	EmoticonFound found;
@@ -3646,6 +3649,12 @@ int BatchParseService(WPARAM wParam, LPARAM lParam)
 	if (bp == NULL || bp->cbSize < sizeof(SMADD_BATCHPARSE2) || bp->str == NULL)
 		return NULL;
 
+	Contact *contact = GetContact(bp->hContact);
+	Module *module = GetContactModule(bp->hContact, bp->Protocolname);
+
+	if (module == NULL)
+		return NULL;
+
 	Buffer<SMADD_BATCHPARSERES> ret;
 
 	BOOL path = (bp->flag & SAFL_PATH);
@@ -3657,9 +3666,6 @@ int BatchParseService(WPARAM wParam, LPARAM lParam)
 	else
 		text = mir_a2t(bp->astr);
 	int len = lstrlen(text);
-
-	Contact *contact = GetContact(bp->hContact);
-	Module *module = GetContactModule(bp->hContact, bp->Protocolname);
 
 	EmoticonFound found;
 	int count = 0;
