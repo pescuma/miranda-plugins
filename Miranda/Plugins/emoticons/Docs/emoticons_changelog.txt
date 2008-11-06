@@ -2,6 +2,11 @@ Emoticons
 
 Changelog:
 
+. 0.0.2.10
+  * Better handling of text in input area
+  * Fixed handling of URLs
+  + Added initial version of Tlen
+
 . 0.0.2.9
   * Fix for crash
 
