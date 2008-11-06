@@ -130,7 +130,7 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 				pd->max_height = 0;
 				pd->max_width = 0;
 				srand((unsigned int) time(NULL));
-				int prob = (pd->pack->images.getCount() - 15) / 10 + 1;
+				int prob = (pd->pack->images.getCount() - 15) / 20 + 1;
 				for(int j = 0, count = 0; j < pd->pack->images.getCount() && count < 15; j++) {
 					if (rand() % prob != 0)
 						continue;
