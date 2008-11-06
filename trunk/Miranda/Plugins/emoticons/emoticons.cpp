@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,2,9),
+	PLUGIN_MAKE_VERSION(0,0,2,10),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -169,6 +169,7 @@ DEFINE_GUIDXXX(IID_ITextDocument,0x8CC497C0,0xA1DF,0x11CE,0x80,0x98,
 
 static TCHAR *webs[] = { 
 	_T("http:/"), 
+	_T("https:/"), 
 	_T("ftp:/"), 
 	_T("irc:/"), 
 	_T("gopher:/"), 
@@ -178,6 +179,11 @@ static TCHAR *webs[] = {
 	_T("ftp."),
 	_T("irc.")
 };
+
+
+static TCHAR *urlChars = _T("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789:/?&=%._-");
+
+
 
 
 // Functions ////////////////////////////////////////////////////////////////////////////
@@ -236,6 +242,38 @@ extern "C" int __declspec(dllexport) Unload(void)
 {
 	return 0;
 }
+
+
+BOOL isURL(TCHAR *text, int text_len)
+{
+	for (int j = 0; j < MAX_REGS(webs); j++)
+	{
+		TCHAR *txt = webs[j];
+		int len = lstrlen(txt);
+
+		if (text_len < len)
+			continue;
+
+		if (_tcsncmp(text, txt, len) != 0)
+			continue;
+
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+
+int findURLEnd(TCHAR *text, int text_len)
+{
+	int i;
+	for(i = 0; i < text_len; i++)
+		if (_tcschr(urlChars, text[i]) == NULL)
+			break;
+	return i;
+}
+
+
 
 COLORREF GetSRMMColor(char *tabsrmm, char *scriver, COLORREF def)
 {
@@ -602,19 +640,6 @@ BOOL FindEmoticonForwards(EmoticonFound &found, Contact *contact, Module *module
 	found.text = NULL;
 	found.img = NULL;
 
-	// Check if it is an URL
-	for (int j = 0; j < MAX_REGS(webs); j++)
-	{
-		TCHAR *txt = webs[j];
-		int len = lstrlen(txt);
-		if (pos + 2 >= len)
-			if (_tcsncmp(&text[pos + 2 - len], txt, len) == 0) 
-				return FALSE;
-		if (pos + 1 >= len)
-			if (_tcsncmp(&text[pos + 1 - len], txt, len) == 0) 
-				return FALSE;
-	}
-
 	// Lets shit text to current pos
 	TCHAR prev_char = (pos == 0 ? _T('\0') : text[pos - 1]);
 	text = &text[pos];
@@ -690,19 +715,12 @@ BOOL FindEmoticonForwards(EmoticonFound &found, Contact *contact, Module *module
 }
 
 
-// Return the size difference with the original text
-int ReplaceEmoticonBackwards(RichEditCtrl &rec, Contact *contact, Module *module, TCHAR *text, int text_len, int last_pos, TCHAR next_char)
+int ReplaceEmoticon(RichEditCtrl &rec, int pos, EmoticonFound &found)
 {
-	EmoticonFound found;
-
-	if (!FindEmoticonBackwards(found, contact, module, text, text_len, last_pos, next_char))
-		return 0;
-
-
 	int ret = 0;
 
 	// Found ya
-	CHARRANGE sel = { last_pos - found.len, last_pos };
+	CHARRANGE sel = { pos, pos + found.len };
 	SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
 
 	if (has_anismiley)
@@ -853,166 +871,56 @@ BOOL IsHidden(RichEditCtrl &rec, int start, int end)
 }
 
 
-int ReplaceAllEmoticonsBackwards(RichEditCtrl &rec, Contact *contact, Module *module, TCHAR *text, int len, TCHAR next_char, int start, CHARRANGE &__old_sel)
+void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, TCHAR *text, int len, int start, CHARRANGE &__old_sel)
 {
-	int ret = 0;
-	for(int i = len; i > 0; i--)
+	int diff = 0;
+	for(int i = 0; i < len; i++)
 	{
-		int dif = ReplaceEmoticonBackwards(rec, contact, module, text, i, start + i, i == len ? next_char : text[i]);
-		if (dif != 0)
+		if (isURL(&text[i], len - i))
 		{
-			FixSelection(__old_sel.cpMax, start + i, dif);
-			FixSelection(__old_sel.cpMin, start + i, dif);
+			i += findURLEnd(&text[i], len - i) - 1;
+			continue;
+		}
 
-			i += dif;
-			ret += dif;
+		EmoticonFound found;
+		if (!FindEmoticonForwards(found, contact, module, text, len, i))
+			continue;
+
+		if (found.img == NULL)
+			continue;
+
+		int pos = start + i + diff;
+
+		int this_dif = ReplaceEmoticon(rec, pos, found);
+		if (this_dif != 0)
+		{
+			FixSelection(__old_sel.cpMax, pos + found.len, this_dif);
+			FixSelection(__old_sel.cpMin, pos + found.len, this_dif);
+
+			diff += this_dif;
+
+			i += found.len - 1;
 		}
 	}
-	return ret;
 }
 
 
-int ReplaceAllEmoticonsBackwards(RichEditCtrl &rec, Contact *contact, Module *module)
-{
-	int ret;
-
-	STOP_RICHEDIT(rec);
-
-	TCHAR *text = GetText(rec, 0, -1);
-	int len = lstrlen(text);
-
-	ret = ReplaceAllEmoticonsBackwards(rec, contact, module, text, len, _T('\0'), 0, __old_sel);
-
-	MIR_FREE(text);
-
-	START_RICHEDIT(rec);
-
-	return ret;
-}
-
-
-int matches(const TCHAR *tag, const TCHAR *text)
-{
-	int len = lstrlen(tag);
-	if (_tcsncmp(tag, text, len) == 0)
-		return len;
-	else
-		return 0;
-}
-
-
-void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, int start, int end)
+void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, int start = 0, int end = -1)
 {
 	STOP_RICHEDIT(rec);
-
-	if (start < 0)
-		start = 0;
 
 	TCHAR *text = GetText(rec, start, end);
 	int len = lstrlen(text);
 
-	int diff = 0;
-	int last_start_pos = 0;
-	BOOL replace = TRUE;
-	HANDLE hContact = (contact == NULL ? NULL : contact->hContact);
-	for(int i = 0; i <= len; i++)
-	{
-		int tl;
-		if (replace)
-		{
-			if (i == 0 || !_istalnum(text[i - 1]))
-			{
-				for (int j = 0; j < MAX_REGS(webs); j++)
-				{
-					if (tl = matches(webs[j], &text[i]))
-					{
-						diff += ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], i - last_start_pos, _T('\0'), start + last_start_pos + diff, __old_sel);
+	ReplaceAllEmoticons(rec, contact, module, text, len, start, __old_sel);
 
-						i += tl;
-						
-						for(;  (text[i] >= _T('a') && text[i] <= _T('z'))
-							|| (text[i] >= _T('A') && text[i] <= _T('Z'))
-							|| (text[i] >= _T('0') && text[i] <= _T('9'))
-							|| text[i] == _T('.') || text[i] == _T('/')
-							|| text[i] == _T('?') || text[i] == _T('_')
-							|| text[i] == _T('=') || text[i] == _T('&')
-							|| text[i] == _T('%') || text[i] == _T('-')
-							; i++) ;
-
-						last_start_pos = i;
-					}
-				}
-			}
-		}
-
-		if (tl = matches(_T("<no-emoticon>"), &text[i]))
-		{
-			if (IsHidden(rec, start + i, start + i + tl))
-			{
-				diff += ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], i - last_start_pos, _T('\0'), start + last_start_pos + diff, __old_sel);
-
-				replace = FALSE;
-				i += tl - 1;
-			}
-			continue;
-		}
-
-		if (tl = matches(_T("</no-emoticon>"), &text[i]))
-		{
-			if (IsHidden(rec, start + i, start + i + tl))
-			{
-				replace = TRUE; 
-				i += tl - 1;
-				last_start_pos = i + 1;
-			}
-			continue;
-		}
-
-		if (tl = matches(_T("</emoticon-contact>"), &text[i]))
-		{
-			if (IsHidden(rec, start + i, start + i + tl))
-			{
-				diff += ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], i - last_start_pos, _T('\0'), start + last_start_pos + diff, __old_sel);
-
-				hContact = (contact == NULL ? NULL : contact->hContact);
-				i += tl - 1;
-				last_start_pos = i + 1;
-			}
-			continue;
-		}
-		
-		if (tl = matches(_T("<emoticon-contact "), &text[i]))
-		{
-			int len = tl;
-			for(int j = 0; j < 10 && text[i + len] != '>'; j++, len++) 
-				;
-
-			if (text[i + len] != '>')
-				continue;
-
-			len++;
-
-			if (IsHidden(rec, start + i, start + i + len))
-			{
-				diff += ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], i - last_start_pos, _T('\0'), start + last_start_pos + diff, __old_sel);
-
-				hContact = (HANDLE) _ttoi(&text[i + tl]);
-				i += len - 1;
-				last_start_pos = i + 1;
-			}
-		}
-	}
-
-	if (replace)
-		ReplaceAllEmoticonsBackwards(rec, contact, module, &text[last_start_pos], len - last_start_pos, _T('\0'), start + last_start_pos + diff, __old_sel);
-	
 	MIR_FREE(text);
 
 	START_RICHEDIT(rec);
 }
 
 
-int RestoreRichEdit(RichEditCtrl &rec, int start = 0, int end = -1)
+int RestoreRichEdit(RichEditCtrl &rec, CHARRANGE &old_sel, int start = 0, int end = -1)
 {
 	int ret = 0;
 
@@ -1046,7 +954,13 @@ int RestoreRichEdit(RichEditCtrl &rec, int start = 0, int end = -1)
 			if (rec.textDocument->Range(reObj.cp, reObj.cp + 1, &range) == S_OK) 
 			{
 				if (range->SetText(hint) == S_OK)
-					ret += wcslen(hint) - 1;
+				{
+					int dif = wcslen(hint) - 1;
+					ret += dif;
+
+					FixSelection(old_sel.cpMax, reObj.cp + 1, dif);
+					FixSelection(old_sel.cpMin, reObj.cp + 1, dif);
+				}
 
 				range->Release();
 			}
@@ -1073,6 +987,30 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch(msg)
 	{
 		case WM_KEYDOWN:
+			if (wParam == VK_DELETE)
+			{
+				STOP_RICHEDIT(dlg->input);
+
+				if (__old_sel.cpMin == __old_sel.cpMax && __old_sel.cpMax + 1 <= GetWindowTextLength(dlg->input.hwnd))
+					RestoreRichEdit(dlg->input, __old_sel, __old_sel.cpMin, __old_sel.cpMax + 1);
+
+				START_RICHEDIT(dlg->input);
+
+				break;
+			}
+			
+			if (wParam == VK_BACK)
+			{
+				STOP_RICHEDIT(dlg->input);
+
+				if (__old_sel.cpMin == __old_sel.cpMax && __old_sel.cpMin > 0)
+					RestoreRichEdit(dlg->input, __old_sel, __old_sel.cpMin - 1, __old_sel.cpMax);
+
+				START_RICHEDIT(dlg->input);
+
+				break;
+			}
+
 			if ((!(GetKeyState(VK_CONTROL) & 0x8000) || (wParam != 'C' && wParam != 'X' && wParam != VK_INSERT))
 				&& (!(GetKeyState(VK_SHIFT) & 0x8000) || wParam != VK_DELETE))
 				break;
@@ -1080,7 +1018,7 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_COPY:
 		{
 			STOP_RICHEDIT(dlg->input);
-			__old_sel.cpMax += RestoreRichEdit(dlg->input, __old_sel.cpMin, __old_sel.cpMax);
+			RestoreRichEdit(dlg->input, __old_sel, __old_sel.cpMin, __old_sel.cpMax);
 			START_RICHEDIT(dlg->input);
 
 			rebuild = TRUE;
@@ -1102,7 +1040,7 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		case WM_CHAR:
 		{
-			if (msg == WM_CHAR && wParam >= 0 && wParam <= 32 && (!_istspace(wParam) || !opts.only_replace_isolated))
+			if (msg == WM_CHAR && wParam >= 0 && wParam < 32)
 				break;
 
 			if (lParam & (1 << 28))	// ALT key
@@ -1116,48 +1054,22 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			STOP_RICHEDIT(dlg->input);
 
-			CHARRANGE sel = {0};
-			SendMessage(hwnd, EM_EXGETSEL, 0, (LPARAM) &sel);
+			int lines = SendMessage(hwnd, EM_GETLINECOUNT, 0, 0);
 
-			int min = max(0, sel.cpMax - 10);
+			// Check only the current line, one up and one down
+			int line = SendMessage(hwnd, EM_LINEFROMCHAR, (WPARAM) __old_sel.cpMin, 0);
 
-			int dif = RestoreRichEdit(dlg->input, min, sel.cpMax);
-			if (dif != 0)
-			{
-				FixSelection(__old_sel.cpMax, sel.cpMax, dif);
-				FixSelection(__old_sel.cpMin, sel.cpMax, dif);
-				sel.cpMax += dif;
-			}
+			int start = SendMessage(hwnd, EM_LINEINDEX, (WPARAM) line, 0);
+			int end = start + SendMessage(hwnd, EM_LINELENGTH, (WPARAM) start, 0);
+//			if (line < lines - 1)
+//				end += SendMessage(hwnd, EM_LINELENGTH, (WPARAM) end, 0);
 
-			TCHAR *text = GetText(dlg->input, min, sel.cpMax + 1);
+			end += RestoreRichEdit(dlg->input, __old_sel, start, end);
+
+			TCHAR *text = GetText(dlg->input, start, end);
 			int len = lstrlen(text);
-			TCHAR last;
-			if (len == sel.cpMax + 1 - min) 
-			{
-				// Strip
-				len--;
-				last = text[len];
-			}
-			else
-			{
-				last = _T('\0');
-			}
 
-			if (dif == 0 && !opts.only_replace_isolated)
-			{
-				// Can replace just last text
-				dif = ReplaceEmoticonBackwards(dlg->input, NULL, dlg->module, text, len, sel.cpMax, last);
-				if (dif != 0)
-				{
-					FixSelection(__old_sel.cpMax, sel.cpMax, dif);
-					FixSelection(__old_sel.cpMin, sel.cpMax, dif);
-				}
-			}
-			else
-			{
-				// Because we already changed the text, we need to replace all range
-				ReplaceAllEmoticonsBackwards(dlg->input, NULL, dlg->module, text, len, last, min, __old_sel);
-			}
+			ReplaceAllEmoticons(dlg->input, NULL, dlg->module, text, len, start, __old_sel);
 
 			MIR_FREE(text);
 
@@ -1177,7 +1089,7 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 
 	if (rebuild)
-		ReplaceAllEmoticonsBackwards(dlg->input, NULL, dlg->module);
+		ReplaceAllEmoticons(dlg->input, NULL, dlg->module);
 
 	return ret;
 }
@@ -1217,13 +1129,17 @@ LRESULT CALLBACK LogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	if (rebuild)
 	{
 		STOP_RICHEDIT(dlg->log);
+
 		if (rebuild == 1)
 		{
+			RestoreRichEdit(dlg->log, __old_sel, __old_sel.cpMin, __old_sel.cpMax);
 			sel = __old_sel;
-			__old_sel.cpMax += RestoreRichEdit(dlg->log, __old_sel.cpMin, __old_sel.cpMax);
 		}
 		else
-			RestoreRichEdit(dlg->log);
+		{
+			RestoreRichEdit(dlg->log, __old_sel);
+		}
+
 		START_RICHEDIT(dlg->log);
 	}
 
@@ -1271,7 +1187,7 @@ LRESULT CALLBACK OwnerProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		STOP_RICHEDIT(dlg->input);
 
-		RestoreRichEdit(dlg->input);
+		RestoreRichEdit(dlg->input, __old_sel);
 
 		START_RICHEDIT(dlg->input);
 	}
@@ -1286,7 +1202,7 @@ LRESULT CALLBACK OwnerProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				if (!ret)
 					// Add emoticons again
-					ReplaceAllEmoticonsBackwards(dlg->input, NULL, dlg->module);
+					ReplaceAllEmoticons(dlg->input, NULL, dlg->module);
 
 				dlg->log.sending = FALSE;
 			}
@@ -1405,7 +1321,7 @@ int MsgWindowEvent(WPARAM wParam, LPARAM lParam)
 
 		if (isSRMM())
 		{
-			ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, 0, -1);
+			ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module);
 
 			dlg->log.old_edit_proc = (WNDPROC) SetWindowLong(dlg->log.hwnd, GWL_WNDPROC, (LONG) SRMMLogProc);
 		}
@@ -3595,11 +3511,20 @@ int ParseService(SMADD_PARSE *sp, BOOL unicode)
 	Module *module = GetModule(sp->Protocolname);
 
 	if (start >= len || start < 0 || module == NULL)
+	{
+		mir_free(text);
 		return -1;
+	}
 
 	EmoticonFound found;
 	for(int i = start; i < len; i++)
 	{
+		if (isURL(&text[i], len - i))
+		{
+			i += findURLEnd(&text[i], len - i) - 1;
+			continue;
+		}
+
 		if (!FindEmoticonForwards(found, NULL, module, text, len, i))
 			continue;
 
@@ -3671,6 +3596,12 @@ int BatchParseService(WPARAM wParam, LPARAM lParam)
 	int count = 0;
 	for(int i = 0; i < len; i++)
 	{
+		if (isURL(&text[i], len - i))
+		{
+			i += findURLEnd(&text[i], len - i) - 1;
+			continue;
+		}
+
 		if (!FindEmoticonForwards(found, contact, module, text, len, i))
 			continue;
 
