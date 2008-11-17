@@ -7,22 +7,24 @@
 This is a plugin that logs to a text file all messages exchanged with contact or in a group chat. The text file is encoded in UTF-8.
 
 The messages filename pattern accepts the following vars: (also, it support variables plugin)
-  %contact%
-  %contact_id%
-  %protocol%
-  %group%
-  %year%
-  %month%
-  %month_name%
-  %day%
+   %contact%
+   %contact_id%
+   %protocol%
+   %group%
+   %year%
+   %month%
+   %month_name%
+   %day%
 
 The group chat filename pattern accepts the following vars: (also, it support variables plugin)
-  %session%
-  %protocol%
-  %year%
-  %month%
-  %month_name%
-  %day%
+   %session%
+   %protocol%
+   %year%
+   %month%
+   %month_name%
+   %day%
+
+It also register itself with meSpeak and allows reading of messages (chat, url, fileand group chat events).
 
 This plugin requires at least Miranda 0.7 and needs History Events to work.
 
