@@ -51,6 +51,7 @@ BOOL ChatAllowProtocol(const char *proto)
 
 
 static OptPageControl optionsControls[] = { 
+	{ &opts.disk_log_enabled,		CONTROL_CHECKBOX,		IDC_ENABLED,		"DiskLogEnabled", FALSE },
 	{ &opts.filename_pattern,		CONTROL_TEXT,			IDC_FILENAME,		"FilenamePattern", (DWORD) _T("Log\\%group%\\%contact%.msgs") },
 	{ &opts.ident_multiline_msgs,	CONTROL_CHECKBOX,		IDC_IDENT_MULTILINE,"IdentMultilineMsgs", TRUE },
 	{ NULL,							CONTROL_PROTOCOL_LIST,	IDC_PROTOCOLS,		"Enable%s", TRUE, (int)AllowProtocol }
@@ -58,6 +59,7 @@ static OptPageControl optionsControls[] = {
 
 
 static OptPageControl chatControls[] = { 
+	{ &opts.chat_disk_log_enabled,		CONTROL_CHECKBOX,		IDC_ENABLED,		"ChatDiskLogEnabled", FALSE },
 	{ &opts.chat_filename_pattern,		CONTROL_TEXT,			IDC_FILENAME,		"ChatFilenamePattern", (DWORD) _T("Log\\Group Chats\\%session%.msgs") },
 	{ &opts.chat_ident_multiline_msgs,	CONTROL_CHECKBOX,		IDC_IDENT_MULTILINE,"ChatIdentMultilineMsgs", TRUE },
 	{ NULL,								CONTROL_PROTOCOL_LIST,	IDC_PROTOCOLS,		"ChatEnable%s", TRUE, (int)ChatAllowProtocol }
@@ -151,6 +153,33 @@ static void GetTextMetric(HFONT hFont, TEXTMETRIC *tm)
 }
 
 
+void EnableDisableControls(HWND hwndDlg, int eventTypeCount)
+{
+	BOOL enabled = IsDlgButtonChecked(hwndDlg, IDC_ENABLED);
+
+	EnableWindow(GetDlgItem(hwndDlg,IDC_FILENAME_L), enabled);
+	EnableWindow(GetDlgItem(hwndDlg,IDC_FILENAME), enabled);
+	EnableWindow(GetDlgItem(hwndDlg,IDC_IDENT_MULTILINE), enabled);
+	EnableWindow(GetDlgItem(hwndDlg,IDC_PROTOCOLS_L), enabled);
+	EnableWindow(GetDlgItem(hwndDlg,IDC_PROTOCOLS), enabled);
+	EnableWindow(GetDlgItem(hwndDlg,IDC_EVENT_TYPES), enabled);
+		
+	int id = IDC_EVENT_TYPES + 100;
+	for (int k = 0; k < eventTypeCount; k++)
+	{
+		HWND ctrl = GetDlgItem(hwndDlg,id++);
+		if (ctrl)
+			EnableWindow(ctrl, enabled);
+		ctrl = GetDlgItem(hwndDlg,id++);
+		if (ctrl)
+			EnableWindow(ctrl, enabled);
+		ctrl = GetDlgItem(hwndDlg,id++);
+		if (ctrl)
+			EnableWindow(ctrl, enabled);
+	}
+}
+
+
 static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
 {
 	static int avaiable = 0;
@@ -158,6 +187,8 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 	static int current = 0;
 	static int lineHeigth = 0;
 	static int eventTypeCount = 0;
+
+	BOOL ret = SaveOptsDlgProc(optionsControls, MAX_REGS(optionsControls), MODULE_NAME, hwndDlg, msg, wParam, lParam);
 
 	switch (msg)
 	{
@@ -201,15 +232,17 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 				id ++;
 
 				HWND icon = CreateWindow(_T("STATIC"), _T(""), WS_CHILD | WS_VISIBLE | SS_ICON | SS_CENTERIMAGE, 
-                        x, pt.y + (height - 16) / 2, 16, 16, hwndDlg, NULL, hInst, NULL);
+                        x, pt.y + (height - 16) / 2, 16, 16, hwndDlg, (HMENU) id, hInst, NULL);
 				x += 20;
+				id ++;
 
 				SendMessage(icon, STM_SETICON, (WPARAM) CallService(MS_HISTORYEVENTS_GET_ICON, heh->eventType, TRUE), 0);
 
 				HWND tmp = CreateWindowA("STATIC", heh->description, WS_CHILD | WS_VISIBLE, 
                         x, pt.y + (height - font.tmHeight) / 2, width - (x - pt.x), font.tmHeight, 
-						hwndDlg, NULL, hInst, NULL);
+						hwndDlg, (HMENU) id, hInst, NULL);
 				SendMessage(tmp, WM_SETFONT, (WPARAM) hFont, FALSE);
+				id ++;
 
 				pt.y += height;
 			}
@@ -226,6 +259,8 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 			si.nPage  = avaiable; 
 			si.nPos   = current; 
 			SetScrollInfo(hwndDlg, SB_VERT, &si, TRUE); 
+
+			EnableDisableControls(hwndDlg, eventTypeCount);
 
 			break;
 		}
@@ -295,8 +330,13 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 				break;
 
 			int id = LOWORD(wParam);
-			if (id >= IDC_EVENT_TYPES + 100 && id < IDC_EVENT_TYPES + 100 + eventTypeCount)
+
+			if (id == IDC_ENABLED)
+				EnableDisableControls(hwndDlg, eventTypeCount);
+
+			else if (id >= IDC_EVENT_TYPES + 100 && id < IDC_EVENT_TYPES + 100 + 3 * eventTypeCount)
 				SendMessage(GetParent(hwndDlg), PSM_CHANGED, 0, 0);
+
 			break;
 		}
 
@@ -312,7 +352,7 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 			{
 				const HISTORY_EVENT_HANDLER *heh = (const HISTORY_EVENT_HANDLER *) CallService(MS_HISTORYEVENTS_GET_EVENT, k, -1);
 				SetEventEnabled(heh->eventType, IsDlgButtonChecked(hwndDlg, id));
-				id ++;
+				id += 3;
 			}
 
 			break;
@@ -320,31 +360,9 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 
 	}
 
-	return SaveOptsDlgProc(optionsControls, MAX_REGS(optionsControls), MODULE_NAME, hwndDlg, msg, wParam, lParam);
+	return ret;
 }
 
-
-
-struct
-{
-	int type;
-	TCHAR *name;
-} 
-CHAT_EVENTS[] = 
-{
-	{ GC_EVENT_MESSAGE, _T("Message") },
-	{ GC_EVENT_ACTION, _T("Action") },
-	{ GC_EVENT_JOIN, _T("User joined") },
-	{ GC_EVENT_PART, _T("User left") },
-	{ GC_EVENT_QUIT, _T("User disconnected") },
-	{ GC_EVENT_KICK, _T("User kicked") },
-	{ GC_EVENT_NICK, _T("Nickname change") },
-	{ GC_EVENT_NOTICE, _T("Notice") },
-	{ GC_EVENT_TOPIC, _T("Topic change") },
-	{ GC_EVENT_INFORMATION, _T("Information message") },
-	{ GC_EVENT_ADDSTATUS, _T("Status enabled") },
-	{ GC_EVENT_REMOVESTATUS, _T("Status disabled") }
-};
 
 static BOOL CALLBACK ChatDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
 {
@@ -353,6 +371,8 @@ static BOOL CALLBACK ChatDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM l
 	static int current = 0;
 	static int lineHeigth = 0;
 	static int eventTypeCount = 0;
+
+	BOOL ret = SaveOptsDlgProc(chatControls, MAX_REGS(chatControls), MODULE_NAME, hwndDlg, msg, wParam, lParam);
 
 	switch (msg)
 	{
@@ -390,7 +410,7 @@ static BOOL CALLBACK ChatDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM l
 						    x, pt.y, width - (x - pt.x), height, hwndDlg, (HMENU) id, hInst, NULL);
 				SendMessage(chk, WM_SETFONT, (WPARAM) hFont, FALSE);
 				SendMessage(chk, BM_SETCHECK, IsChatEventEnabled(CHAT_EVENTS[k].type) ? BST_CHECKED : BST_UNCHECKED, 0);
-				id ++;
+				id += 3;
 
 				pt.y += height;
 			}
@@ -407,6 +427,8 @@ static BOOL CALLBACK ChatDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM l
 			si.nPage  = avaiable; 
 			si.nPos   = current; 
 			SetScrollInfo(hwndDlg, SB_VERT, &si, TRUE); 
+
+			EnableDisableControls(hwndDlg, eventTypeCount);
 
 			break;
 		}
@@ -476,7 +498,11 @@ static BOOL CALLBACK ChatDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM l
 				break;
 
 			int id = LOWORD(wParam);
-			if (id >= IDC_EVENT_TYPES + 100 && id < IDC_EVENT_TYPES + 100 + eventTypeCount)
+
+			if (id == IDC_ENABLED)
+				EnableDisableControls(hwndDlg, eventTypeCount);
+
+			else if (id >= IDC_EVENT_TYPES + 100 && id < IDC_EVENT_TYPES + 100 + 3 * eventTypeCount)
 				SendMessage(GetParent(hwndDlg), PSM_CHANGED, 0, 0);
 			break;
 		}
@@ -492,7 +518,7 @@ static BOOL CALLBACK ChatDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM l
 			for (int k = 0; k < eventTypeCount; k++)
 			{
 				SetChatEventEnabled(CHAT_EVENTS[k].type, IsDlgButtonChecked(hwndDlg, id));
-				id ++;
+				id += 3;
 			}
 
 			break;
@@ -500,5 +526,5 @@ static BOOL CALLBACK ChatDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM l
 
 	}
 
-	return SaveOptsDlgProc(chatControls, MAX_REGS(chatControls), MODULE_NAME, hwndDlg, msg, wParam, lParam);
+	return ret;
 }
