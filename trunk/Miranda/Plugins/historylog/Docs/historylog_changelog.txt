@@ -2,6 +2,10 @@ History Log
 
 Changelog:
 
+. 0.0.0.4
+  + Added option to speak texts
+  * Per default disk log is disabled
+
 . 0.0.0.3
   + Added BOM to files (editors should work better with this) - only for new files
   + Added group chat logging (dll needed to be renamed for this to work)

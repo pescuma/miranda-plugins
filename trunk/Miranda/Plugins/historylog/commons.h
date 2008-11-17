@@ -49,11 +49,13 @@ Boston, MA 02111-1307, USA.
 #include <m_protocols.h>
 #include <m_protosvc.h>
 #include <m_chat.h>
+#include <m_speak.h>
 
 #include "../utils/mir_memory.h"
 #include "../utils/mir_options.h"
 #include "../utils/mir_icons.h"
 #include "../utils/mir_buffer.h"
+#include "../utils/mir_scope.h"
 #include "../utils/ContactAsyncQueue.h"
 
 #include "resource.h"
@@ -89,6 +91,32 @@ void SetEventEnabled(WORD eventType, BOOL enable);
 
 BOOL IsChatEventEnabled(WORD type);
 void SetChatEventEnabled(WORD type, BOOL enable);
+
+
+static struct
+{
+	int type;
+	TCHAR *name;
+	TCHAR *templ;
+	TCHAR *templ_notext;
+	TCHAR *templ_nonick;
+} 
+CHAT_EVENTS[] = 
+{
+	{ GC_EVENT_MESSAGE,			_T("Message"),				_T("* %nick%: %text%") },
+	{ GC_EVENT_ACTION,			_T("Action"),				_T("* %nick% %text%") },
+	{ GC_EVENT_JOIN,			_T("User joined"),			_T("> %nick% has joined") },
+	{ GC_EVENT_PART,			_T("User left"),			_T("< %nick% has left (%text_sl%)"), _T("< %nick% has left") },
+	{ GC_EVENT_QUIT,			_T("User disconnected"),	_T("< %nick% has disconnected (%text_sl%)"), _T("< %nick% has disconnected") },
+	{ GC_EVENT_KICK,			_T("User kicked"),			_T("~ %status% kicked %nick% (%text_sl%)"), _T("~ %status% kicked %nick%") },
+	{ GC_EVENT_NICK,			_T("Nickname change"),		_T("^ %nick% is now known as %text%") },
+	{ GC_EVENT_NOTICE,			_T("Notice"),				_T("¤ Notice from %nick%: %text%") },
+	{ GC_EVENT_TOPIC,			_T("Topic change"),			_T("# The topic is \'%text_sl%\' (set by %nick%)"), NULL, _T("# The topic is \'%text_sl%\'") },
+	{ GC_EVENT_INFORMATION,		_T("Information message"),	_T("! %text_sl%") },
+	{ GC_EVENT_ADDSTATUS,		_T("Status enabled"),		_T("+ %text% enables \'%status%\' status for %nick%") },
+	{ GC_EVENT_REMOVESTATUS,	_T("Status disabled"),		_T("- %text% disables \'%status%\' status for %nick%") }
+};
+
 
 
 #endif // __COMMONS_H__
