@@ -33,8 +33,8 @@ PLUGININFOEX pluginInfo={
 #else
 	"History Log",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,0,3),
-	"Logs history events to disk on the fly",
+	PLUGIN_MAKE_VERSION(0,0,0,4),
+	"Logs history events to disk on the fly and speaks then",
 	"Ricardo Pescuma Domenecci",
 	"",
 	"© 2008 Ricardo Pescuma Domenecci",
@@ -171,6 +171,45 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		upd.cpbVersion = strlen((char *)upd.pbVersion);
 
         CallService(MS_UPDATE_REGISTER, 0, (LPARAM)&upd);
+	}
+
+	{
+		Buffer<char> tmps[MAX_REGS(CHAT_EVENTS)];
+		char *templates[MAX_REGS(CHAT_EVENTS)];
+		for(int i = 0; i < MAX_REGS(CHAT_EVENTS); i++) 
+		{
+			tmps[i].append(CHAT_EVENTS[i].name);
+			tmps[i].append('\n');
+			tmps[i].append("%session%: ");
+			tmps[i].append(&(CHAT_EVENTS[i].templ[2]));
+			tmps[i].append('\n');
+			tmps[i].append("%nick%\tNickname\n%status%\tStatus message\n%text%\tTest\n%text_sl%\tText as single line\n" 
+						   "%protocol%\tProtocol\n%year%\tYear\n%month%\tMonth\n%month_name%\tMonth name\n%day%\tDay\n%session%\tSession");
+			tmps[i].pack();
+			templates[i] = tmps[i].str;
+		}
+		Speak_RegisterWT(MODULE_NAME, "groupchat", "Group chat", "core_main_1", templates, MAX_REGS(templates));
+	}
+	{
+		char *templates[] = { 
+			"Sent\nto %contact%: %text%\n%text%\tMessage text\n%nick%\tNickname\n%msg_date%\tDate of message\n%protocol%\tProtocol\n%year%\tYear\n%month%\tMonth\n%month_name%\tMonth name\n%day%\tDay",
+			"Received\nfrom %contact%: %text%\n%text%\tMessage text\n%nick%\tNickname\n%msg_date%\tDate of message%protocol%\tProtocol\n%year%\tYear\n%month%\tMonth\n%month_name%\tMonth name\n%day%\tDay" 
+		};
+		Speak_RegisterWT(MODULE_NAME, "message", "Message", "core_main_1", templates, MAX_REGS(templates));
+	}
+	{
+		char *templates[] = { 
+			"Sent\nto %contact%: %text%\n%text%\tURL\n%msg_date%\tDate of message\n%protocol%\tProtocol\n%year%\tYear\n%month%\tMonth\n%month_name%\tMonth name\n%day%\tDay", 
+			"Received\nfrom %contact%: %text%\n%text%\tURL\n%msg_date%\tDate of message\n%protocol%\tProtocol\n%year%\tYear\n%month%\tMonth\n%month_name%\tMonth name\n%day%\tDay" 
+		};
+		Speak_RegisterWT(MODULE_NAME, "url", "URL", "core_main_2", templates, MAX_REGS(templates));
+	}
+	{
+		char *templates[] = { 
+			"Sent\nSent file to %contact%: %text%\n%text%\tFilename\n%description%\tDescription\n%msg_date%\tDate of message\n%protocol%\tProtocol\n%year%\tYear\n%month%\tMonth\n%month_name%\tMonth name\n%day%\tDay",
+			"Received\nReceived file from %contact%: %text%\n%text%\tFilename\n%description%\tDescription\n%msg_date%\tDate of message\n%protocol%\tProtocol\n%year%\tYear\n%month%\tMonth\n%month_name%\tMonth name\n%day%\tDay" 
+		};
+		Speak_RegisterWT(MODULE_NAME, "file", "File Transfer", "core_main_3", templates, MAX_REGS(templates));
 	}
 
 	return 0;
@@ -537,6 +576,33 @@ void AppendKeepingIndentation(Buffer<TCHAR> &text, TCHAR *eventText, BOOL ident)
 	}
 }
 
+void GetNick(Buffer<TCHAR> &nick, HANDLE hContact, char *proto)
+{
+	if (hContact == NULL)
+	{
+		CONTACTINFO ci;
+		ZeroMemory(&ci, sizeof(ci));
+		ci.cbSize = sizeof(ci);
+		ci.hContact = NULL;
+		ci.szProto = proto;
+		ci.dwFlag = CNF_DISPLAY;
+
+#ifdef UNICODE
+		ci.dwFlag |= CNF_UNICODE;
+#endif
+
+		if (!CallService(MS_CONTACT_GETCONTACTINFO, 0, (LPARAM) & ci)) 
+		{
+			nick.append(ci.pszVal);
+			mir_free(ci.pszVal);
+		}
+	}
+	else
+	{
+		nick.append((TCHAR *) CallService(MS_CLIST_GETCONTACTDISPLAYNAME, (WPARAM) hContact, GCDNF_TCHAR | GCDNF_NOCACHE));
+	}
+}
+
 
 void ProcessEvent(HANDLE hDbEvent, void *param)
 {
@@ -545,7 +611,60 @@ void ProcessEvent(HANDLE hDbEvent, void *param)
 	if (hContact == NULL)
 		return;
 
+	DBEVENTINFO dbe = {0};
+	dbe.cbSize = sizeof(dbe);
+	if (CallService(MS_DB_EVENT_GET, (WPARAM) hDbEvent, (LPARAM) &dbe) != 0)
+		return;
+
 	char *proto = (char*) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
+	if (proto == NULL)
+		return;
+
+	scope<TCHAR *> eventText = HistoryEvents_GetTextT(hDbEvent, NULL);
+	int flags = HistoryEvents_GetFlags(dbe.eventType);
+
+	TCHAR date[128];
+	DBTIMETOSTRINGT tst = {0};
+	tst.szFormat = _T("d s");
+	tst.szDest = date;
+	tst.cbDest = 128;
+	CallService(MS_DB_TIME_TIMESTAMPTOSTRINGT, (WPARAM) dbe.timestamp, (LPARAM) &tst);
+
+	Buffer<TCHAR> nick;
+	GetNick(nick, dbe.flags & DBEF_SENT ? NULL : hContact, proto);
+
+	TCHAR year[16];
+	TCHAR month[16];
+	TCHAR month_name[32];
+	TCHAR day[16];
+	GetDateTexts(dbe.timestamp, year, month, month_name, day);
+
+	scope<TCHAR *> protocol = mir_a2t(proto);
+	scope<TCHAR *> group = GetContactGroup(hContact);
+
+	TCHAR cid[512];
+	GetUIDFromHContact(hContact, cid, MAX_REGS(cid));
+
+	TCHAR *vars[] = { 
+		_T("text"), eventText, 
+		_T("nick"), nick.str, 
+		_T("group"), group == NULL ? _T("") : group, 
+		_T("protocol"), protocol,
+		_T("msg_date"), date, 
+		_T("year"), year,
+		_T("month"), month,
+		_T("month_name"), month_name, 
+		_T("day"), day,
+		_T("contact_id"), cid
+	};
+
+	if (dbe.eventType == EVENTTYPE_MESSAGE)
+		Speak_SayExWT("message", hContact, dbe.flags & DBEF_SENT ? 0 : 1, vars, MAX_REGS(vars));
+	else if (dbe.eventType == EVENTTYPE_URL)
+		Speak_SayExWT("url", hContact, dbe.flags & DBEF_SENT ? 0 : 1, vars, MAX_REGS(vars));
+	else if (dbe.eventType == EVENTTYPE_FILE)
+		Speak_SayExWT("file", hContact, dbe.flags & DBEF_SENT ? 0 : 1, vars, MAX_REGS(vars));
+
 	if (!IsProtocolEnabled(proto))
 		return;
 
@@ -556,23 +675,8 @@ void ProcessEvent(HANDLE hDbEvent, void *param)
 			return;
 	}
 
-	DBEVENTINFO dbe = {0};
-	dbe.cbSize = sizeof(dbe);
-	if (CallService(MS_DB_EVENT_GET, (WPARAM) hDbEvent, (LPARAM) &dbe) != 0)
-		return;
-
 	if (!IsEventEnabled(dbe.eventType))
 		return;
-
-	TCHAR *eventText = HistoryEvents_GetTextT(hDbEvent, NULL);
-	int flags = HistoryEvents_GetFlags(dbe.eventType);
-
-	TCHAR date[128];
-	DBTIMETOSTRINGT tst = {0};
-	tst.szFormat = _T("d s");
-	tst.szDest = date;
-	tst.cbDest = 128;
-	CallService(MS_DB_TIME_TIMESTAMPTOSTRINGT, (WPARAM) dbe.timestamp, (LPARAM) &tst);
 
 	Buffer<TCHAR> text;
 	text.append(_T("["));
@@ -581,63 +685,13 @@ void ProcessEvent(HANDLE hDbEvent, void *param)
 
 	if (flags & HISTORYEVENTS_FLAG_EXPECT_CONTACT_NAME_BEFORE)
 	{
-		if (dbe.flags & DBEF_SENT)
-		{
-			CONTACTINFO ci;
-			ZeroMemory(&ci, sizeof(ci));
-			ci.cbSize = sizeof(ci);
-			ci.hContact = NULL;
-			ci.szProto = proto;
-			ci.dwFlag = CNF_DISPLAY;
-
-#ifdef UNICODE
-			ci.dwFlag |= CNF_UNICODE;
-#endif
-
-			if (!CallService(MS_CONTACT_GETCONTACTINFO, 0, (LPARAM) & ci)) 
-			{
-				text.append(ci.pszVal);
-				mir_free(ci.pszVal);
-			}
-		}
-		else
-		{
-			text.append((TCHAR *) CallService(MS_CLIST_GETCONTACTDISPLAYNAME, (WPARAM) hContact, GCDNF_TCHAR | GCDNF_NOCACHE));
-		}
+		text.append(nick);
 		text.append(_T(": "));
 	}
 
 	AppendKeepingIndentation(text, eventText, opts.ident_multiline_msgs);
 
-	text.pack();
-
-	TCHAR year[16];
-	TCHAR month[16];
-	TCHAR month_name[32];
-	TCHAR day[16];
-	GetDateTexts(dbe.timestamp, year, month, month_name, day);
-
-	TCHAR *protocol = mir_a2t(proto);
-	TCHAR *group = GetContactGroup(hContact);
-
-	TCHAR cid[512];
-	GetUIDFromHContact(hContact, cid, MAX_REGS(cid));
-
-	TCHAR *vars[] = { 
-		_T("group"), group == NULL ? _T("") : group, 
-		_T("protocol"), protocol,
-		_T("year"), year,
-		_T("month"), month,
-		_T("month_name"), month_name, 
-		_T("day"), day,
-		_T("contact_id"), cid
-	};
-
 	AppendToFile(opts.filename_pattern, vars, MAX_REGS(vars), hContact, text.str);
-
-	mir_free(protocol);
-	mir_free(group);
-	mir_free(eventText);
 }
 
 
@@ -650,13 +704,13 @@ GETEVENTFUNC originalAddEvent = NULL;
 struct ChatMsg
 {
 	int type;
-	char *proto;
-	TCHAR *name;
+	Buffer<char> proto;
+	Buffer<TCHAR> name;
 	DWORD time;
-	TCHAR *nick;
-	TCHAR *status;
-	TCHAR *text;
-	TCHAR *userInfo;
+	Buffer<TCHAR> nick;
+	Buffer<TCHAR> status;
+	Buffer<TCHAR> text;
+	Buffer<TCHAR> userInfo;
 };
 
 int ChatAddEvent(WPARAM wParam, LPARAM lParam)
@@ -702,23 +756,23 @@ int ChatAddEvent(WPARAM wParam, LPARAM lParam)
 
 	msg->type = gcd->iType;
 	msg->time = gce->time;
-	msg->proto = mir_strdup(gcd->pszModule);
+	msg->proto = gcd->pszModule;
 
 	if (gce->dwFlags & GC_UNICODE)
 	{
-		msg->name = mir_u2t((WCHAR *) gcd->pszID);
-		msg->nick = mir_u2t((WCHAR *) gce->pszNick);
-		msg->status = mir_u2t((WCHAR *) gce->pszStatus);
-		msg->text = mir_u2t((WCHAR *) gce->pszText);
-		msg->userInfo = mir_u2t((WCHAR *) gce->pszUserInfo);
+		msg->name = (WCHAR *) gcd->pszID;
+		msg->nick = (WCHAR *) gce->pszNick;
+		msg->status = (WCHAR *) gce->pszStatus;
+		msg->text = (WCHAR *) gce->pszText;
+		msg->userInfo = (WCHAR *) gce->pszUserInfo;
 	}
 	else
 	{
-		msg->name = mir_a2t(gce->pszUID);
-		msg->nick = mir_a2t(gce->pszNick);
-		msg->status = mir_a2t(gce->pszStatus);
-		msg->text = mir_a2t(gce->pszText);
-		msg->userInfo = mir_a2t(gce->pszUserInfo);
+		msg->name = gce->pszUID;
+		msg->nick = gce->pszNick;
+		msg->status = gce->pszStatus;
+		msg->text = gce->pszText;
+		msg->userInfo = gce->pszUserInfo;
 	}
 
 	chatQueue->Add(500, 0, msg);
@@ -735,46 +789,72 @@ void ProcessChat(HANDLE hDummy, void *param)
 	ChatMsg *msg = (ChatMsg *) param;
 	msg->type = msg->type & ~GC_EVENT_HIGHLIGHT;
 
-	if (IsChatProtocolEnabled(msg->proto) && IsChatEventEnabled(msg->type))
+	msg->text.trim();
+	msg->name.trim();
+
+	TCHAR date[128];
+	DBTIMETOSTRINGT tst = {0};
+	tst.szFormat = _T("d s");
+	tst.szDest = date;
+	tst.cbDest = 128;
+	CallService(MS_DB_TIME_TIMESTAMPTOSTRINGT, (WPARAM) msg->time, (LPARAM) &tst);
+
+	Buffer<TCHAR> nick;
+	if (msg->nick.len > 0)
 	{
-		int i;
-		for(i = lstrlen(msg->name) - 1; i > 0 
-			&& (msg->name[i] == _T(' ') || msg->name[i] == _T('\t') || msg->name[i] == _T('-')); i--);
-		msg->name[i+1] = _T('\0');
+		nick = msg->nick;
+		if (msg->userInfo.len > 0)
+		{
+			nick += _T(" (");
+			nick += msg->userInfo;
+			nick += _T(")");
+		}
+	}
 
-		TCHAR date[128];
-		DBTIMETOSTRINGT tst = {0};
-		tst.szFormat = _T("d s");
-		tst.szDest = date;
-		tst.cbDest = 128;
-		CallService(MS_DB_TIME_TIMESTAMPTOSTRINGT, (WPARAM) msg->time, (LPARAM) &tst);
+	Buffer<TCHAR> plain;
+	if (msg->text.len > 0)
+	{
+		AppendKeepingIndentationRemovingFormatting(plain, msg->text.str, FALSE);
+		plain.replaceAll('\r', ' ');
+		plain.replaceAll('\n', ' ');
+		plain.trim();
+	}
 
+	TCHAR year[16];
+	TCHAR month[16];
+	TCHAR month_name[32];
+	TCHAR day[16];
+	GetDateTexts(msg->time, year, month, month_name, day);
+
+	scope<TCHAR *> protocol = mir_a2t(msg->proto.str);
+
+	TCHAR *vars[] = { 
+		_T("nick"), nick.str,
+		_T("status"), msg->status.str,
+		_T("text"), msg->text.str,
+		_T("text_sl"), plain.str,
+		_T("protocol"), protocol,
+		_T("msg_date"), date, 
+		_T("year"), year,
+		_T("month"), month,
+		_T("month_name"), month_name, 
+		_T("day"), day,
+		_T("session"), msg->name.str
+	};
+
+	int i;
+	for(i = 0; i < MAX_REGS(CHAT_EVENTS); i++) 
+		if (msg->type == CHAT_EVENTS[i].type)
+			break;
+	if (i < MAX_REGS(CHAT_EVENTS))
+		Speak_SayExWT("groupchat", NULL, i, vars, MAX_REGS(vars));
+
+	if (IsChatProtocolEnabled(msg->proto.str) && IsChatEventEnabled(msg->type))
+	{
 		Buffer<TCHAR> text;
 		text.append(_T("["));
 		text.append(date);
 		text.append(_T("] "));
-
-		Buffer<TCHAR> nick;
-		if (msg->nick != NULL) 
-		{
-			nick.append(msg->nick);
-			if (msg->userInfo)
-			{
-				nick.append(_T(" ("));
-				nick.append(msg->userInfo);
-				nick.append(_T(")"));
-			}
-		}
-		nick.pack();
-
-		Buffer<TCHAR> plain;
-		if (msg->text != NULL)
-		{
-			AppendKeepingIndentationRemovingFormatting(plain, msg->text, FALSE);
-			plain.replaceAll('\r', ' ');
-			plain.replaceAll('\n', ' ');
-		}
-		plain.pack();
 
 		switch (msg->type) 
 		{
@@ -782,13 +862,13 @@ void ProcessChat(HANDLE hDummy, void *param)
 				text.append(_T("* "));
 				text.append(nick);
 				text.append(_T(": "));
-				AppendKeepingIndentationRemovingFormatting(text, msg->text, opts.chat_ident_multiline_msgs);
+				AppendKeepingIndentationRemovingFormatting(text, msg->text.str, opts.chat_ident_multiline_msgs);
 				break;
 			case GC_EVENT_ACTION:
 				text.append(_T("* "));
 				text.append(nick);
 				text.append(_T(" "));
-				AppendKeepingIndentationRemovingFormatting(text, msg->text, opts.chat_ident_multiline_msgs);
+				AppendKeepingIndentationRemovingFormatting(text, msg->text.str, opts.chat_ident_multiline_msgs);
 				break;
 			case GC_EVENT_JOIN:
 				text.append(_T("> "));
@@ -796,28 +876,28 @@ void ProcessChat(HANDLE hDummy, void *param)
 				break;
 			case GC_EVENT_PART:
 				text.append(_T("< "));
-				if (msg->text == NULL)
+				if (plain.len <= 0)
 					text.appendPrintf(TranslateT("%s has left"), nick.str);
 				else
 					text.appendPrintf(TranslateT("%s has left (%s)"), nick.str, plain.str);
 				break;
 			case GC_EVENT_QUIT:
 				text.append(_T("< "));
-				if (msg->text == NULL)
+				if (plain.len <= 0)
 					text.appendPrintf(TranslateT("%s has disconnected"), nick.str);
 				else
 					text.appendPrintf(TranslateT("%s has disconnected (%s)"), nick.str, plain.str);
 				break;
 			case GC_EVENT_NICK:
 				text.append(_T("^ "));
-				text.appendPrintf(TranslateT("%s is now known as %s"), nick.str, msg->text);
+				text.appendPrintf(TranslateT("%s is now known as %s"), nick.str, msg->text.str);
 				break;
 			case GC_EVENT_KICK:
 				text.append(_T("~ "));
-				if (msg->text == NULL)
-					text.appendPrintf(TranslateT("%s kicked %s"), msg->status, nick.str);
+				if (plain.len <= 0)
+					text.appendPrintf(TranslateT("%s kicked %s"), msg->status.str, nick.str);
 				else
-					text.appendPrintf(TranslateT("%s kicked %s (%s)"), msg->status, nick.str, plain.str);
+					text.appendPrintf(TranslateT("%s kicked %s (%s)"), msg->status.str, nick.str, plain.str);
 				break;
 			case GC_EVENT_NOTICE:
 				text.append(_T("¤ "));
@@ -825,7 +905,7 @@ void ProcessChat(HANDLE hDummy, void *param)
 				break;
 			case GC_EVENT_TOPIC:
 				text.append(_T("# "));
-				if (msg->nick == NULL)
+				if (nick.len <= 0)
 					text.appendPrintf(TranslateT("The topic is \'%s\'"), plain.str);
 				else
 					text.appendPrintf(TranslateT("The topic is \'%s\' (set by %s)"), plain.str, nick.str);
@@ -836,44 +916,18 @@ void ProcessChat(HANDLE hDummy, void *param)
 				break;
 			case GC_EVENT_ADDSTATUS:
 				text.append(_T("+ "));
-				text.appendPrintf(TranslateT("%s enables \'%s\' status for %s"), msg->text, msg->status, nick.str);
+				text.appendPrintf(TranslateT("%s enables \'%s\' status for %s"), msg->text.str, msg->status.str, nick.str);
 				break;
 			case GC_EVENT_REMOVESTATUS:
 				text.append(_T("- "));
-				text.appendPrintf(TranslateT("%s disables \'%s\' status for %s"), msg->text, msg->status, nick.str);
+				text.appendPrintf(TranslateT("%s disables \'%s\' status for %s"), msg->text.str, msg->status.str, nick.str);
 				break;
 		}
 
-		text.pack();
-
-		TCHAR year[16];
-		TCHAR month[16];
-		TCHAR month_name[32];
-		TCHAR day[16];
-		GetDateTexts(msg->time, year, month, month_name, day);
-
-		TCHAR *protocol = mir_a2t(msg->proto);
-
-		TCHAR *vars[] = { 
-			_T("protocol"), protocol,
-			_T("year"), year,
-			_T("month"), month,
-			_T("month_name"), month_name, 
-			_T("day"), day,
-			_T("session"), msg->name
-		};
-
 		AppendToFile(opts.chat_filename_pattern, vars, MAX_REGS(vars), NULL, text.str);
 
-		mir_free(protocol);
 	}
 
-	mir_free(msg->proto);
-	mir_free(msg->name);
-	mir_free(msg->nick);
-	mir_free(msg->status);
-	mir_free(msg->text);
-	mir_free(msg->userInfo);
 	delete msg;
 }
 

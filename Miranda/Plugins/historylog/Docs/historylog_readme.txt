@@ -23,6 +23,14 @@ The group chat filename pattern accepts the following vars: (also, it support va
   %month_name%
   %day%
 
+It also register itself with meSpeak and allows reading of messages (chat, url, fileand group chat events).
+
 This plugin requires at least Miranda 0.7 and needs History Events to work.
 
 To report bugs/make suggestions, go to the forum thread: http://forums.miranda-im.org/showthread.php?t=18488
+
+
+TODO
+-----
+- In group chat, disconnects and renames are not logged
+

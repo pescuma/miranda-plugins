@@ -76,6 +76,8 @@
 #define IDC_FILENAME                    1104
 #define IDC_CHECK1                      1105
 #define IDC_IDENT_MULTILINE             1105
+#define IDC_ENABLED                     1107
+#define IDC_FILENAME_L                  1108
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -86,7 +88,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        126
 #define _APS_NEXT_COMMAND_VALUE         40004
-#define _APS_NEXT_CONTROL_VALUE         1107
+#define _APS_NEXT_CONTROL_VALUE         1109
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
