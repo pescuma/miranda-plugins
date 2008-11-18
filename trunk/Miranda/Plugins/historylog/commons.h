@@ -104,6 +104,7 @@ static struct
 CHAT_EVENTS[] = 
 {
 	{ GC_EVENT_MESSAGE,			_T("Message"),				_T("* %nick%: %text%") },
+	{ GC_EVENT_MESSAGE,			_T("Highlighted Message"),	_T("* %nick%: %text%") },
 	{ GC_EVENT_ACTION,			_T("Action"),				_T("* %nick% %text%") },
 	{ GC_EVENT_JOIN,			_T("User joined"),			_T("> %nick% has joined") },
 	{ GC_EVENT_PART,			_T("User left"),			_T("< %nick% has left (%text_sl%)"), _T("< %nick% has left") },
