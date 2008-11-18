@@ -2,6 +2,11 @@ History Log
 
 Changelog:
 
+. 0.0.0.5
+  * Fix for crash
+  * Fix for enable not working
+  + Added highlighted messages as a separated meSpeak template
+
 . 0.0.0.4
   + Added option to speak texts
   * Per default disk log is disabled

@@ -33,7 +33,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"History Log",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,0,4),
+	PLUGIN_MAKE_VERSION(0,0,0,5),
 	"Logs history events to disk on the fly and speaks then",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -107,6 +107,8 @@ extern "C" __declspec(dllexport) const MUUID* MirandaPluginInterfaces(void)
 extern "C" int __declspec(dllexport) Load(PLUGINLINK *link) 
 {
 	pluginLink = link;
+
+	CHECK_VERSION("History Log")
 
 	if (!ServiceExists(MS_HISTORYEVENTS_GET_TEXT))
 	{
@@ -665,6 +667,9 @@ void ProcessEvent(HANDLE hDbEvent, void *param)
 	else if (dbe.eventType == EVENTTYPE_FILE)
 		Speak_SayExWT("file", hContact, dbe.flags & DBEF_SENT ? 0 : 1, vars, MAX_REGS(vars));
 
+	if (!opts.disk_log_enabled)
+		return;
+
 	if (!IsProtocolEnabled(proto))
 		return;
 
@@ -787,6 +792,9 @@ void ProcessChat(HANDLE hDummy, void *param)
 		return;
 
 	ChatMsg *msg = (ChatMsg *) param;
+
+	BOOL highlight = (msg->type & GC_EVENT_HIGHLIGHT) != 0;
+
 	msg->type = msg->type & ~GC_EVENT_HIGHLIGHT;
 
 	msg->text.trim();
@@ -846,10 +854,12 @@ void ProcessChat(HANDLE hDummy, void *param)
 	for(i = 0; i < MAX_REGS(CHAT_EVENTS); i++) 
 		if (msg->type == CHAT_EVENTS[i].type)
 			break;
+	if (CHAT_EVENTS[i].type == GC_EVENT_MESSAGE && highlight)
+		i++;
 	if (i < MAX_REGS(CHAT_EVENTS))
 		Speak_SayExWT("groupchat", NULL, i, vars, MAX_REGS(vars));
 
-	if (IsChatProtocolEnabled(msg->proto.str) && IsChatEventEnabled(msg->type))
+	if (opts.chat_disk_log_enabled && IsChatProtocolEnabled(msg->proto.str) && IsChatEventEnabled(msg->type))
 	{
 		Buffer<TCHAR> text;
 		text.append(_T("["));
