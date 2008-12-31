@@ -1,0 +1,54 @@
+struct DialogState
+{
+	Int32 width;
+	Int32 height;
+};
+
+struct FieldState
+{
+	Int32 x;
+	Int32 y;
+	Int32 width;
+	Int32 height;
+	Int32 left;
+	Int32 top;
+	Int32 right;
+	Int32 bottom;
+	Boolean visible;
+};
+
+struct ControlFieldState
+{
+	Char text[1024];
+};
+
+struct TextFieldState
+{
+	Char text[1024];
+};
+
+struct FontState
+{
+	Char face[32];
+	Int32 size;
+	Boolean italic;
+	Boolean bold;
+	Boolean underline;
+	Boolean strikeOut;
+};
+
+struct BorderState
+{
+	Int32 left;
+	Int32 right;
+	Int32 top;
+	Int32 bottom;
+};
+
+struct SkinOption
+{
+	Char description[128];
+	Int32 min;
+	Int32 max;
+	Int32 type | CHECKBOX | NUMBER | TEXT;
+};
