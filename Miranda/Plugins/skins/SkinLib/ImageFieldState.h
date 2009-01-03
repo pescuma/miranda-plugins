@@ -16,6 +16,8 @@ public:
 
 	virtual HBITMAP getImage() const;
 
+	virtual bool isEmpty() const;
+
 private:
 	ImageFieldState(ImageField *field);
 

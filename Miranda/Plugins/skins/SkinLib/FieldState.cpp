@@ -173,3 +173,9 @@ void FieldState::setBottom(int botom)
 
 	SET(usingY, END);
 }
+
+//bool FieldState::isEmpty() const
+//{
+//	Size s = getPreferedSize();
+//	return s.x <= 0 || s.y <= 0;
+//}

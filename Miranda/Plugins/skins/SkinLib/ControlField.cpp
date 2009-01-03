@@ -3,7 +3,8 @@
 #include "ControlFieldState.h"
 
 
-ControlField::ControlField(const char *name, HWND aHwnd) : Field(name), hwnd(aHwnd), textSet(false), hFont(NULL)
+ControlField::ControlField(Dialog *dlg, const char *name, HWND aHwnd) 
+		: Field(dlg, name), hwnd(aHwnd), textSet(false), hFont(NULL)
 {
 }
 

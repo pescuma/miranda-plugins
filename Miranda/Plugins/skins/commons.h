@@ -38,7 +38,7 @@ using namespace std;
 
 
 // Miranda headers
-#define MIRANDA_VER 0x0700
+#define MIRANDA_VER 0x0800
 #include <win2k.h>
 #include <newpluginapi.h>
 #include <m_system.h>
@@ -66,13 +66,23 @@ using namespace std;
 #include "../utils/mir_options.h"
 #include "../utils/mir_icons.h"
 #include "../utils/mir_buffer.h"
+#include "../utils/utf8_helpers.h"
 
 #include "resource.h"
 #include "m_skins.h"
+//#include "m_skins_cpp.h"
 #include "options.h"
+#include "MirandaSkinnedDialog.h"
+#include "MirandaField.h"
+#include "MirandaTextField.h"
+#include "MirandaIconField.h"
+#include "MirandaImageField.h"
 
 
 #define MODULE_NAME		"Skins"
+
+#define DEFAULT_SKIN_NAME "Default"
+#define SKIN_EXTENSION "msk"
 
 
 // Global Variables
@@ -86,6 +96,9 @@ extern HANDLE hChangedEvent;
 
 
 extern TCHAR skinsFolder[1024];
+
+extern std::vector<MirandaSkinnedDialog *> dlgs;
+
 
 
 // See if a protocol service exists

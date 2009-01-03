@@ -3,12 +3,18 @@
 #include "FieldState.h"
 
 
-Field::Field(const char *aName) : name(aName), onChangeCallback(NULL), onChangeCallbackParam(NULL)
+Field::Field(Dialog *aDlg, const char *aName) 
+		: dlg(aDlg), name(aName), onChangeCallback(NULL), onChangeCallbackParam(NULL)
 {
 }
 
 Field::~Field()
 {
+}
+
+Dialog * Field::getDialog() const
+{
+	return dlg;
 }
 
 const char * Field::getName() const

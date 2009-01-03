@@ -6,7 +6,7 @@
 class ButtonField : public ControlField
 {
 public:
-	ButtonField(const char *name, HWND hwnd);
+	ButtonField(Dialog *dlg, const char *name, HWND hwnd);
 	virtual ~ButtonField();
 
 	virtual FieldType getType() const;

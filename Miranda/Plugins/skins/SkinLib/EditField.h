@@ -7,7 +7,7 @@
 class EditField : public ControlField
 {
 public:
-	EditField(const char *name, HWND hwnd);
+	EditField(Dialog *dlg, const char *name, HWND hwnd);
 	virtual ~EditField();
 
 	virtual FieldType getType() const;

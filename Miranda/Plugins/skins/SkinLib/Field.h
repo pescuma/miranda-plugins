@@ -8,7 +8,6 @@
 #include "Position.h"
 
 
-
 enum FieldType
 {
 	SIMPLE_TEXT = 1,
@@ -20,6 +19,7 @@ enum FieldType
 	USER_DEFINED = 0x100
 };
 
+class Dialog;
 class Field;
 class FieldState;
 
@@ -29,9 +29,10 @@ typedef void (*FieldCallback)(void *param, const Field *field);
 class Field
 {
 public:
-	Field(const char *name);
+	Field(Dialog *dlg, const char *name);
 	virtual ~Field();
 
+	virtual Dialog * getDialog() const;
 	virtual const char * getName() const;
 	virtual FieldType getType() const = 0;
 
@@ -43,6 +44,7 @@ protected:
 	void fireOnChange() const;
 
 private:
+	Dialog *dlg;
 	const std::string name;
 
 	FieldCallback onChangeCallback;

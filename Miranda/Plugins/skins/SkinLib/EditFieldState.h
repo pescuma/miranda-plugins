@@ -12,6 +12,8 @@ public:
 
 	virtual Size getPreferedSize() const;
 
+	virtual bool isEmpty() const;
+
 private:
 	EditFieldState(EditField *field);
 

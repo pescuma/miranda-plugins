@@ -8,8 +8,8 @@
 
 
 SkinnedDialog::SkinnedDialog(const char *name) 
-		: dlg(name), fileChangedTime(0), 
-		  script(NULL), state(NULL), opts(NULL),
+		: Dialog(name), fileChangedTime(0), 
+		  script(NULL), state(NULL), opts(NULL), defaultState(NULL),
 		  errorCallback(NULL), errorCallbackParam(NULL),
 		  traceCallback(NULL), traceCallbackParam(NULL)
 {
@@ -26,10 +26,8 @@ const TCHAR * SkinnedDialog::getFilename() const
 	return filename.c_str();
 }
 
-void SkinnedDialog::setFilename(const char *skin, const TCHAR *filename)
+void SkinnedDialog::setFilename(const TCHAR *filename)
 {
-	this->skin = skin;
-
 	if (this->filename == filename)
 		return;
 
@@ -40,7 +38,7 @@ void SkinnedDialog::setFilename(const char *skin, const TCHAR *filename)
 
 bool SkinnedDialog::addField(Field *field)
 {
-	if (dlg.addField(field))
+	if (Dialog::addField(field))
 	{
 		releaseCompiledScript();
 		releaseState();
@@ -51,41 +49,58 @@ bool SkinnedDialog::addField(Field *field)
 		return false;
 }
 
-Field * SkinnedDialog::getField(const char *name) const
-{
-	return dlg.getField(name);
-}
-
-Field * SkinnedDialog::getField(unsigned int pos) const
-{
-	if (pos >= dlg.fields.size())
-		return NULL;
-	return dlg.fields[pos];
-}
-
-int SkinnedDialog::getFieldCount() const
-{
-	return dlg.fields.size();
-}
-
-const Size & SkinnedDialog::getSize() const
-{
-	return dlg.getSize();
-}
-
 void SkinnedDialog::setSize(const Size &size)
 {
-	if (dlg.getSize() == size)
+	if (getSize() == size)
 		return;
 
-	dlg.setSize(size);
+	Dialog::setSize(size);
 	releaseState();
+}
+
+bool SkinnedDialog::compile()
+{
+	bool changed = fileChanged();
+	if (!changed)
+		return true;
+
+	releaseCompiledScript();
+
+	struct _stat st = {0};
+	if (_tstat(filename.c_str(), &st) != 0)
+		return false;
+
+	std::tstring text;
+	readFile(text);
+	if (text.size() <= 0)
+		return false;
+
+	script = new V8Script();
+	script->setExceptionCallback(errorCallback, errorCallbackParam);
+
+	if (!script->compile(text.c_str(), this))
+	{
+		releaseCompiledScript();
+		return false;
+	}
+
+	std::pair<SkinOptions *,DialogState *> pair = script->configure(this);
+	opts = pair.first;
+	defaultState = pair.second;
+	if (opts == NULL)
+	{
+		releaseCompiledScript();
+		return false;
+	}
+
+	fileChangedTime = st.st_mtime;
+
+	return true;
 }
 
 DialogState * SkinnedDialog::getState()
 {	
-	bool changed = fileChanged();
-	if (state != NULL && !changed)
+	if (state != NULL && !fileChanged())
 		return state;
 
 	releaseState();
@@ -93,39 +108,10 @@ DialogState * SkinnedDialog::getState()
 	if (filename.size() <= 0)
 		return NULL;
 
-	if (changed || script == NULL)
-	{
-		releaseCompiledScript();
+	if (!compile())
+		return NULL;
 
-		struct _stat st = {0};
-		if (_tstat(filename.c_str(), &st) != 0)
-			return NULL;
-
-		std::tstring text;
-		readFile(text);
-		if (text.size() <= 0)
-			return NULL;
-
-		script = new V8Script();
-		script->setExceptionCallback(errorCallback, errorCallbackParam);
-
-		if (!script->compile(text.c_str(), &dlg))
-		{
-			releaseCompiledScript();
-			return NULL;
-		}
-
-		opts = script->createOptions(&dlg);
-		if (opts == NULL)
-		{
-			releaseCompiledScript();
-			return NULL;
-		}
-
-		fileChangedTime = st.st_mtime;
-	}
-
-	state = dlg.createState();
+	state = Dialog::createState();
 	if (!script->run(state, opts))
 	{
 		releaseState();
@@ -142,6 +128,9 @@ void SkinnedDialog::releaseCompiledScript()
 
 	delete opts;
 	opts = NULL;
+
+	delete defaultState;
+	defaultState = NULL;
 }
 
 void SkinnedDialog::releaseState()
@@ -155,10 +144,10 @@ DialogState * SkinnedDialog::createState(const TCHAR *text, MessageCallback erro
 	V8Script script;
 	script.setExceptionCallback(errorCallback, errorCallbackParam);
 
-	if (!script.compile(text, &dlg))
+	if (!script.compile(text, this))
 		return NULL;
 
-	DialogState *state = dlg.createState();
+	DialogState *state = Dialog::createState();
 	if (!script.run(state, opts))
 	{
 		delete state;
@@ -249,4 +238,16 @@ void SkinnedDialog::trace(TCHAR *msg, ...)
 	va_end(args);
 
 	traceCallback(traceCallbackParam, buff);
+}
+
+SkinOptions * SkinnedDialog::getOpts()
+{
+	compile();
+	return opts;
+}
+
+DialogState * SkinnedDialog::getDefaultState()
+{
+	compile();
+	return defaultState;
 }

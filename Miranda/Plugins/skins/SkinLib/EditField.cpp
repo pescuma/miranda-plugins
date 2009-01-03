@@ -3,7 +3,8 @@
 #include "EditFieldState.h"
 
 
-EditField::EditField(const char *name, HWND hwnd) : ControlField(name, hwnd)
+EditField::EditField(Dialog *dlg, const char *name, HWND hwnd) 
+		: ControlField(dlg, name, hwnd)
 {
 }
 

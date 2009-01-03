@@ -12,21 +12,24 @@ class Dialog
 {
 public:
 	Dialog(const char *name);
-	~Dialog();
+	virtual ~Dialog();
 
-	const char * getName() const;
+	virtual const char * getName() const;
 
-	std::vector<Field *> fields;
-	bool addField(Field *field);
-	Field * getField(const char *name) const;
+	virtual bool addField(Field *field);
+	virtual Field * getField(const char *name) const;
+	virtual Field * getField(unsigned int pos) const;
+	virtual int getIndexOf(Field *field) const;
+	virtual unsigned int getFieldCount() const;
 
-	const Size & getSize() const;
-	void setSize(const Size &size);
+	virtual const Size & getSize() const;
+	virtual void setSize(const Size &size);
 
-	DialogState * createState();
+	virtual DialogState * createState();
 
 private:
 	const std::string name;
+	std::vector<Field *> fields;
 	Size size;
 };
 

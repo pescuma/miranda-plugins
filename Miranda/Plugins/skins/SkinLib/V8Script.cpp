@@ -16,21 +16,67 @@ V8Script::~V8Script()
 	dispose();
 }
 
+static Handle<Value> IsEmptyCallback(const Arguments& args)
+{
+	if (args.Length() < 1) 
+		return Undefined();
+	
+	HandleScope scope;
+
+	for(int i = 0; i < args.Length(); i++)
+	{
+		Local<Value> arg = args[0];
+
+		if (arg.IsEmpty() || arg->IsNull() || arg->IsUndefined())
+		{
+			return Boolean::New(true);
+		}
+		else if (arg->IsExternal())
+		{
+			Local<External> wrap = Local<External>::Cast(arg);
+			FieldState *field = (FieldState *) wrap->Value();
+			if (field->isEmpty())
+				return Boolean::New(true);
+		}
+		else if (arg->IsString())
+		{
+			Local<String> str = Local<String>::Cast(arg);
+			if (str->Length() <= 0)
+				return Boolean::New(true);
+		}
+	}
+
+	return Boolean::New(false);
+}
+
+static Handle<Value> RGBCallback(const Arguments& args)
+{
+	if (args.Length() != 3) 
+		return Undefined();
+
+	COLORREF color = RGB(args[0]->Int32Value(), args[1]->Int32Value(), args[2]->Int32Value());
+	return Int32::New(color);
+}
+
 bool V8Script::compile(const TCHAR *source, Dialog *dlg)
 {
 	dispose();
 
 	HandleScope handle_scope;
 
-	context = Context::New();
+	Handle<ObjectTemplate> global = ObjectTemplate::New();
+	global->Set(String::New("IsEmpty"), FunctionTemplate::New(&IsEmptyCallback));
+	global->Set(String::New("RGB"), FunctionTemplate::New(&RGBCallback));
+
+	context = Context::New(NULL, global);
 
 	Context::Scope context_scope(context);
 
 	context->Global()->Set(String::New("window"), wrappers.createDialogWrapper(), ReadOnly);
 	context->Global()->Set(String::New("opts"), wrappers.createOptionsWrapper(), ReadOnly);
-	for(unsigned int i = 0; i < dlg->fields.size(); i++)
+	for(unsigned int i = 0; i < dlg->getFieldCount(); i++)
 	{
-		Field *field = dlg->fields[i];
+		Field *field = dlg->getField(i);
 		context->Global()->Set(String::New(field->getName()), wrappers.createWrapper(field->getType()), ReadOnly);
 	}
 	wrappers.clearTemplates();
@@ -68,7 +114,7 @@ static Handle<Object> get(Local<Object> obj, const char *field)
 	return Handle<Object>::Cast(obj->Get(String::New(field)));
 }
 
-Handle<Function> V8Script::getOptionsFunction(Dialog *dlg)
+Handle<Function> V8Script::getConfigureFunction(Dialog *dlg)
 {
 	DialogState *state = dlg->createState();
 
@@ -92,47 +138,55 @@ Handle<Function> V8Script::getOptionsFunction(Dialog *dlg)
 
 	delete state;
 
-	Handle<Value> options_val = context->Global()->Get(String::New("options"));
-	if (options_val.IsEmpty() || !options_val->IsFunction()) 
+	Handle<Value> configure_val = context->Global()->Get(String::New("configure"));
+	if (configure_val.IsEmpty() || !configure_val->IsFunction()) 
 		return Handle<Function>();
 
-	Handle<Function> options = Handle<Function>::Cast(options_val);
+	Handle<Function> configure = Handle<Function>::Cast(configure_val);
 
-	return handle_scope.Close(options);
+	return handle_scope.Close(configure);
 }
 
-SkinOptions * V8Script::createOptions(Dialog *dlg)
+std::pair<SkinOptions *,DialogState *> V8Script::configure(Dialog *dlg)
 {
 	if (!isValid())
-		return NULL;
+		return std::pair<SkinOptions *,DialogState *>(NULL, NULL);
 
 	SkinOptions *opts = new SkinOptions();
+	DialogState *state = dlg->createState();
 
 	HandleScope handle_scope;
 
 	Context::Scope context_scope(context);
 
-	Handle<Function> options = getOptionsFunction(dlg);
-	if (options.IsEmpty())
-		return opts;
+	Handle<Function> configure = getConfigureFunction(dlg);
+	if (configure.IsEmpty())
+		return std::pair<SkinOptions *,DialogState *>(opts, state);
 
 	Local<Object> global = context->Global();
 	wrappers.fillWrapper(get(global, "opts"), opts, true);
+	wrappers.fillWrapper(get(global, "window"), state);
+	for(unsigned int i = 0; i < state->fields.size(); i++)
+	{
+		FieldState *field = state->fields[i];
+		wrappers.fillWrapper(get(global, field->getField()->getName()), field);
+	}
 
 	global->Set(String::New("NUMBER"), String::New("NUMBER"));
 	global->Set(String::New("CHECKBOX"), String::New("CHECKBOX"));
 	global->Set(String::New("TEXT"), String::New("TEXT"));
 
 	TryCatch try_catch;
-	Handle<Value> result = options->Call(global, 0, NULL);
+	Handle<Value> result = configure->Call(global, 0, NULL);
 	if (result.IsEmpty()) 
 	{
 		reportException(&try_catch);
 		delete opts;
-		return NULL;
+		delete state;
+		return std::pair<SkinOptions *,DialogState *>(NULL, NULL);;
 	} 
 
-	return opts;
+	return std::pair<SkinOptions *,DialogState *>(opts, state);
 }
 
 bool V8Script::run(DialogState * state, SkinOptions *opts)

@@ -35,6 +35,7 @@ struct FontState
 	Boolean bold;
 	Boolean underline;
 	Boolean strikeOut;
+	Int32 color;
 };
 
 struct BorderState

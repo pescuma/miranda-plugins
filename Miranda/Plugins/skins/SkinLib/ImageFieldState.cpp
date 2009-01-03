@@ -29,3 +29,8 @@ HBITMAP ImageFieldState::getImage() const
 {
 	return getField()->getImage();
 }
+
+bool ImageFieldState::isEmpty() const
+{
+	return getImage() != NULL;
+}

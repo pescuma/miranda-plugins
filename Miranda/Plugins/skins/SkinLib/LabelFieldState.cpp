@@ -27,3 +27,8 @@ Size LabelFieldState::getPreferedSize() const
 
 	return ret;
 }
+
+bool LabelFieldState::isEmpty() const
+{
+	return lstrlen(getText()) <= 0;
+}
