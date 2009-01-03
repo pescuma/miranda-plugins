@@ -22,3 +22,8 @@ Size ButtonFieldState::getPreferedSize() const
 
 	return ret;
 }
+
+bool ButtonFieldState::isEmpty() const
+{
+	return false;
+}

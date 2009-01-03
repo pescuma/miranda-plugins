@@ -7,7 +7,7 @@
 class TextField : public Field
 {
 public:
-	TextField(const char *name);
+	TextField(Dialog *dlg, const char *name);
 	virtual ~TextField();
 
 	virtual FieldType getType() const;

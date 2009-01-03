@@ -23,48 +23,56 @@
 #include "LabelFieldState.h"
 #include "TextFieldState.h"
 
+#include "SkinOptions.h"
+
 class V8Script;
-class SkinOptions;
+
 
 typedef void (*MessageCallback)(void *param, const TCHAR *err);
 
 
 
-class SkinnedDialog
+class SkinnedDialog : public Dialog
 {
 public:
 	SkinnedDialog(const char *name);
-	~SkinnedDialog();
+	virtual ~SkinnedDialog();
 
-	const TCHAR * getFilename() const;
-	void setFilename(const char *skin, const TCHAR *filename);
+	virtual const TCHAR * getFilename() const;
+	virtual void setFilename(const TCHAR *filename);
 
-	bool addField(Field *field);
-	Field * getField(const char *name) const;
-	Field * getField(unsigned int pos) const;
-	int getFieldCount() const;
+	virtual bool addField(Field *field);
 
-	const Size & getSize() const;
-	void setSize(const Size &size);
+	virtual void setSize(const Size &size);
 
 	/// Return the cached state. Do not free the result. 
 	/// Each call to this method can potentially create the state, so don't cache it.
-	DialogState * getState();
+	virtual DialogState * getState();
 
 	/// Create a state based on the script passed in text. the caller have to free the DialogState *
-	DialogState * createState(const TCHAR *text, MessageCallback errorCallback = NULL, void *errorCallbackParam = NULL);
+	virtual DialogState * createState(const TCHAR *text, MessageCallback errorCallback = NULL, void *errorCallbackParam = NULL);
 
-	void setErrorCallback(MessageCallback cb, void *param = NULL);
-	void setTraceCallback(MessageCallback cb, void *param = NULL);
+	virtual void setErrorCallback(MessageCallback cb, void *param = NULL);
+	virtual void setTraceCallback(MessageCallback cb, void *param = NULL);
+
+	virtual SkinOptions * getOpts();
+	virtual DialogState * getDefaultState();
+
+protected:
+	virtual bool fileChanged();
+	virtual bool compile();
+
+	virtual void trace(TCHAR *msg, ...);
+
+	virtual void onFieldChange(const Field *field);
 
 private:
-	Dialog dlg;
-	std::string skin;
 	std::tstring filename;
 	__time64_t fileChangedTime;
 	V8Script *script;
 	DialogState *state;
 	SkinOptions *opts;
+	DialogState *defaultState;
 
 	MessageCallback errorCallback;
 	void *errorCallbackParam;
@@ -73,12 +81,7 @@ private:
 
 	void releaseCompiledScript();
 	void releaseState();
-	bool fileChanged();
 	void readFile(std::tstring &ret);
-
-	void trace(TCHAR *msg, ...);
-
-	void onFieldChange(const Field *field);
 
 	static void staticOnFieldChange(void *param, const Field *field);
 };

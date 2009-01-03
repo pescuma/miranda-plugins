@@ -3,7 +3,8 @@
 #include "LabelFieldState.h"
 
 
-LabelField::LabelField(const char *name, HWND hwnd) : ControlField(name, hwnd)
+LabelField::LabelField(Dialog *dlg, const char *name, HWND hwnd) 
+		: ControlField(dlg, name, hwnd)
 {
 }
 

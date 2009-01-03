@@ -3,7 +3,8 @@
 #include "IconFieldState.h"
 
 
-IconField::IconField(const char *name) : Field(name), hIcon(NULL)
+IconField::IconField(Dialog *dlg, const char *name) 
+		: Field(dlg, name), hIcon(NULL)
 {
 
 }

@@ -2,6 +2,7 @@
 # define __V8_SCRIPT_H__
 
 #include <v8.h>
+#include <utility>
 #include "V8Wrappers.h"
 
 typedef void (*ExceptionCallback)(void *param, const TCHAR *err);
@@ -18,7 +19,7 @@ public:
 
 	bool isValid();
 
-	SkinOptions * createOptions(Dialog *dlg);
+	std::pair<SkinOptions *,DialogState *> configure(Dialog *dlg);
 
 	bool run(DialogState * state, SkinOptions *opts);
 
@@ -32,7 +33,7 @@ private:
 	ExceptionCallback exceptionCallback;
 	void *exceptionCallbackParam;
 
-	v8::Handle<v8::Function> getOptionsFunction(Dialog *dlg);
+	v8::Handle<v8::Function> getConfigureFunction(Dialog *dlg);
 	void reportException(v8::TryCatch *try_catch);
 };
 

@@ -11,6 +11,8 @@ public:
 
 	virtual Size getPreferedSize() const;
 
+	virtual bool isEmpty() const;
+
 private:
 	ButtonFieldState(ControlField *field);
 

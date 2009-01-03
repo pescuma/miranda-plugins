@@ -16,6 +16,8 @@ public:
 
 	virtual HICON getIcon() const;
 
+	virtual bool isEmpty() const;
+
 private:
 	IconFieldState(IconField *field);
 

@@ -48,6 +48,29 @@ Field * Dialog::getField(const char *name) const
 	return NULL;
 }
 
+Field * Dialog::getField(unsigned int pos) const
+{
+	if (pos >= fields.size())
+		return NULL;
+	return fields[pos];
+}
+
+int Dialog::getIndexOf(Field *field) const
+{
+	for(unsigned int i = 0; i < fields.size(); i++) 
+	{
+		Field *f = fields[i];
+		if (field == f)
+			return i;
+	}
+
+	return -1;
+}
+
+unsigned int Dialog::getFieldCount() const
+{
+	return fields.size();
+}
 
 const Size & Dialog::getSize() const
 {

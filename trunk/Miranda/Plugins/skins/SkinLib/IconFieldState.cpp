@@ -29,3 +29,8 @@ HICON IconFieldState::getIcon() const
 {
 	return getField()->getIcon();
 }
+
+bool IconFieldState::isEmpty() const
+{
+	return getIcon() != NULL;
+}

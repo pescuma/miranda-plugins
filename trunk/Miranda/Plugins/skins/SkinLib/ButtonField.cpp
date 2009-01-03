@@ -3,7 +3,7 @@
 #include "ButtonFieldState.h"
 
 
-ButtonField::ButtonField(const char *name, HWND hwnd) : ControlField(name, hwnd)
+ButtonField::ButtonField(Dialog *dlg, const char *name, HWND hwnd) : ControlField(dlg, name, hwnd)
 {
 }
 

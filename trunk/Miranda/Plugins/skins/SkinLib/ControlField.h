@@ -6,7 +6,7 @@
 class ControlField : public Field
 {
 public:
-	ControlField(const char *name, HWND hwnd);
+	ControlField(Dialog *dlg, const char *name, HWND hwnd);
 	virtual ~ControlField();
 
 	virtual HWND getHWND();

@@ -56,3 +56,8 @@ const FontState * TextFieldState::getFont() const
 {
 	return &font;
 }
+
+bool TextFieldState::isEmpty() const
+{
+	return lstrlen(getText()) <= 0;
+}

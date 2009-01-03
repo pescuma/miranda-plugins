@@ -3,7 +3,8 @@
 #include "TextFieldState.h"
 
 
-TextField::TextField(const char *name) : Field(name), hFont(NULL), fontColor(RGB(0,0,0))
+TextField::TextField(Dialog *dlg, const char *name) 
+		: Field(dlg, name), hFont(NULL), fontColor(RGB(0,0,0))
 {
 }
 
