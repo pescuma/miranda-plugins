@@ -8,13 +8,13 @@ version 2 of the License, or (at your option) any later version.
 
 This is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 Library General Public License for more details.
 
 You should have received a copy of the GNU Library General Public
-License along with this file; see the file license.txt.  If
+License along with this file; see the file license.txt. If
 not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-Boston, MA 02111-1307, USA.  
+Boston, MA 02111-1307, USA. 
 */
 
 #include "commons.h"
@@ -51,6 +51,7 @@ PLUGINLINK *pluginLink;
 
 std::vector<HANDLE> hHooks;
 std::vector<HANDLE> hServices;
+HANDLE hNetlibUser = 0;
 
 HANDLE hSkinsFolder = NULL;
 TCHAR skinsFolder[1024];
@@ -58,12 +59,15 @@ TCHAR skinsFolder[1024];
 char *metacontacts_proto = NULL;
 BOOL loaded = FALSE;
 
+std::vector<MirandaSkinnedDialog *> dlgs;
+
 LIST_INTERFACE li;
 FI_INTERFACE *fei = NULL;
 
 int ModulesLoaded(WPARAM wParam, LPARAM lParam);
 int PreShutdown(WPARAM wParam, LPARAM lParam);
 
+static int Service_GetInterface(WPARAM wParam, LPARAM lParam);
 
 
 // Functions ////////////////////////////////////////////////////////////////////////////
@@ -108,6 +112,36 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	hHooks.push_back( HookEvent(ME_SYSTEM_MODULESLOADED, ModulesLoaded) );
 	hHooks.push_back( HookEvent(ME_SYSTEM_PRESHUTDOWN, PreShutdown) );
 
+	NETLIBUSER nl_user = {0};
+	nl_user.cbSize = sizeof(nl_user);
+	nl_user.szSettingsModule = MODULE_NAME;
+	nl_user.flags = NUF_NOOPTIONS;
+	nl_user.szDescriptiveName = Translate("Skins");
+	hNetlibUser = (HANDLE)CallService(MS_NETLIB_REGISTERUSER, 0, (LPARAM)&nl_user);
+
+	TCHAR mirandaFolder[1024];
+	GetModuleFileName(GetModuleHandle(NULL), mirandaFolder, MAX_REGS(mirandaFolder));
+	TCHAR *p = _tcsrchr(mirandaFolder, _T('\\'));
+	if (p != NULL)
+		*p = _T('\0');
+
+	// Folders plugin support
+	if (ServiceExists(MS_FOLDERS_REGISTER_PATH))
+	{
+		hSkinsFolder = (HANDLE) FoldersRegisterCustomPathT(Translate("Skins"), 
+			Translate("Skins"), _T(MIRANDA_PATH) _T("\\Skins"));
+
+		FoldersGetCustomPathT(hSkinsFolder, skinsFolder, MAX_REGS(skinsFolder), _T("."));
+	}
+	else
+	{
+		mir_sntprintf(skinsFolder, MAX_REGS(skinsFolder), _T("%s\\Skins"), mirandaFolder);
+	}
+
+	InitOptions();
+
+	hServices.push_back( CreateServiceFunction(MS_SKINS_GETINTERFACE, Service_GetInterface) );
+
 	return 0;
 }
 
@@ -127,14 +161,8 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 	// add our modules to the KnownModules list
 	CallService("DBEditorpp/RegisterSingleModule", (WPARAM) MODULE_NAME, 0);
 
-	TCHAR mirandaFolder[1024];
-	GetModuleFileName(GetModuleHandle(NULL), mirandaFolder, MAX_REGS(mirandaFolder));
-	TCHAR *p = _tcsrchr(mirandaFolder, _T('\\'));
-	if (p != NULL)
-		*p = _T('\0');
-
-    // updater plugin support
-    if(ServiceExists(MS_UPDATE_REGISTER))
+	// updater plugin support
+	if(ServiceExists(MS_UPDATE_REGISTER))
 	{
 		Update upd = {0};
 		char szCurrentVersion[30];
@@ -157,24 +185,8 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		upd.pbVersion = (BYTE *)CreateVersionStringPlugin((PLUGININFO*) &pluginInfo, szCurrentVersion);
 		upd.cpbVersion = strlen((char *)upd.pbVersion);
 
-        CallService(MS_UPDATE_REGISTER, 0, (LPARAM)&upd);
+		CallService(MS_UPDATE_REGISTER, 0, (LPARAM)&upd);
 	}
-
-    // Folders plugin support
-	if (ServiceExists(MS_FOLDERS_REGISTER_PATH))
-	{
-		hSkinsFolder = (HANDLE) FoldersRegisterCustomPathT(Translate("Skins"), 
-					Translate("Skins"), 
-					_T(MIRANDA_PATH) _T("\\Skins"));
-
-		FoldersGetCustomPathT(hSkinsFolder, skinsFolder, MAX_REGS(skinsFolder), _T("."));
-	}
-	else
-	{
-		mir_sntprintf(skinsFolder, MAX_REGS(skinsFolder), _T("%s\\Skins"), mirandaFolder);
-	}
-
-	InitOptions();
 
 	loaded = TRUE;
 
@@ -264,13 +276,366 @@ BOOL CreatePath(const char *path)
 
 void log(const char *fmt, ...)
 {
-    va_list va;
-    char text[1024];
+  va_list va;
+  char text[1024];
 
-    va_start(va, fmt);
-    mir_vsnprintf(text, sizeof(text), fmt, va);
-    va_end(va);
+  va_start(va, fmt);
+  mir_vsnprintf(text, sizeof(text), fmt, va);
+  va_end(va);
 
 	CallService(MS_NETLIB_LOG, (WPARAM) NULL, (LPARAM) text);
 }
 
+
+MirandaSkinnedDialog *GetDialog(const char *name)
+{
+	_ASSERT(name != NULL);
+
+	for(unsigned int i = 0; i < dlgs.size(); i++)
+	{
+		MirandaSkinnedDialog *dlg = dlgs[i];
+		if (strcmp(name, dlg->getName()) == 0)
+			return dlg;
+	}
+
+	return NULL;
+}
+
+
+SKINNED_DIALOG Interface_RegisterDialog(const char *name, const char *description, const char *module)
+{
+	if (name == NULL || name[0] == 0 || module == NULL || module[0] == 0)
+		return NULL;
+	if (GetDialog(name) != NULL)
+		return NULL;
+
+	// Check if default skin exists
+	std::tstring filename;
+	filename = skinsFolder;
+	filename += _T("\\");
+	filename += _T(DEFAULT_SKIN_NAME);
+	filename += _T("\\");
+	filename += Utf8ToTchar(name);
+	filename += _T(".");
+	filename += _T(SKIN_EXTENSION);
+
+	if (!FileExists(filename.c_str()))
+		return NULL;
+
+	MirandaSkinnedDialog *dlg = new MirandaSkinnedDialog(name, module);
+	dlgs.push_back(dlg);
+	return (SKINNED_DIALOG) dlg;
+}
+
+void Interface_DeleteDialog(SKINNED_DIALOG aDlg)
+{
+	if (aDlg == NULL)
+		return;
+
+	MirandaSkinnedDialog * dlg = (MirandaSkinnedDialog *) aDlg;
+	for(std::vector<MirandaSkinnedDialog*>::iterator it = dlgs.begin(); it != dlgs.end(); it++)
+	{
+		if (*it == dlg)
+		{
+			dlgs.erase(it);
+			break;
+		}
+	}
+
+	delete dlg;
+}
+
+void Interface_FinishedConfiguring(SKINNED_DIALOG aDlg)
+{
+	if (aDlg == NULL)
+		return;
+
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
+	dlg->finishedConfiguring();
+}
+
+void Interface_SetDialogSize(SKINNED_DIALOG aDlg, int width, int height)
+{
+	if (aDlg == NULL)
+		return;
+
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
+	dlg->setSize(Size(width, height));
+}
+
+SKINNED_FIELD Interface_AddTextField(SKINNED_DIALOG aDlg, const char *name, const char *description)
+{
+	if (aDlg == NULL || name == NULL || name[0] == 0)
+		return NULL;
+
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
+
+	MirandaTextField *field = new MirandaTextField(dlg, name, description);
+	if (!dlg->addField(field))
+	{
+		delete field;
+		return NULL;
+	}
+	
+	return (SKINNED_FIELD) field;
+}
+
+SKINNED_FIELD Interface_AddIconField(SKINNED_DIALOG aDlg, const char *name, const char *description)
+{
+	if (aDlg == NULL || name == NULL || name[0] == 0)
+		return NULL;
+
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
+
+	MirandaIconField *field = new MirandaIconField(dlg, name, description);
+	if (!dlg->addField(field))
+	{
+		delete field;
+		return NULL;
+	}
+
+	return (SKINNED_FIELD) field;
+}
+
+SKINNED_FIELD Interface_AddImageField(SKINNED_DIALOG aDlg, const char *name, const char *description)
+{
+	if (aDlg == NULL || name == NULL || name[0] == 0)
+		return NULL;
+
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
+
+	MirandaImageField *field = new MirandaImageField(dlg, name, description);
+	if (!dlg->addField(field))
+	{
+		delete field;
+		return NULL;
+	}
+
+	return (SKINNED_FIELD) field;
+}
+
+SKINNED_FIELD Interface_GetField(SKINNED_DIALOG aDlg, const char *name)
+{
+	if (aDlg == NULL || name == NULL || name[0] == 0)
+		return NULL;
+
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
+
+	return (SKINNED_FIELD) dlg->getField(name);
+}
+
+RECT Interface_GetRect(SKINNED_FIELD aField)
+{
+	RECT ret = { 0, 0, -1, -1 };
+
+	if (aField == NULL)
+		return ret;
+
+	Field *field = (Field *) aField;
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) field->getDialog();
+	FieldState *fieldState = dlg->getState()->getField(field->getName());
+
+	if (!fieldState->isVisible())
+		return ret;
+
+	ret.left = fieldState->getLeft();
+	ret.top = fieldState->getTop();
+	ret.right = fieldState->getRight();
+	ret.bottom = fieldState->getBottom();
+
+	return ret;
+}
+
+BOOL Interface_IsVisible(SKINNED_FIELD aField)
+{
+	if (aField == NULL)
+		return FALSE;
+
+	Field *field = (Field *) aField;
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) field->getDialog();
+	FieldState *fieldState = dlg->getState()->getField(field->getName());
+	
+	return fieldState->isVisible();
+}
+
+void Interface_SetText(SKINNED_FIELD aField, const TCHAR *text)
+{
+	if (aField == NULL)
+		return;
+
+	Field *field = (Field *) aField;
+	switch(field->getType())
+	{
+		case SIMPLE_TEXT:
+			((TextField *) field)->setText(text);
+			break;
+		case CONTROL_LABEL:
+		case CONTROL_BUTTON:
+		case CONTROL_EDIT:
+			((ControlField *) field)->setText(text);
+			break;
+	}
+}
+
+const TCHAR * Interface_GetText(SKINNED_FIELD aField)
+{
+	if (aField == NULL)
+		return NULL;
+
+	Field *field = (Field *) aField;
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) field->getDialog();
+	FieldState *fieldState = dlg->getState()->getField(field->getName());
+
+	switch(field->getType())
+	{
+		case SIMPLE_TEXT:
+			return ((TextFieldState *) fieldState)->getText();
+		case CONTROL_LABEL:
+		case CONTROL_BUTTON:
+		case CONTROL_EDIT:
+			return ((ControlFieldState *) field)->getText();
+	}
+
+	return NULL;
+}
+
+HFONT Interface_GetFont(SKINNED_FIELD aField)
+{
+	if (aField == NULL)
+		return NULL;
+
+	Field *field = (Field *) aField;
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) field->getDialog();
+	FieldState *fieldState = dlg->getState()->getField(field->getName());
+
+	switch(field->getType())
+	{
+		case SIMPLE_TEXT:
+			return ((TextFieldState *) fieldState)->getFont()->getHFONT();
+		case CONTROL_LABEL:
+		case CONTROL_BUTTON:
+		case CONTROL_EDIT:
+			return ((ControlFieldState *) field)->getFont()->getHFONT();
+	}
+
+	return NULL;
+}
+
+COLORREF Interface_GetFontColor(SKINNED_FIELD aField)
+{
+	if (aField == NULL)
+		return RGB(0,0,0);
+
+	Field *field = (Field *) aField;
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) field->getDialog();
+	FieldState *fieldState = dlg->getState()->getField(field->getName());
+
+	switch(field->getType())
+	{
+		case SIMPLE_TEXT:
+			return ((TextFieldState *) fieldState)->getFont()->getColor();
+		case CONTROL_LABEL:
+		case CONTROL_BUTTON:
+		case CONTROL_EDIT:
+			return ((ControlFieldState *) field)->getFont()->getColor();
+	}
+
+	return RGB(0,0,0);
+}
+
+void Interface_SetIcon(SKINNED_FIELD aField, HICON hIcon)
+{
+	if (aField == NULL)
+		return;
+
+	Field *field = (Field *) aField;
+	switch(field->getType())
+	{
+		case SIMPLE_ICON:
+			((IconField *) field)->setIcon(hIcon);
+			break;
+	}
+}
+
+HICON Interface_GetIcon(SKINNED_FIELD aField)
+{
+	if (aField == NULL)
+		return NULL;
+
+	Field *field = (Field *) aField;
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) field->getDialog();
+	FieldState *fieldState = dlg->getState()->getField(field->getName());
+	switch(field->getType())
+	{
+		case SIMPLE_ICON:
+			return ((IconFieldState *) fieldState)->getIcon();
+	}
+	return NULL;
+}
+
+void Interface_SetImage(SKINNED_FIELD aField, HBITMAP hBmp)
+{
+	if (aField == NULL)
+		return;
+
+	Field *field = (Field *) aField;
+	switch(field->getType())
+	{
+		case SIMPLE_IMAGE:
+			((ImageField *) field)->setImage(hBmp);
+			break;
+	}
+}
+
+HBITMAP Interface_GetImage(SKINNED_FIELD aField)
+{
+	if (aField == NULL)
+		return NULL;
+
+	Field *field = (Field *) aField;
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) field->getDialog();
+	FieldState *fieldState = dlg->getState()->getField(field->getName());
+	switch(field->getType())
+	{
+		case SIMPLE_IMAGE:
+			return ((ImageFieldState *) fieldState)->getImage();
+	}
+	return NULL;
+}
+
+
+static int Service_GetInterface(WPARAM wParam, LPARAM lParam)
+{
+	SKIN_INTERFACE *mski = (SKIN_INTERFACE *) lParam;
+	if (mski == NULL)
+		return -1;
+
+	if (mski->cbSize < sizeof(SKIN_INTERFACE))
+		return -2;
+
+	mski->RegisterDialog = &Interface_RegisterDialog;
+	mski->DeleteDialog = &Interface_DeleteDialog;
+	mski->FinishedConfiguring = &Interface_FinishedConfiguring;
+	mski->SetDialogSize = &Interface_SetDialogSize;
+
+	mski->AddTextField = &Interface_AddTextField;
+	mski->AddIconField = &Interface_AddIconField;
+	mski->AddImageField = &Interface_AddImageField;
+	mski->GetField = &Interface_GetField;
+
+	mski->GetRect = &Interface_GetRect;
+	mski->IsVisible = &Interface_IsVisible;
+
+	mski->SetText = &Interface_SetText;
+	mski->GetText = &Interface_GetText;
+	mski->GetFont = &Interface_GetFont;
+	mski->GetFontColor = &Interface_GetFontColor;
+
+	mski->SetIcon = &Interface_SetIcon;
+	mski->GetIcon = &Interface_GetIcon;
+
+	mski->SetImage = &Interface_SetImage;
+	mski->GetImage = &Interface_GetImage;
+
+	return 0;
+}

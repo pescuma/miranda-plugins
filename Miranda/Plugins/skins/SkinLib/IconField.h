@@ -7,7 +7,7 @@
 class IconField : public Field
 {
 public:
-	IconField(const char *name);
+	IconField(Dialog *dlg, const char *name);
 	virtual ~IconField();
 
 	virtual FieldType getType() const;

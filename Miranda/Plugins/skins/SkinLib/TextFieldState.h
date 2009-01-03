@@ -21,6 +21,8 @@ public:
 	virtual FontState * getFont();
 	virtual const FontState * getFont() const;
 
+	virtual bool isEmpty() const;
+
 private:
 	TextFieldState(TextField *field);
 

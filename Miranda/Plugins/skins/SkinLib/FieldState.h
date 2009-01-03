@@ -40,6 +40,8 @@ public:
 	virtual bool isVisible() const;
 	virtual void setVisible(bool visible);
 
+	virtual bool isEmpty() const = 0;
+
 protected:
 	FieldState(Field *field);
 

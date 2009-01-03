@@ -6,7 +6,7 @@
 class ImageField : public Field
 {
 public:
-	ImageField(const char *name);
+	ImageField(Dialog *dlg, const char *name);
 	virtual ~ImageField();
 
 	virtual FieldType getType() const;

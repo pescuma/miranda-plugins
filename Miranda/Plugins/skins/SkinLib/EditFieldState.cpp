@@ -50,3 +50,8 @@ Size EditFieldState::getPreferedSize() const
 
 	return ret;
 }
+
+bool EditFieldState::isEmpty() const
+{
+	return false;
+}

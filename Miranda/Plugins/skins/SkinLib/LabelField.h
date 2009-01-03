@@ -7,7 +7,7 @@
 class LabelField : public ControlField
 {
 public:
-	LabelField(const char *name, HWND hwnd);
+	LabelField(Dialog *dlg, const char *name, HWND hwnd);
 	virtual ~LabelField();
 
 	virtual FieldType getType() const;

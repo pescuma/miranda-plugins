@@ -430,6 +430,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\m_skins_cpp.h"
+				>
+			</File>
+			<File
 				RelativePath="..\utils\mir_icons.h"
 				>
 			</File>
@@ -616,6 +620,34 @@
 						>
 					</File>
 				</Filter>
+			</Filter>
+			<Filter
+				Name="Miranda Wrappers Header Files"
+				>
+				<File
+					RelativePath=".\MirandaField.h"
+					>
+				</File>
+				<File
+					RelativePath=".\MirandaFont.h"
+					>
+				</File>
+				<File
+					RelativePath=".\MirandaIconField.h"
+					>
+				</File>
+				<File
+					RelativePath=".\MirandaImageField.h"
+					>
+				</File>
+				<File
+					RelativePath=".\MirandaSkinnedDialog.h"
+					>
+				</File>
+				<File
+					RelativePath=".\MirandaTextField.h"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -1010,6 +1042,30 @@
 						>
 					</File>
 				</Filter>
+			</Filter>
+			<Filter
+				Name="Miranda Wrappers Source Files"
+				>
+				<File
+					RelativePath=".\MirandaFont.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\MirandaIconField.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\MirandaImageField.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\MirandaSkinnedDialog.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\MirandaTextField.cpp"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter

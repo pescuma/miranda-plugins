@@ -3,7 +3,8 @@
 #include "ImageFieldState.h"
 
 
-ImageField::ImageField(const char *name) : Field(name), hBmp(NULL)
+ImageField::ImageField(Dialog *dlg, const char *name) 
+		: Field(dlg, name), hBmp(NULL)
 {
 
 }

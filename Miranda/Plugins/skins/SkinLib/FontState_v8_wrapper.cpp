@@ -117,6 +117,23 @@ static void Set_FontState_strikeOut(Local<String> property, Local<Value> value, 
 }
 
 
+static Handle<Value> Get_FontState_color(Local<String> property, const AccessorInfo &info) 
+{
+	Local<Object> self = info.Holder();
+	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	FontState *tmp = (FontState *) wrap->Value();
+	return Int32::New(tmp->getColor());
+}
+
+static void Set_FontState_color(Local<String> property, Local<Value> value, const AccessorInfo& info) 
+{
+	Local<Object> self = info.Holder();
+	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	FontState *tmp = (FontState *) wrap->Value();
+	tmp->setColor(value->Int32Value());
+}
+
+
 void AddFontStateAcessors(Handle<ObjectTemplate> &templ)
 {
 	templ->SetAccessor(String::New("face"), Get_FontState_face, Set_FontState_face);
@@ -125,4 +142,5 @@ void AddFontStateAcessors(Handle<ObjectTemplate> &templ)
 	templ->SetAccessor(String::New("bold"), Get_FontState_bold, Set_FontState_bold);
 	templ->SetAccessor(String::New("underline"), Get_FontState_underline, Set_FontState_underline);
 	templ->SetAccessor(String::New("strikeOut"), Get_FontState_strikeOut, Set_FontState_strikeOut);
+	templ->SetAccessor(String::New("color"), Get_FontState_color, Set_FontState_color);
 }

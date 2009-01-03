@@ -25,6 +25,68 @@ Boston, MA 02111-1307, USA.
 #define MIID_SKINS { 0x917db7a4, 0xd0fe, 0x4b1c, { 0x8c, 0xa3, 0x6d, 0xc1, 0x44, 0x80, 0xf5, 0xcc } }
 
 
+typedef void * SKINNED_DIALOG;
+typedef void * SKINNED_FIELD;
+
+/// Some common parameters:
+///  - name : internal name and name used inside skin file
+///  - description : name shown to the user
+/// Do not translate any parameters.
+struct SKIN_INTERFACE
+{
+	int cbSize;
+
+	// Global methods
+	SKINNED_DIALOG (*RegisterDialog)(const char *name, const char *description, const char *module);
+	void (*DeleteDialog)(SKINNED_DIALOG dlg);
+	void (*FinishedConfiguring)(SKINNED_DIALOG dlg);
+	void (*SetDialogSize)(SKINNED_DIALOG dlg, int width, int height);
+
+	// Dialog methods
+	SKINNED_FIELD (*AddTextField)(SKINNED_DIALOG dlg, const char *name, const char *description);
+	SKINNED_FIELD (*AddIconField)(SKINNED_DIALOG dlg, const char *name, const char *description);
+	SKINNED_FIELD (*AddImageField)(SKINNED_DIALOG dlg, const char *name, const char *description);
+	SKINNED_FIELD (*GetField)(SKINNED_DIALOG dlg, const char *name);
+
+	// Field methods
+	RECT (*GetRect)(SKINNED_FIELD field);
+	BOOL (*IsVisible)(SKINNED_FIELD field);
+
+	// TextField methods
+	void (*SetText)(SKINNED_FIELD field, const TCHAR *text);
+	const TCHAR * (*GetText)(SKINNED_FIELD field);
+	HFONT (*GetFont)(SKINNED_FIELD field);
+	COLORREF (*GetFontColor)(SKINNED_FIELD field);
+
+	// IconField methods
+	void (*SetIcon)(SKINNED_FIELD field, HICON hIcon);
+	HICON (*GetIcon)(SKINNED_FIELD field);
+
+	// ImageField methods
+	void (*SetImage)(SKINNED_FIELD field, HBITMAP hBmp);
+	HBITMAP (*GetImage)(SKINNED_FIELD field);
+};
+
+
+
+/*
+Skins/GetInterface service
+Fill the function pointers for a SKIN_INTERFACE struct
+
+wparam = 0
+lparam = (SKIN_INTERFACE *) struct to be filled
+returns: 0 on success
+*/
+#define MS_SKINS_GETINTERFACE		"Skins/GetInterface"
+
+
+
+
+static int mir_skins_getInterface(struct SKIN_INTERFACE *dest)
+{
+	dest->cbSize = sizeof(SKIN_INTERFACE);
+	return CallService(MS_SKINS_GETINTERFACE, 0, (LPARAM) dest);
+}
 
 
 #endif // __M_SKINS_H__
