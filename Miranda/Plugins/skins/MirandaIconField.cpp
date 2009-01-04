@@ -11,7 +11,7 @@ MirandaIconField::~MirandaIconField()
 
 MirandaSkinnedDialog * MirandaIconField::getDialog() const
 {
-	return (MirandaSkinnedDialog *) getDialog();
+	return (MirandaSkinnedDialog *) IconField::getDialog();
 }
 
 void MirandaIconField::configure()

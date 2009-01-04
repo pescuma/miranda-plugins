@@ -11,7 +11,7 @@ MirandaImageField::~MirandaImageField()
 
 MirandaSkinnedDialog * MirandaImageField::getDialog() const
 {
-	return (MirandaSkinnedDialog *) getDialog();
+	return (MirandaSkinnedDialog *) ImageField::getDialog();
 }
 
 void MirandaImageField::configure()

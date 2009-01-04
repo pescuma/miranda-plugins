@@ -354,15 +354,6 @@ void Interface_FinishedConfiguring(SKINNED_DIALOG aDlg)
 	dlg->finishedConfiguring();
 }
 
-void Interface_SetDialogSize(SKINNED_DIALOG aDlg, int width, int height)
-{
-	if (aDlg == NULL)
-		return;
-
-	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
-	dlg->setSize(Size(width, height));
-}
-
 SKINNED_FIELD Interface_AddTextField(SKINNED_DIALOG aDlg, const char *name, const char *description)
 {
 	if (aDlg == NULL || name == NULL || name[0] == 0)
@@ -424,24 +415,63 @@ SKINNED_FIELD Interface_GetField(SKINNED_DIALOG aDlg, const char *name)
 	return (SKINNED_FIELD) dlg->getField(name);
 }
 
+void Interface_SetDialogSize(SKINNED_DIALOG aDlg, int width, int height)
+{
+	if (aDlg == NULL)
+		return;
+
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
+	dlg->setSize(Size(width, height));
+}
+
+RECT Interface_GetBorders(SKINNED_DIALOG aDlg)
+{
+	RECT ret = {0};
+
+	if (aDlg == NULL)
+		return ret;
+
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
+	BorderState *borders = dlg->getState()->getBorders();
+
+	ret.left = borders->getLeft();
+	ret.top = borders->getTop();
+	ret.right = borders->getRight();
+	ret.bottom = borders->getBottom();
+
+	return ret;
+}
+
+static inline int beetween(int val, int minVal, int maxVal)
+{
+	return max(minVal, min(maxVal, val));
+}
+
 RECT Interface_GetRect(SKINNED_FIELD aField)
 {
-	RECT ret = { 0, 0, -1, -1 };
+	RECT ret = { 0, 0, 0, 0 };
 
 	if (aField == NULL)
 		return ret;
 
 	Field *field = (Field *) aField;
 	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) field->getDialog();
-	FieldState *fieldState = dlg->getState()->getField(field->getName());
+	DialogState *dlgState = dlg->getState();
+	FieldState *fieldState = dlgState->getField(field->getName());
 
 	if (!fieldState->isVisible())
 		return ret;
 
-	ret.left = fieldState->getLeft();
-	ret.top = fieldState->getTop();
-	ret.right = fieldState->getRight();
-	ret.bottom = fieldState->getBottom();
+	BorderState *borders = dlgState->getBorders();
+	int left = max(0, borders->getLeft());
+	int right = max(left, min(dlgState->getWidth(), dlgState->getWidth() - borders->getRight()));
+	int top = max(0, borders->getTop());
+	int bottom = max(top, min(dlgState->getHeight(), dlgState->getHeight() - borders->getBottom()));
+
+	ret.left = beetween(fieldState->getLeft() + borders->getLeft(), left, right);
+	ret.right = beetween(fieldState->getRight(), left, right);
+	ret.top = beetween(fieldState->getTop() + borders->getTop(), top, bottom);
+	ret.bottom = beetween(fieldState->getBottom(), top, bottom);
 
 	return ret;
 }
@@ -458,7 +488,7 @@ BOOL Interface_IsVisible(SKINNED_FIELD aField)
 	return fieldState->isVisible();
 }
 
-void Interface_SetText(SKINNED_FIELD aField, const TCHAR *text)
+void Interface_SetTextA(SKINNED_FIELD aField, const char *text)
 {
 	if (aField == NULL)
 		return;
@@ -467,17 +497,36 @@ void Interface_SetText(SKINNED_FIELD aField, const TCHAR *text)
 	switch(field->getType())
 	{
 		case SIMPLE_TEXT:
-			((TextField *) field)->setText(text);
+			((TextField *) field)->setText(CharToTchar(text));
 			break;
 		case CONTROL_LABEL:
 		case CONTROL_BUTTON:
 		case CONTROL_EDIT:
-			((ControlField *) field)->setText(text);
+			((ControlField *) field)->setText(CharToTchar(text));
 			break;
 	}
 }
 
-const TCHAR * Interface_GetText(SKINNED_FIELD aField)
+void Interface_SetTextW(SKINNED_FIELD aField, const WCHAR *text)
+{
+	if (aField == NULL)
+		return;
+
+	Field *field = (Field *) aField;
+	switch(field->getType())
+	{
+		case SIMPLE_TEXT:
+			((TextField *) field)->setText(WcharToTchar(text));
+			break;
+		case CONTROL_LABEL:
+		case CONTROL_BUTTON:
+		case CONTROL_EDIT:
+			((ControlField *) field)->setText(WcharToTchar(text));
+			break;
+	}
+}
+
+char * Interface_GetTextA(SKINNED_FIELD aField)
 {
 	if (aField == NULL)
 		return NULL;
@@ -489,11 +538,33 @@ const TCHAR * Interface_GetText(SKINNED_FIELD aField)
 	switch(field->getType())
 	{
 		case SIMPLE_TEXT:
-			return ((TextFieldState *) fieldState)->getText();
+			return TcharToChar(((TextFieldState *) fieldState)->getText()).detach();
 		case CONTROL_LABEL:
 		case CONTROL_BUTTON:
 		case CONTROL_EDIT:
-			return ((ControlFieldState *) field)->getText();
+			return TcharToChar(((ControlFieldState *) field)->getText()).detach();
+	}
+
+	return NULL;
+}
+
+WCHAR * Interface_GetTextW(SKINNED_FIELD aField)
+{
+	if (aField == NULL)
+		return NULL;
+
+	Field *field = (Field *) aField;
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) field->getDialog();
+	FieldState *fieldState = dlg->getState()->getField(field->getName());
+
+	switch(field->getType())
+	{
+		case SIMPLE_TEXT:
+			return TcharToWchar(((TextFieldState *) fieldState)->getText()).detach();
+		case CONTROL_LABEL:
+		case CONTROL_BUTTON:
+		case CONTROL_EDIT:
+			return TcharToWchar(((ControlFieldState *) field)->getText()).detach();
 	}
 
 	return NULL;
@@ -616,18 +687,21 @@ static int Service_GetInterface(WPARAM wParam, LPARAM lParam)
 	mski->RegisterDialog = &Interface_RegisterDialog;
 	mski->DeleteDialog = &Interface_DeleteDialog;
 	mski->FinishedConfiguring = &Interface_FinishedConfiguring;
-	mski->SetDialogSize = &Interface_SetDialogSize;
 
 	mski->AddTextField = &Interface_AddTextField;
 	mski->AddIconField = &Interface_AddIconField;
 	mski->AddImageField = &Interface_AddImageField;
 	mski->GetField = &Interface_GetField;
+	mski->SetDialogSize = &Interface_SetDialogSize;
+	mski->GetBorders = &Interface_GetBorders;
 
 	mski->GetRect = &Interface_GetRect;
 	mski->IsVisible = &Interface_IsVisible;
 
-	mski->SetText = &Interface_SetText;
-	mski->GetText = &Interface_GetText;
+	mski->SetTextA = &Interface_SetTextA;
+	mski->SetTextW = &Interface_SetTextW;
+	mski->GetTextA = &Interface_GetTextA;
+	mski->GetTextW = &Interface_GetTextW;
 	mski->GetFont = &Interface_GetFont;
 	mski->GetFontColor = &Interface_GetFontColor;
 
