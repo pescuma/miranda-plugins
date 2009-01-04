@@ -27,6 +27,8 @@ const TCHAR * MirandaSkinnedDialog::getSkinName()
 
 bool MirandaSkinnedDialog::finishedConfiguring()
 {
+	updateFilename();
+
 	SkinOptions * opts = getOpts();
 	if (getDefaultState() == NULL || opts == NULL)
 		return false;

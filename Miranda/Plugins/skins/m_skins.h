@@ -21,6 +21,7 @@ Boston, MA 02111-1307, USA.
 #ifndef __M_SKINS_H__
 # define __M_SKINS_H__
 
+#include <windows.h>
 
 #define MIID_SKINS { 0x917db7a4, 0xd0fe, 0x4b1c, { 0x8c, 0xa3, 0x6d, 0xc1, 0x44, 0x80, 0xf5, 0xcc } }
 
@@ -28,9 +29,11 @@ Boston, MA 02111-1307, USA.
 typedef void * SKINNED_DIALOG;
 typedef void * SKINNED_FIELD;
 
+
 /// Some common parameters:
 ///  - name : internal name and name used inside skin file
 ///  - description : name shown to the user
+///  - module : the module name where the settings will be stored
 /// Do not translate any parameters.
 struct SKIN_INTERFACE
 {
@@ -40,21 +43,24 @@ struct SKIN_INTERFACE
 	SKINNED_DIALOG (*RegisterDialog)(const char *name, const char *description, const char *module);
 	void (*DeleteDialog)(SKINNED_DIALOG dlg);
 	void (*FinishedConfiguring)(SKINNED_DIALOG dlg);
-	void (*SetDialogSize)(SKINNED_DIALOG dlg, int width, int height);
 
 	// Dialog methods
 	SKINNED_FIELD (*AddTextField)(SKINNED_DIALOG dlg, const char *name, const char *description);
 	SKINNED_FIELD (*AddIconField)(SKINNED_DIALOG dlg, const char *name, const char *description);
 	SKINNED_FIELD (*AddImageField)(SKINNED_DIALOG dlg, const char *name, const char *description);
 	SKINNED_FIELD (*GetField)(SKINNED_DIALOG dlg, const char *name);
+	void (*SetDialogSize)(SKINNED_DIALOG dlg, int width, int height);
+	RECT (*GetBorders)(SKINNED_DIALOG dlg);
 
 	// Field methods
 	RECT (*GetRect)(SKINNED_FIELD field);
 	BOOL (*IsVisible)(SKINNED_FIELD field);
 
 	// TextField methods
-	void (*SetText)(SKINNED_FIELD field, const TCHAR *text);
-	const TCHAR * (*GetText)(SKINNED_FIELD field);
+	void (*SetTextA)(SKINNED_FIELD field, const char *text);
+	void (*SetTextW)(SKINNED_FIELD field, const WCHAR *text);
+	char * (*GetTextA)(SKINNED_FIELD field); // You have to free the result
+	WCHAR * (*GetTextW)(SKINNED_FIELD field); // You have to free the result
 	HFONT (*GetFont)(SKINNED_FIELD field);
 	COLORREF (*GetFontColor)(SKINNED_FIELD field);
 
