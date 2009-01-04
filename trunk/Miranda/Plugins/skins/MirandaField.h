@@ -1,6 +1,7 @@
 #ifndef __MIRANDA_FIELD_H__
 # define __MIRANDA_FIELD_H__
 
+
 class MirandaField
 {
 public:

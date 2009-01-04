@@ -15,7 +15,7 @@ MirandaTextField::~MirandaTextField()
 
 MirandaSkinnedDialog * MirandaTextField::getDialog() const
 {
-	return (MirandaSkinnedDialog *) getDialog();
+	return (MirandaSkinnedDialog *) TextField::getDialog();
 }
 
 void MirandaTextField::configure()

@@ -70,7 +70,7 @@ using namespace std;
 
 #include "resource.h"
 #include "m_skins.h"
-//#include "m_skins_cpp.h"
+#include "m_skins_cpp.h"
 #include "options.h"
 #include "MirandaSkinnedDialog.h"
 #include "MirandaField.h"
