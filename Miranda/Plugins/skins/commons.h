@@ -62,11 +62,11 @@ using namespace std;
 #include <m_netlib.h>
 #include <m_fontservice.h>
 
-#include "../utils/mir_memory.h"
-#include "../utils/mir_options.h"
-#include "../utils/mir_icons.h"
-#include "../utils/mir_buffer.h"
-#include "../utils/utf8_helpers.h"
+#include <mir_memory.h>
+#include <mir_options.h>
+#include <mir_icons.h>
+#include <mir_buffer.h>
+#include <utf8_helpers.h>
 
 #include "resource.h"
 #include "m_skins.h"

@@ -3,6 +3,15 @@
 
 #include "Field.h"
 
+class DialogState;
+
+enum HORIZONTAL_ALIGN
+{
+	LEFT = 1,
+	RIGHT,
+	CENTER
+};
+
 
 class FieldState
 {
@@ -10,6 +19,7 @@ public:
 	virtual ~FieldState();
 
 	virtual Field * getField() const;
+	virtual DialogState * getDialog() const;
 
 	virtual Size getPreferedSize() const = 0;
 
@@ -42,10 +52,13 @@ public:
 
 	virtual bool isEmpty() const = 0;
 
+	virtual RECT getRect() const;
+
 protected:
-	FieldState(Field *field);
+	FieldState(DialogState *dialog, Field *field);
 
 	Field *field;
+	DialogState *dialog;
 
 	Size size;
 	Position pos;

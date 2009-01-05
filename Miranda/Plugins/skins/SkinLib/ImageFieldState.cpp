@@ -2,7 +2,8 @@
 #include "ImageFieldState.h"
 
 
-ImageFieldState::ImageFieldState(ImageField *field) : FieldState(field)
+ImageFieldState::ImageFieldState(DialogState *dialog, ImageField *field) 
+		: FieldState(dialog, field)
 {
 }
 

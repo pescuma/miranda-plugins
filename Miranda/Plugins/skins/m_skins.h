@@ -30,6 +30,10 @@ typedef void * SKINNED_DIALOG;
 typedef void * SKINNED_FIELD;
 
 
+#define SKN_HALIGN_LEFT 1
+#define SKN_HALIGN_CENTER 2
+#define SKN_HALIGN_RIGHT 3
+
 /// Some common parameters:
 ///  - name : internal name and name used inside skin file
 ///  - description : name shown to the user
@@ -63,6 +67,7 @@ struct SKIN_INTERFACE
 	WCHAR * (*GetTextW)(SKINNED_FIELD field); // You have to free the result
 	HFONT (*GetFont)(SKINNED_FIELD field);
 	COLORREF (*GetFontColor)(SKINNED_FIELD field);
+	int (*GetHorizontalAlign)(SKINNED_FIELD field); // one of SKN_HALIGN_*
 
 	// IconField methods
 	void (*SetIcon)(SKINNED_FIELD field, HICON hIcon);

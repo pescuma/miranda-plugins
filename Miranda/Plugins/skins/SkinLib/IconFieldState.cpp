@@ -4,7 +4,8 @@
 #define ICON_SIZE 16
 
 
-IconFieldState::IconFieldState(IconField *field) : FieldState(field)
+IconFieldState::IconFieldState(DialogState *dialog, IconField *field) 
+		: FieldState(dialog, field)
 {
 }
 

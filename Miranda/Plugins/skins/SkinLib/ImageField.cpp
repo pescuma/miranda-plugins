@@ -32,7 +32,7 @@ void ImageField::setImage(HBITMAP hBmp)
 	fireOnChange();
 }
 
-FieldState * ImageField::createState()
+FieldState * ImageField::createState(DialogState *dialogState)
 {
-	return new ImageFieldState(this);
+	return new ImageFieldState(dialogState, this);
 }

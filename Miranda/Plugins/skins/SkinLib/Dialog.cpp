@@ -89,7 +89,7 @@ DialogState * Dialog::createState()
 	DialogState *ret = new DialogState(this);
 
 	for(unsigned int i = 0; i < fields.size(); i++) 
-		ret->fields.push_back(fields[i]->createState());
+		ret->fields.push_back(fields[i]->createState(ret));
 
 	return ret;
 }

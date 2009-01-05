@@ -15,7 +15,7 @@ public:
 	virtual HICON getIcon() const;
 	virtual void setIcon(HICON hIcon);
 
-	virtual FieldState * createState();
+	virtual FieldState * createState(DialogState *dialogState);
 
 private:
 	HICON hIcon;

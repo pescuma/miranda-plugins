@@ -67,6 +67,7 @@ public:
 
 	HFONT getFont() { return mski.GetFont(field); }
 	COLORREF getFontColor() { return mski.GetFontColor(field); }
+	int getHorizontalAlign() { return mski.GetHorizontalAlign(field); } // one of SKN_HALIGN_*
 
 private:
 	TCHAR *text;

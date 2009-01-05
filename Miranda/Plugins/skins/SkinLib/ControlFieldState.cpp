@@ -2,8 +2,8 @@
 #include "ControlFieldState.h"
 
 
-ControlFieldState::ControlFieldState(ControlField *field) : FieldState(field), textSet(false), 
-															font(field->getFont(), field->getFontColor())
+ControlFieldState::ControlFieldState(DialogState *dialog, ControlField *field) 
+		: FieldState(dialog, field), textSet(false), font(field->getFont(), field->getFontColor())
 {
 }
 

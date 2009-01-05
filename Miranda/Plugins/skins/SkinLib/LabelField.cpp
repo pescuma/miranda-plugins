@@ -17,7 +17,7 @@ FieldType LabelField::getType() const
 	return CONTROL_LABEL;
 }
 
-FieldState * LabelField::createState()
+FieldState * LabelField::createState(DialogState *dialogState)
 {
-	return new LabelFieldState(this);
+	return new LabelFieldState(dialogState, this);
 }

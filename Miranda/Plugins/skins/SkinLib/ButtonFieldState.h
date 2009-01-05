@@ -14,7 +14,7 @@ public:
 	virtual bool isEmpty() const;
 
 private:
-	ButtonFieldState(ControlField *field);
+	ButtonFieldState(DialogState *dialog, ControlField *field);
 
 	friend class ButtonField;
 };

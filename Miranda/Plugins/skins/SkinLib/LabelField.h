@@ -12,7 +12,7 @@ public:
 
 	virtual FieldType getType() const;
 
-	virtual FieldState * createState();
+	virtual FieldState * createState(DialogState *dialogState);
 };
 
 

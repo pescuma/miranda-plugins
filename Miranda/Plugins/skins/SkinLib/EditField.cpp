@@ -17,7 +17,7 @@ FieldType EditField::getType() const
 	return CONTROL_EDIT;
 }
 
-FieldState * EditField::createState()
+FieldState * EditField::createState(DialogState *dialogState)
 {
-	return new EditFieldState(this);
+	return new EditFieldState(dialogState, this);
 }

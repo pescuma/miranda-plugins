@@ -1,7 +1,8 @@
 #include "globals.h"
 #include "ButtonFieldState.h"
 
-ButtonFieldState::ButtonFieldState(ControlField *field) : ControlFieldState(field)
+ButtonFieldState::ButtonFieldState(DialogState *dialog, ControlField *field) 
+		: ControlFieldState(dialog, field)
 {
 }
 
