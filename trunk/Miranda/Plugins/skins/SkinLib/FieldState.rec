@@ -25,6 +25,7 @@ struct ControlFieldState
 struct TextFieldState
 {
 	Char text[1024];
+	Int32 hAlign | LEFT | CENTER | RIGHT;
 };
 
 struct FontState

@@ -16,7 +16,7 @@ FieldType ButtonField::getType() const
 	return CONTROL_BUTTON;
 }
 
-FieldState * ButtonField::createState()
+FieldState * ButtonField::createState(DialogState *dialogState)
 {
-	return new ButtonFieldState(this);
+	return new ButtonFieldState(dialogState, this);
 }

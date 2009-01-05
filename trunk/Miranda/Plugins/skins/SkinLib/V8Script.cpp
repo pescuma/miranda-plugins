@@ -1,7 +1,7 @@
 #include "globals.h"
 #include "V8Script.h"
 
-#include "utf8_helpers.h"
+#include <utf8_helpers.h>
 
 using namespace v8;
 
@@ -65,8 +65,16 @@ bool V8Script::compile(const TCHAR *source, Dialog *dlg)
 	HandleScope handle_scope;
 
 	Handle<ObjectTemplate> global = ObjectTemplate::New();
+	
 	global->Set(String::New("IsEmpty"), FunctionTemplate::New(&IsEmptyCallback));
 	global->Set(String::New("RGB"), FunctionTemplate::New(&RGBCallback));
+
+	global->Set(String::New("NUMBER"), String::New("NUMBER"));
+	global->Set(String::New("CHECKBOX"), String::New("CHECKBOX"));
+	global->Set(String::New("TEXT"), String::New("TEXT"));
+	global->Set(String::New("LEFT"), String::New("LEFT"));
+	global->Set(String::New("CENTER"), String::New("CENTER"));
+	global->Set(String::New("RIGHT"), String::New("RIGHT"));
 
 	context = Context::New(NULL, global);
 
@@ -171,10 +179,6 @@ std::pair<SkinOptions *,DialogState *> V8Script::configure(Dialog *dlg)
 		FieldState *field = state->fields[i];
 		wrappers.fillWrapper(get(global, field->getField()->getName()), field);
 	}
-
-	global->Set(String::New("NUMBER"), String::New("NUMBER"));
-	global->Set(String::New("CHECKBOX"), String::New("CHECKBOX"));
-	global->Set(String::New("TEXT"), String::New("TEXT"));
 
 	TryCatch try_catch;
 	Handle<Value> result = configure->Call(global, 0, NULL);

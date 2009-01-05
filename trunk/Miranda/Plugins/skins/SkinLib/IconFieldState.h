@@ -19,7 +19,7 @@ public:
 	virtual bool isEmpty() const;
 
 private:
-	IconFieldState(IconField *field);
+	IconFieldState(DialogState *dialog, IconField *field);
 
 	friend class IconField;
 };

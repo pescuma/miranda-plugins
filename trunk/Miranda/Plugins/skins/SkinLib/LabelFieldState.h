@@ -15,7 +15,7 @@ public:
 	virtual bool isEmpty() const;
 
 private:
-	LabelFieldState(LabelField *field);
+	LabelFieldState(DialogState *dialog, LabelField *field);
 
 	friend class LabelField;
 };

@@ -14,7 +14,7 @@ public:
 	virtual HBITMAP getImage() const;
 	virtual void setImage(HBITMAP hBmp);
 
-	virtual FieldState * createState();
+	virtual FieldState * createState(DialogState *dialogState);
 
 private:
 	HBITMAP hBmp;

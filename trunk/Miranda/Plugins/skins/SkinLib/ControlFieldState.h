@@ -22,7 +22,7 @@ public:
 	virtual const FontState * getFont() const;
 
 protected:
-	ControlFieldState(ControlField *field);
+	ControlFieldState(DialogState *dialog, ControlField *field);
 
 	virtual Size getTextPreferedSize(unsigned int format) const;
 

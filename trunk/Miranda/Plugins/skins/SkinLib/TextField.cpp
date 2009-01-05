@@ -72,7 +72,7 @@ void TextField::setFontColor(COLORREF color)
 }
 
 
-FieldState * TextField::createState()
+FieldState * TextField::createState(DialogState *dialogState)
 {
-	return new TextFieldState(this);
+	return new TextFieldState(dialogState, this);
 }

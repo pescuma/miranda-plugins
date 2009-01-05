@@ -2,7 +2,8 @@
 #include "TextFieldState.h"
 
 
-TextFieldState::TextFieldState(TextField *field) : FieldState(field), font(field->getFont(), field->getFontColor())
+TextFieldState::TextFieldState(DialogState *dialog, TextField *field) 
+		: FieldState(dialog, field), font(field->getFont(), field->getFontColor()), halign(LEFT)
 {
 }
 
@@ -55,6 +56,16 @@ FontState * TextFieldState::getFont()
 const FontState * TextFieldState::getFont() const
 {
 	return &font;
+}
+
+HORIZONTAL_ALIGN TextFieldState::getHAlign() const
+{
+	return halign;
+}
+
+void TextFieldState::setHAlign(HORIZONTAL_ALIGN halign)
+{
+	this->halign = halign;
 }
 
 bool TextFieldState::isEmpty() const

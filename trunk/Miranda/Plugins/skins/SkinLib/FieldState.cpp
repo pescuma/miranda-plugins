@@ -1,5 +1,7 @@
 #include "globals.h"
 #include "FieldState.h"
+#include "DialogState.h"
+#include "BorderState.h"
 
 #define START		1<<0
 #define LEN			1<<1
@@ -10,8 +12,9 @@
 #define LAST_SET(_FIELD_)			(_FIELD_ >> LAST_SHIFT)
 
 
-FieldState::FieldState(Field *aField) : field(aField), size(-1, -1), pos(0, 0), 
-										usingX(0), usingY(0), visible(true)
+FieldState::FieldState(DialogState *aDialog, Field *aField) 
+		: field(aField), dialog(aDialog), size(-1, -1), pos(0, 0), 
+		  usingX(0), usingY(0), visible(true)
 {
 }
 
@@ -22,6 +25,11 @@ FieldState::~FieldState()
 Field * FieldState::getField() const
 {
 	return field;
+}
+
+DialogState * FieldState::getDialog() const
+{
+	return dialog;
 }
 
 int FieldState::getX() const
@@ -108,7 +116,14 @@ void FieldState::setHeight(int height)
 
 bool FieldState::isVisible() const
 {
-	return visible;
+	if (!visible)
+		return false;
+
+	RECT rc = getRect();
+	if (rc.right <= rc.left || rc.bottom <= rc.top)
+		return false;
+
+	return true;
 }
 
 void FieldState::setVisible(bool visible)
@@ -174,8 +189,28 @@ void FieldState::setBottom(int botom)
 	SET(usingY, END);
 }
 
-//bool FieldState::isEmpty() const
-//{
-//	Size s = getPreferedSize();
-//	return s.x <= 0 || s.y <= 0;
-//}
+static inline int beetween(int val, int minVal, int maxVal)
+{
+	return max(minVal, min(maxVal, val));
+}
+
+RECT FieldState::getRect() const
+{
+	RECT ret = { 0, 0, 0, 0 };
+
+	if (!visible)
+		return ret;
+
+	BorderState *borders = dialog->getBorders();
+	int left = max(0, borders->getLeft());
+	int right = max(left, min(dialog->getWidth(), dialog->getWidth() - borders->getRight()));
+	int top = max(0, borders->getTop());
+	int bottom = max(top, min(dialog->getHeight(), dialog->getHeight() - borders->getBottom()));
+
+	ret.left = beetween(getLeft() + borders->getLeft(), left, right);
+	ret.right = beetween(getRight(), left, right);
+	ret.top = beetween(getTop() + borders->getTop(), top, bottom);
+	ret.bottom = beetween(getBottom(), top, bottom);
+
+	return ret;
+}
