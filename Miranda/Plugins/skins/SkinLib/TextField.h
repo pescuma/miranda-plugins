@@ -21,7 +21,7 @@ public:
 	virtual COLORREF getFontColor() const;
 	virtual void setFontColor(COLORREF color);
 
-	virtual FieldState * createState();
+	virtual FieldState * createState(DialogState *dialogState);
 
 private:
 	std::tstring text;

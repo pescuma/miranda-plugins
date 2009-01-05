@@ -21,15 +21,19 @@ public:
 	virtual FontState * getFont();
 	virtual const FontState * getFont() const;
 
+	virtual HORIZONTAL_ALIGN getHAlign() const;
+	virtual void setHAlign(HORIZONTAL_ALIGN halign);
+
 	virtual bool isEmpty() const;
 
 private:
-	TextFieldState(TextField *field);
+	TextFieldState(DialogState *dialog, TextField *field);
 
 	FontState font;
-
 	BOOL textSet;
 	std::tstring text;
+	HORIZONTAL_ALIGN halign;
+
 
 	friend class TextField;
 };

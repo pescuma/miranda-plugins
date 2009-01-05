@@ -32,7 +32,7 @@ void IconField::setIcon(HICON hIcon)
 	fireOnChange();
 }
 
-FieldState * IconField::createState()
+FieldState * IconField::createState(DialogState *dialogState)
 {
-	return new IconFieldState(this);
+	return new IconFieldState(dialogState, this);
 }

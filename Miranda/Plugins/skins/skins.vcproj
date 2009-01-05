@@ -4,6 +4,7 @@
 	Version="9,00"
 	Name="skins"
 	ProjectGUID="{F5F5EA6E-F648-4174-8419-D6CA41DF0A11}"
+	RootNamespace="skins"
 	TargetFrameworkVersion="0"
 	>
 	<Platforms>
@@ -48,7 +49,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../include,sdk,libs"
+				AdditionalIncludeDirectories="../../include,sdk,libs,../utils"
 				PreprocessorDefinitions="WIN32;W32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS"
 				RuntimeLibrary="1"
 				PrecompiledHeaderFile=".\Debug/skins.pch"
@@ -119,6 +120,7 @@
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -146,7 +148,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="0"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="../../include,sdk,libs"
+				AdditionalIncludeDirectories="../../include,sdk,libs,../utils"
 				PreprocessorDefinitions="WIN32;W32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -218,7 +220,6 @@
 			OutputDirectory=".\Unicode_Debug"
 			IntermediateDirectory=".\Unicode_Debug"
 			ConfigurationType="2"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="1"
@@ -247,13 +248,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../include,sdk,libs"
-				PreprocessorDefinitions="WIN32;W32;_DEBUG;_WINDOWS;UNICODE;_USRDLL;_CRT_SECURE_NO_WARNINGS"
+				AdditionalIncludeDirectories="../../include,sdk,libs,../utils"
+				PreprocessorDefinitions="WIN32;W32;_DEBUG;DEBUG;_WINDOWS;UNICODE;_USRDLL;_CRT_SECURE_NO_WARNINGS"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				PrecompiledHeaderFile=".\Unicode_Debug/skins.pch"
-				AssemblerListingLocation=".\Unicode_Debug/"
-				ObjectFile=".\Unicode_Debug/"
-				ProgramDataBaseFileName=".\Unicode_Debug/"
+				AssemblerListingLocation=""
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
@@ -264,8 +265,6 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1047"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -273,15 +272,13 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/ALIGN:4096 /filealign:0x200 /ignore:4108 "
-				AdditionalDependencies="msimg32.lib comctl32.lib $(ProjectDir)libs\v8.lib"
+				AdditionalDependencies="$(ProjectDir)libs\v8_g.lib"
 				OutputFile="..\..\bin\debug unicode\Plugins\skinsW.dll"
 				LinkIncremental="2"
-				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Unicode_Debug/skinsW.pdb"
-				BaseAddress="0x3EC20000"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
+				SubSystem="2"
+				BaseAddress=""
 				ImportLibrary=".\Unicode_Debug/skinsW.lib"
 				TargetMachine="1"
 			/>
@@ -296,8 +293,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\Unicode_Debug/skins.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -318,6 +313,7 @@
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="1"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -346,7 +342,7 @@
 				InlineFunctionExpansion="0"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="../../include,sdk,libs"
+				AdditionalIncludeDirectories="../../include,sdk,libs,../utils"
 				PreprocessorDefinitions="WIN32;W32;NDEBUG;_WINDOWS;UNICODE;_USRDLL;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -486,10 +482,6 @@
 				</File>
 				<File
 					RelativePath=".\SkinLib\tstring.h"
-					>
-				</File>
-				<File
-					RelativePath=".\SkinLib\utf8_helpers.h"
 					>
 				</File>
 				<Filter

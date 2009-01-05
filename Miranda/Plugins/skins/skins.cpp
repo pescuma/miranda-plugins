@@ -109,6 +109,14 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	init_mir_malloc();
 	mir_getLI(&li);
 
+//	{
+//		SkinnedDialog dialog("About");
+//		dialog.setFilename(_T("C:\\Desenvolvimento\\Miranda\\plugins\\skinlib\\SkinLib\\test.js"));
+//		dialog.addField(new TextField(&dialog, "firstLine"));
+//		dialog.setSize(Size(20, 10));
+//		DialogState *state = dialog.getState();
+//	}
+
 	hHooks.push_back( HookEvent(ME_SYSTEM_MODULESLOADED, ModulesLoaded) );
 	hHooks.push_back( HookEvent(ME_SYSTEM_PRESHUTDOWN, PreShutdown) );
 
@@ -442,38 +450,19 @@ RECT Interface_GetBorders(SKINNED_DIALOG aDlg)
 	return ret;
 }
 
-static inline int beetween(int val, int minVal, int maxVal)
-{
-	return max(minVal, min(maxVal, val));
-}
-
 RECT Interface_GetRect(SKINNED_FIELD aField)
 {
-	RECT ret = { 0, 0, 0, 0 };
-
 	if (aField == NULL)
+	{
+		RECT ret = { 0, 0, 0, 0 };
 		return ret;
+	}
 
 	Field *field = (Field *) aField;
 	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) field->getDialog();
-	DialogState *dlgState = dlg->getState();
-	FieldState *fieldState = dlgState->getField(field->getName());
+	FieldState *fieldState = dlg->getState()->getField(field->getName());
 
-	if (!fieldState->isVisible())
-		return ret;
-
-	BorderState *borders = dlgState->getBorders();
-	int left = max(0, borders->getLeft());
-	int right = max(left, min(dlgState->getWidth(), dlgState->getWidth() - borders->getRight()));
-	int top = max(0, borders->getTop());
-	int bottom = max(top, min(dlgState->getHeight(), dlgState->getHeight() - borders->getBottom()));
-
-	ret.left = beetween(fieldState->getLeft() + borders->getLeft(), left, right);
-	ret.right = beetween(fieldState->getRight(), left, right);
-	ret.top = beetween(fieldState->getTop() + borders->getTop(), top, bottom);
-	ret.bottom = beetween(fieldState->getBottom(), top, bottom);
-
-	return ret;
+	return fieldState->getRect();
 }
 
 BOOL Interface_IsVisible(SKINNED_FIELD aField)

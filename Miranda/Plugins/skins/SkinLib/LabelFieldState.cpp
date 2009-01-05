@@ -2,7 +2,8 @@
 #include "LabelFieldState.h"
 
 
-LabelFieldState::LabelFieldState(LabelField *field) : ControlFieldState(field)
+LabelFieldState::LabelFieldState(DialogState *dialog, LabelField *field) 
+		: ControlFieldState(dialog, field)
 {
 }
 

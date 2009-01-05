@@ -8,7 +8,7 @@
 #include "DialogState_v8_wrapper.h"
 #include "BorderState_v8_wrapper.h"
 #include "SkinOption_v8_wrapper.h"
-#include "utf8_helpers.h"
+#include <utf8_helpers.h>
 
 
 #define OPTION (USER_DEFINED-5)

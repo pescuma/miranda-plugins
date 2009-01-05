@@ -1,6 +1,6 @@
 #include "globals.h"
 #include "SkinOptions.h"
-#include "utf8_helpers.h"
+#include <utf8_helpers.h>
 
 
 SkinOption::SkinOption(const char *aName) 

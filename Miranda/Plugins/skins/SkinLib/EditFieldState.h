@@ -15,7 +15,7 @@ public:
 	virtual bool isEmpty() const;
 
 private:
-	EditFieldState(EditField *field);
+	EditFieldState(DialogState *dialog, EditField *field);
 
 	friend class EditField;
 };

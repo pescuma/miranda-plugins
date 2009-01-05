@@ -19,7 +19,7 @@ public:
 	virtual bool isEmpty() const;
 
 private:
-	ImageFieldState(ImageField *field);
+	ImageFieldState(DialogState *dialog, ImageField *field);
 
 	friend class ImageField;
 };

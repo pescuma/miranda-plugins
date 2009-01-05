@@ -20,6 +20,7 @@ enum FieldType
 };
 
 class Dialog;
+class DialogState;
 class Field;
 class FieldState;
 
@@ -36,7 +37,7 @@ public:
 	virtual const char * getName() const;
 	virtual FieldType getType() const = 0;
 
-	virtual FieldState * createState() = 0;
+	virtual FieldState * createState(DialogState *dialogState) = 0;
 
 	virtual void setOnChangeCallback(FieldCallback cb, void *param = NULL);
 

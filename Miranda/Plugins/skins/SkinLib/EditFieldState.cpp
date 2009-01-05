@@ -2,7 +2,8 @@
 #include "EditFieldState.h"
 
 
-EditFieldState::EditFieldState(EditField *field) : ControlFieldState(field)
+EditFieldState::EditFieldState(DialogState *dialog, EditField *field) 
+		: ControlFieldState(dialog, field)
 {
 }
 
