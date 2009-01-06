@@ -2,6 +2,7 @@
 # define __FIELD_STATE_H__
 
 #include "Field.h"
+#include "BorderState.h"
 
 class DialogState;
 
@@ -22,6 +23,8 @@ public:
 	virtual DialogState * getDialog() const;
 
 	virtual Size getPreferedSize() const = 0;
+
+	// Used inside script
 
 	virtual int getX() const;
 	virtual void setX(int x);
@@ -45,13 +48,21 @@ public:
 	virtual void setRight(int right);
 
 	virtual int getBottom() const;
-	virtual void setBottom(int botom);
+	virtual void setBottom(int bottom);
 
 	virtual bool isVisible() const;
 	virtual void setVisible(bool visible);
 
+	virtual bool isEnabled() const;
+
+	virtual BorderState * getBorders();
+	virtual const BorderState * getBorders() const;
+
 	virtual bool isEmpty() const = 0;
 
+	// Results
+
+	virtual RECT getInsideRect() const;
 	virtual RECT getRect() const;
 
 protected:
@@ -65,6 +76,10 @@ protected:
 	int usingX;
 	int usingY;
 	bool visible;
+	BorderState borders;
+
+	int getHorizontalBorders() const;
+	int getVerticalBorders() const;
 
 	friend class Field;
 };

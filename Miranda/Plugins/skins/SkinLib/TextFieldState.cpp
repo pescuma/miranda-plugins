@@ -3,7 +3,7 @@
 
 
 TextFieldState::TextFieldState(DialogState *dialog, TextField *field) 
-		: FieldState(dialog, field), font(field->getFont(), field->getFontColor()), halign(LEFT)
+		: FieldState(dialog, field), font(field->getFont(), field->getFontColor()), textSet(false), halign(LEFT)
 {
 }
 
@@ -46,6 +46,7 @@ const TCHAR * TextFieldState::getText() const
 void TextFieldState::setText(const TCHAR *text)
 {
 	this->text = text;
+	textSet = true;
 }
 
 FontState * TextFieldState::getFont()

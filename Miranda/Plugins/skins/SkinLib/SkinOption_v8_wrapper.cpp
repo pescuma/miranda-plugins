@@ -18,7 +18,13 @@ static Handle<Value> Get_SkinOption_description(Local<String> property, const Ac
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	SkinOption *tmp = (SkinOption *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return String::New((const V8_TCHAR *) tmp->getDescription());
 }
 
@@ -26,9 +32,18 @@ static void Set_SkinOption_description(Local<String> property, Local<Value> valu
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	SkinOption *tmp = (SkinOption *) wrap->Value();
-	String::Utf8Value utf8_value(value);
-	tmp->setDescription(Utf8ToTchar(*utf8_value));
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsString())
+	{
+		String::Utf8Value utf8_value(value);
+		tmp->setDescription(Utf8ToTchar(*utf8_value));
+	}
 }
 
 
@@ -36,7 +51,13 @@ static Handle<Value> Get_SkinOption_min(Local<String> property, const AccessorIn
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	SkinOption *tmp = (SkinOption *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return Int32::New(tmp->getMin());
 }
 
@@ -44,8 +65,15 @@ static void Set_SkinOption_min(Local<String> property, Local<Value> value, const
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	SkinOption *tmp = (SkinOption *) wrap->Value();
-	tmp->setMin(value->Int32Value());
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsInt32())
+		tmp->setMin(value->Int32Value());
 }
 
 
@@ -53,7 +81,13 @@ static Handle<Value> Get_SkinOption_max(Local<String> property, const AccessorIn
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	SkinOption *tmp = (SkinOption *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return Int32::New(tmp->getMax());
 }
 
@@ -61,8 +95,15 @@ static void Set_SkinOption_max(Local<String> property, Local<Value> value, const
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	SkinOption *tmp = (SkinOption *) wrap->Value();
-	tmp->setMax(value->Int32Value());
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsInt32())
+		tmp->setMax(value->Int32Value());
 }
 
 
@@ -70,7 +111,13 @@ static Handle<Value> Get_SkinOption_type(Local<String> property, const AccessorI
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	SkinOption *tmp = (SkinOption *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	switch(tmp->getType())
 	{
 		case CHECKBOX: return String::New((const V8_TCHAR *) _T("CHECKBOX"));
@@ -84,15 +131,24 @@ static void Set_SkinOption_type(Local<String> property, Local<Value> value, cons
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	SkinOption *tmp = (SkinOption *) wrap->Value();
-	String::Utf8Value utf8_value(value);
-	Utf8ToTchar tval(*utf8_value);
-	if ( lstrcmpi(_T("CHECKBOX"), tval) == 0)
-		tmp->setType(CHECKBOX);
-	else if ( lstrcmpi(_T("NUMBER"), tval) == 0)
-		tmp->setType(NUMBER);
-	else if ( lstrcmpi(_T("TEXT"), tval) == 0)
-		tmp->setType(TEXT);
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsString())
+	{
+		String::Utf8Value utf8_value(value);
+		Utf8ToTchar tval(*utf8_value);
+		if ( lstrcmpi(_T("CHECKBOX"), tval) == 0)
+			tmp->setType(CHECKBOX);
+		else if ( lstrcmpi(_T("NUMBER"), tval) == 0)
+			tmp->setType(NUMBER);
+		else if ( lstrcmpi(_T("TEXT"), tval) == 0)
+			tmp->setType(TEXT);
+	}
 }
 
 

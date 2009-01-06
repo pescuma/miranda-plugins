@@ -18,7 +18,13 @@ static Handle<Value> Get_FontState_face(Local<String> property, const AccessorIn
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	FontState *tmp = (FontState *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return String::New((const V8_TCHAR *) tmp->getFace());
 }
 
@@ -26,9 +32,18 @@ static void Set_FontState_face(Local<String> property, Local<Value> value, const
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	FontState *tmp = (FontState *) wrap->Value();
-	String::Utf8Value utf8_value(value);
-	tmp->setFace(Utf8ToTchar(*utf8_value));
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsString())
+	{
+		String::Utf8Value utf8_value(value);
+		tmp->setFace(Utf8ToTchar(*utf8_value));
+	}
 }
 
 
@@ -36,7 +51,13 @@ static Handle<Value> Get_FontState_size(Local<String> property, const AccessorIn
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	FontState *tmp = (FontState *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return Int32::New(tmp->getSize());
 }
 
@@ -44,8 +65,15 @@ static void Set_FontState_size(Local<String> property, Local<Value> value, const
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	FontState *tmp = (FontState *) wrap->Value();
-	tmp->setSize(value->Int32Value());
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsInt32())
+		tmp->setSize(value->Int32Value());
 }
 
 
@@ -53,7 +81,13 @@ static Handle<Value> Get_FontState_italic(Local<String> property, const Accessor
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	FontState *tmp = (FontState *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return Boolean::New(tmp->isItalic());
 }
 
@@ -61,8 +95,15 @@ static void Set_FontState_italic(Local<String> property, Local<Value> value, con
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	FontState *tmp = (FontState *) wrap->Value();
-	tmp->setItalic(value->BooleanValue());
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsBoolean())
+		tmp->setItalic(value->BooleanValue());
 }
 
 
@@ -70,7 +111,13 @@ static Handle<Value> Get_FontState_bold(Local<String> property, const AccessorIn
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	FontState *tmp = (FontState *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return Boolean::New(tmp->isBold());
 }
 
@@ -78,8 +125,15 @@ static void Set_FontState_bold(Local<String> property, Local<Value> value, const
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	FontState *tmp = (FontState *) wrap->Value();
-	tmp->setBold(value->BooleanValue());
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsBoolean())
+		tmp->setBold(value->BooleanValue());
 }
 
 
@@ -87,7 +141,13 @@ static Handle<Value> Get_FontState_underline(Local<String> property, const Acces
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	FontState *tmp = (FontState *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return Boolean::New(tmp->isUnderline());
 }
 
@@ -95,8 +155,15 @@ static void Set_FontState_underline(Local<String> property, Local<Value> value, 
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	FontState *tmp = (FontState *) wrap->Value();
-	tmp->setUnderline(value->BooleanValue());
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsBoolean())
+		tmp->setUnderline(value->BooleanValue());
 }
 
 
@@ -104,7 +171,13 @@ static Handle<Value> Get_FontState_strikeOut(Local<String> property, const Acces
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	FontState *tmp = (FontState *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return Boolean::New(tmp->isStrikeOut());
 }
 
@@ -112,8 +185,15 @@ static void Set_FontState_strikeOut(Local<String> property, Local<Value> value, 
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	FontState *tmp = (FontState *) wrap->Value();
-	tmp->setStrikeOut(value->BooleanValue());
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsBoolean())
+		tmp->setStrikeOut(value->BooleanValue());
 }
 
 
@@ -121,7 +201,13 @@ static Handle<Value> Get_FontState_color(Local<String> property, const AccessorI
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	FontState *tmp = (FontState *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return Int32::New(tmp->getColor());
 }
 
@@ -129,8 +215,15 @@ static void Set_FontState_color(Local<String> property, Local<Value> value, cons
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	FontState *tmp = (FontState *) wrap->Value();
-	tmp->setColor(value->Int32Value());
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsInt32())
+		tmp->setColor(value->Int32Value());
 }
 
 
