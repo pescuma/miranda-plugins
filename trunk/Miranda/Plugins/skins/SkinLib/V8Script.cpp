@@ -31,10 +31,17 @@ static Handle<Value> IsEmptyCallback(const Arguments& args)
 		{
 			return Boolean::New(true);
 		}
-		else if (arg->IsExternal())
+		else if (arg->IsObject())
 		{
-			Local<External> wrap = Local<External>::Cast(arg);
+			Local<Object> self = Local<Object>::Cast(arg);
+			if (self->InternalFieldCount() < 1)
+				continue;
+
+			Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 			FieldState *field = (FieldState *) wrap->Value();
+			if (field == NULL)
+				continue;
+
 			if (field->isEmpty())
 				return Boolean::New(true);
 		}
@@ -58,6 +65,34 @@ static Handle<Value> RGBCallback(const Arguments& args)
 	return Int32::New(color);
 }
 
+static Handle<Value> AlertCallback(const Arguments& args)
+{
+	Local<External> wrap = Local<External>::Cast(args.Data());
+	if (wrap.IsEmpty())
+		return Int32::New(-1);
+
+	Dialog *dialog = (Dialog *) wrap->Value();
+	if (dialog == NULL)
+		return Int32::New(-1);
+
+	if (args.Length() < 1) 
+		return Int32::New(-1);
+
+	Local<Value> arg = args[0];
+	if (!arg->IsString())
+		return Int32::New(-1);
+
+	Local<String> str = Local<String>::Cast(arg);
+	String::Utf8Value utf8_value(str);
+
+	std::tstring title;
+	title = CharToTchar(dialog->getName());
+	title += _T(" - Skin alert");
+	MessageBox(NULL, Utf8ToTchar(*utf8_value), title.c_str(), MB_OK);
+
+	return Int32::New(0);
+}
+
 bool V8Script::compile(const TCHAR *source, Dialog *dlg)
 {
 	dispose();
@@ -68,6 +103,7 @@ bool V8Script::compile(const TCHAR *source, Dialog *dlg)
 	
 	global->Set(String::New("IsEmpty"), FunctionTemplate::New(&IsEmptyCallback));
 	global->Set(String::New("RGB"), FunctionTemplate::New(&RGBCallback));
+	global->Set(String::New("alert"), FunctionTemplate::New(&AlertCallback, External::New(dlg)));
 
 	global->Set(String::New("NUMBER"), String::New("NUMBER"));
 	global->Set(String::New("CHECKBOX"), String::New("CHECKBOX"));

@@ -34,6 +34,36 @@ FieldState * DialogState::getField(const char *name) const
 	return NULL;
 }
 
+int DialogState::getX() const
+{
+	return 0;
+}
+
+int DialogState::getY() const
+{
+	return 0;
+}
+
+int DialogState::getLeft() const
+{
+	return getX();
+}
+
+int DialogState::getTop() const
+{
+	return getY();
+}
+
+int DialogState::getRight() const
+{
+	return getX() + getWidth();
+}
+
+int DialogState::getBottom() const
+{
+	return getY() + getHeight();
+}
+
 int DialogState::getWidth() const
 {
 	if (size.x >= 0)
@@ -79,3 +109,24 @@ int DialogState::getVerticalBorders() const
 {
 	return borders.getTop() + borders.getBottom();
 }
+
+RECT DialogState::getInsideRect() const
+{
+	RECT ret;
+	ret.left = borders.getLeft();
+	ret.right = ret.left + getWidth();
+	ret.top = borders.getTop();
+	ret.bottom = ret.top + getHeight();
+	return ret;
+}
+
+RECT DialogState::getRect() const
+{
+	RECT ret;
+	ret.left = 0;
+	ret.right = borders.getLeft() + getWidth() + borders.getRight();
+	ret.top = 0;
+	ret.bottom = borders.getTop() + getHeight() + borders.getBottom();
+	return ret;
+}
+

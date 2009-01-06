@@ -4,7 +4,7 @@
 
 
 Field::Field(Dialog *aDlg, const char *aName) 
-		: dlg(aDlg), name(aName), onChangeCallback(NULL), onChangeCallbackParam(NULL)
+		: dlg(aDlg), name(aName), onChangeCallback(NULL), onChangeCallbackParam(NULL), enabled(true)
 {
 }
 
@@ -20,6 +20,17 @@ Dialog * Field::getDialog() const
 const char * Field::getName() const
 {
 	return name.c_str();
+}
+
+bool Field::isEnabled() const
+{
+	return enabled;
+}
+
+void Field::setEnabled(bool enabled)
+{
+	this->enabled = enabled;
+	fireOnChange();
 }
 
 void Field::setOnChangeCallback(FieldCallback cb, void *param /*= NULL*/)

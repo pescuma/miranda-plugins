@@ -33,5 +33,5 @@ HBITMAP ImageFieldState::getImage() const
 
 bool ImageFieldState::isEmpty() const
 {
-	return getImage() != NULL;
+	return getImage() == NULL;
 }

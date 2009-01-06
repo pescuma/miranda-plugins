@@ -2,6 +2,12 @@ struct DialogState
 {
 	Int32 width;
 	Int32 height;
+	const Int32 x;
+	const Int32 y;
+	const Int32 left;
+	const Int32 top;
+	const Int32 right;
+	const Int32 bottom;
 };
 
 struct FieldState
@@ -15,6 +21,7 @@ struct FieldState
 	Int32 right;
 	Int32 bottom;
 	Boolean visible;
+	const Boolean enabled;
 };
 
 struct ControlFieldState

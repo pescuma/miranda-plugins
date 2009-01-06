@@ -26,33 +26,28 @@ Boston, MA 02111-1307, USA.
 extern struct SKIN_INTERFACE mski;
 
 
-class SkinField
+class SkinFieldState
 {
 public:
-	SkinField(SKINNED_FIELD field) { this->field = field; }
-	
+	SkinFieldState(SKINNED_FIELD_STATE field) { this->field = field; }
+
 	BOOL isValid() { return field != NULL; }
-	
+
 	RECT getRect() { return mski.GetRect(field); }
+	RECT getInsideRect() { return mski.GetInsideRect(field); }
+	RECT getBorders() { return mski.GetBorders(field); }
 	BOOL isVisible() { return mski.IsVisible(field); }
 
 protected:
-	SKINNED_FIELD field;
+	SKINNED_FIELD_STATE field;
 };
 
-class SkinTextField : public SkinField
+class SkinTextFieldState : public SkinFieldState
 {
 public:
-	SkinTextField(SKINNED_FIELD field) : SkinField(field), text(NULL) {}
-	~SkinTextField() { if (text != NULL) mir_free(text); }
+	SkinTextFieldState(SKINNED_FIELD_STATE field) : SkinFieldState(field), text(NULL) {}
+	~SkinTextFieldState() { if (text != NULL) mir_free(text); }
 
-	void setText(const TCHAR *text) { 
-#ifdef UNICODE 
-		mski.SetTextW(field, text); 
-#else 
-		mski.SetTextA(field, text); 
-#endif
-	}
 	const TCHAR * getText() { 
 		if (text != NULL) 
 			mir_free(text);
@@ -73,13 +68,75 @@ private:
 	TCHAR *text;
 };
 
+class SkinIconFieldState : public SkinFieldState
+{
+public:
+	SkinIconFieldState(SKINNED_FIELD_STATE field) : SkinFieldState(field) {}
+
+	HICON getIcon() { return mski.GetIcon(field); }
+};
+
+class SkinImageFieldState : public SkinFieldState
+{
+public:
+	SkinImageFieldState(SKINNED_FIELD_STATE field) : SkinFieldState(field) {}
+
+	HBITMAP getImage() { return mski.GetImage(field); }
+};
+
+
+class SkinDialogState
+{
+public:
+	SkinDialogState(SKINNED_DIALOG_STATE dlg) { this->dlg = dlg; }
+//	~SkinDialogState() { mski.DeleteDialogState(dlg); dlg = NULL; }
+
+	BOOL isValid() { return dlg != NULL; }
+
+	RECT getBorders() { return mski.GetDialogBorders(dlg); }
+
+	SkinTextFieldState getTextField(const char *name) { return SkinTextFieldState( mski.GetFieldState(dlg, name) ); }
+	SkinIconFieldState getIconField(const char *name) { return SkinIconFieldState( mski.GetFieldState(dlg, name) ); }
+	SkinImageFieldState getImageField(const char *name) { return SkinImageFieldState( mski.GetFieldState(dlg, name) ); }
+
+private:
+	SKINNED_DIALOG_STATE dlg;
+};
+
+
+class SkinField
+{
+public:
+	SkinField(SKINNED_FIELD field) { this->field = field; }
+	
+	BOOL isValid() { return field != NULL; }
+	
+	void setEnabled(BOOL enabled) { mski.SetEnabled(field, enabled); }
+
+protected:
+	SKINNED_FIELD field;
+};
+
+class SkinTextField : public SkinField
+{
+public:
+	SkinTextField(SKINNED_FIELD field) : SkinField(field) {}
+
+	void setText(const TCHAR *text) { 
+#ifdef UNICODE 
+		mski.SetTextW(field, text); 
+#else 
+		mski.SetTextA(field, text); 
+#endif
+	}
+};
+
 class SkinIconField : public SkinField
 {
 public:
 	SkinIconField(SKINNED_FIELD field) : SkinField(field) {}
 
 	void setIcon(HICON hIcon) { mski.SetIcon(field, hIcon); }
-	HICON getIcon() { return mski.GetIcon(field); }
 };
 
 class SkinImageField : public SkinField
@@ -88,29 +145,20 @@ public:
 	SkinImageField(SKINNED_FIELD field) : SkinField(field) {}
 
 	void setImage(HBITMAP hBmp) { mski.SetImage(field, hBmp); }
-	HBITMAP getImage() { return mski.GetImage(field); }
 };
 
 
 class SkinDialog
 {
 public:
-	SkinDialog(const char *name, const char *description, const char *module)
-	{
-		dlg = mski.RegisterDialog(name, description, module);
-	}
-
-	~SkinDialog()
-	{
-		mski.DeleteDialog(dlg);
-		dlg = NULL;
-	}
+	SkinDialog(const char *name, const char *description, const char *module) { dlg = mski.RegisterDialog(name, description, module); }
+	~SkinDialog() { mski.DeleteDialog(dlg); dlg = NULL; }
 
 	BOOL isValid() { return dlg != NULL; }
 
 	void finishedConfiguring() { mski.FinishedConfiguring(dlg); }
+
 	void setSize(int width, int height) { mski.SetDialogSize(dlg, width, height); }
-	RECT getBorders() { return mski.GetBorders(dlg); }
 
 	SkinTextField addTextField(const char *name, const char *description) { return SkinTextField( mski.AddTextField(dlg, name, description) ); }
 	SkinIconField addIconField(const char *name, const char *description) { return SkinIconField( mski.AddIconField(dlg, name, description) ); }
@@ -119,6 +167,8 @@ public:
 	SkinTextField getTextField(const char *name) { return SkinTextField( mski.GetField(dlg, name) ); }
 	SkinIconField getIconField(const char *name) { return SkinIconField( mski.GetField(dlg, name) ); }
 	SkinImageField getImageField(const char *name) { return SkinImageField( mski.GetField(dlg, name) ); }
+
+	SkinDialogState run() { return SkinDialogState( mski.Run(dlg) ); }
 
 private:
 	SKINNED_DIALOG dlg;
