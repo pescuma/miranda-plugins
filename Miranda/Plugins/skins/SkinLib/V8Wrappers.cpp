@@ -58,8 +58,15 @@ static void Set_DialogState_borders(Local<String> property, Local<Value> value, 
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	DialogState *tmp = (DialogState *) wrap->Value();
-	tmp->getBorders()->setAll(value->Int32Value());
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsInt32())
+		tmp->getBorders()->setAll(value->Int32Value());
 }
 
 
@@ -77,6 +84,27 @@ void V8Wrappers::createDialogTemplate()
 	createBorderTemplate();
 }
 
+static Handle<Value> Get_FieldState_borders(Local<String> property, const AccessorInfo &info) 
+{
+	Local<Object> self = info.Holder();
+	return self->GetInternalField(1);
+}
+
+
+static void Set_FieldState_borders(Local<String> property, Local<Value> value, const AccessorInfo& info) 
+{
+	Local<Object> self = info.Holder();
+	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
+	FieldState *tmp = (FieldState *) wrap->Value();
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsInt32())
+		tmp->getBorders()->setAll(value->Int32Value());
+}
 
 void V8Wrappers::createTextTemplate()
 {	
@@ -84,12 +112,14 @@ void V8Wrappers::createTextTemplate()
 		return;
 
 	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(1);
+	templ->SetInternalFieldCount(2);
 	AddFieldStateAcessors(templ);
 	AddTextFieldStateAcessors(templ);
+	templ->SetAccessor(String::New("borders"), Get_FieldState_borders, Set_FieldState_borders);
 	templs[SIMPLE_TEXT] = templ;
 
 	createFontTemplate();
+	createBorderTemplate();
 }
 
 void V8Wrappers::createImageTemplate()
@@ -98,9 +128,12 @@ void V8Wrappers::createImageTemplate()
 		return;
 
 	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(1);
+	templ->SetInternalFieldCount(2);
 	AddFieldStateAcessors(templ);
+	templ->SetAccessor(String::New("borders"), Get_FieldState_borders, Set_FieldState_borders);
 	templs[SIMPLE_IMAGE] = templ;
+
+	createBorderTemplate();
 }
 
 void V8Wrappers::createIconTemplate()
@@ -109,9 +142,12 @@ void V8Wrappers::createIconTemplate()
 		return;
 
 	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(1);
+	templ->SetInternalFieldCount(2);
 	AddFieldStateAcessors(templ);
+	templ->SetAccessor(String::New("borders"), Get_FieldState_borders, Set_FieldState_borders);
 	templs[SIMPLE_ICON] = templ;
+
+	createBorderTemplate();
 }
 
 void V8Wrappers::createLabelTemplate()
@@ -120,12 +156,15 @@ void V8Wrappers::createLabelTemplate()
 		return;
 
 	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(1);
+	templ->SetInternalFieldCount(2);
 	AddFieldStateAcessors(templ);
 	AddControlFieldStateAcessors(templ);
+	templ->SetAccessor(String::New("borders"), Get_FieldState_borders, Set_FieldState_borders);
 	templs[CONTROL_LABEL] = templ;
 
 	createFontTemplate();
+
+	createBorderTemplate();
 }
 
 void V8Wrappers::createButtonTemplate()
@@ -134,12 +173,14 @@ void V8Wrappers::createButtonTemplate()
 		return;
 
 	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(1);
+	templ->SetInternalFieldCount(2);
 	AddFieldStateAcessors(templ);
 	AddControlFieldStateAcessors(templ);
+	templ->SetAccessor(String::New("borders"), Get_FieldState_borders, Set_FieldState_borders);
 	templs[CONTROL_BUTTON] = templ;
 
 	createFontTemplate();
+	createBorderTemplate();
 }
 
 void V8Wrappers::createEditTemplate()
@@ -148,12 +189,14 @@ void V8Wrappers::createEditTemplate()
 		return;
 
 	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(1);
+	templ->SetInternalFieldCount(2);
 	AddFieldStateAcessors(templ);
 	AddControlFieldStateAcessors(templ);
+	templ->SetAccessor(String::New("borders"), Get_FieldState_borders, Set_FieldState_borders);
 	templs[CONTROL_EDIT] = templ;
 
 	createFontTemplate();
+	createBorderTemplate();
 }
 
 void V8Wrappers::createFontTemplate()
@@ -273,6 +316,9 @@ Handle<Object> V8Wrappers::createTextWrapper()
 {
 	Handle<Object> obj = newInstance(SIMPLE_TEXT);
 
+	Handle<Object> borders = newInstance(BORDER);
+	obj->SetInternalField(1, borders);
+
 	Handle<Object> font = newInstance(FONT);
 	obj->Set(String::New("font"), font, ReadOnly);
 
@@ -286,6 +332,9 @@ Handle<Object> V8Wrappers::fillTextWrapper(Handle<Object> obj, TextFieldState *s
 
 	obj->SetInternalField(0, External::New(state));
 
+	Handle<Object> borders = Handle<Object>::Cast(obj->GetInternalField(1));
+	borders->SetInternalField(0, External::New(state->getBorders()));
+
 	Handle<Object> font = Handle<Object>::Cast(obj->Get(String::New("font")));
 	font->SetInternalField(0, External::New(state->getFont()));
 
@@ -294,7 +343,12 @@ Handle<Object> V8Wrappers::fillTextWrapper(Handle<Object> obj, TextFieldState *s
 
 Handle<Object> V8Wrappers::createIconWrapper()
 {
-	return newInstance(SIMPLE_ICON);
+	Handle<Object> obj = newInstance(SIMPLE_ICON);
+
+	Handle<Object> borders = newInstance(BORDER);
+	obj->SetInternalField(1, borders);
+
+	return obj;
 }
 
 Handle<Object> V8Wrappers::fillIconWrapper(Handle<Object> obj, IconFieldState *state)
@@ -304,12 +358,20 @@ Handle<Object> V8Wrappers::fillIconWrapper(Handle<Object> obj, IconFieldState *s
 
 	obj->SetInternalField(0, External::New(state));
 
+	Handle<Object> borders = Handle<Object>::Cast(obj->GetInternalField(1));
+	borders->SetInternalField(0, External::New(state->getBorders()));
+
 	return obj;
 }
 
 Handle<Object> V8Wrappers::createImageWrapper()
 {
-	return newInstance(SIMPLE_IMAGE);
+	Handle<Object> obj = newInstance(SIMPLE_IMAGE);
+
+	Handle<Object> borders = newInstance(BORDER);
+	obj->SetInternalField(1, borders);
+
+	return obj;
 }
 
 Handle<Object> V8Wrappers::fillImageWrapper(Handle<Object> obj, ImageFieldState *state)
@@ -319,12 +381,18 @@ Handle<Object> V8Wrappers::fillImageWrapper(Handle<Object> obj, ImageFieldState 
 
 	obj->SetInternalField(0, External::New(state));
 
+	Handle<Object> borders = Handle<Object>::Cast(obj->GetInternalField(1));
+	borders->SetInternalField(0, External::New(state->getBorders()));
+
 	return obj;
 }
 
 Handle<Object> V8Wrappers::createLabelWrapper()
 {
 	Handle<Object> obj = newInstance(CONTROL_LABEL);
+
+	Handle<Object> borders = newInstance(BORDER);
+	obj->SetInternalField(1, borders);
 
 	Handle<Object> font = newInstance(FONT);
 	obj->Set(String::New("font"), font, ReadOnly);
@@ -339,6 +407,9 @@ Handle<Object> V8Wrappers::fillLabelWrapper(Handle<Object> obj, LabelFieldState 
 
 	obj->SetInternalField(0, External::New(state));
 
+	Handle<Object> borders = Handle<Object>::Cast(obj->GetInternalField(1));
+	borders->SetInternalField(0, External::New(state->getBorders()));
+
 	Handle<Object> font = Handle<Object>::Cast(obj->Get(String::New("font")));
 	font->SetInternalField(0, External::New(state->getFont()));
 
@@ -348,6 +419,9 @@ Handle<Object> V8Wrappers::fillLabelWrapper(Handle<Object> obj, LabelFieldState 
 Handle<Object> V8Wrappers::createButtonWrapper()
 {
 	Handle<Object> obj = newInstance(CONTROL_BUTTON);
+
+	Handle<Object> borders = newInstance(BORDER);
+	obj->SetInternalField(1, borders);
 
 	Handle<Object> font = newInstance(FONT);
 	obj->Set(String::New("font"), font, ReadOnly);
@@ -362,6 +436,9 @@ Handle<Object> V8Wrappers::fillButtonWrapper(Handle<Object> obj, ButtonFieldStat
 
 	obj->SetInternalField(0, External::New(state));
 
+	Handle<Object> borders = Handle<Object>::Cast(obj->GetInternalField(1));
+	borders->SetInternalField(0, External::New(state->getBorders()));
+
 	Handle<Object> font = Handle<Object>::Cast(obj->Get(String::New("font")));
 	font->SetInternalField(0, External::New(state->getFont()));
 
@@ -371,6 +448,9 @@ Handle<Object> V8Wrappers::fillButtonWrapper(Handle<Object> obj, ButtonFieldStat
 Handle<Object> V8Wrappers::createEditWrapper()
 {
 	Handle<Object> obj = newInstance(CONTROL_EDIT);
+
+	Handle<Object> borders = newInstance(BORDER);
+	obj->SetInternalField(1, borders);
 
 	Handle<Object> font = newInstance(FONT);
 	obj->Set(String::New("font"), font, ReadOnly);
@@ -384,6 +464,9 @@ Handle<Object> V8Wrappers::fillEditWrapper(Handle<Object> obj, EditFieldState *s
 		throw "Empty object";
 
 	obj->SetInternalField(0, External::New(state));
+
+	Handle<Object> borders = Handle<Object>::Cast(obj->GetInternalField(1));
+	borders->SetInternalField(0, External::New(state->getBorders()));
 
 	Handle<Object> font = Handle<Object>::Cast(obj->Get(String::New("font")));
 	font->SetInternalField(0, External::New(state->getFont()));
@@ -401,6 +484,9 @@ static Handle<Value> Get_Options_Fields(Local<String> aName, const AccessorInfo 
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	SkinOptions *opts = (SkinOptions *) wrap->Value();
 	if (opts == NULL)
 		return Undefined();
@@ -462,7 +548,13 @@ static Handle<Value> Get_SkinOption_value(Local<String> property, const Accessor
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	SkinOption *opt = (SkinOption *) wrap->Value();
+	if (opt == NULL)
+		return Undefined();
+
 	switch (opt->getType())
 	{
 		case CHECKBOX:	return Boolean::New(opt->getValueCheckbox());
@@ -476,17 +568,26 @@ static void Set_SkinOption_value(Local<String> property, Local<Value> value, con
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	SkinOption *opt = (SkinOption *) wrap->Value();
+	if (opt == NULL)
+		return;
+
 	switch (opt->getType())
 	{
 		case CHECKBOX:	
-			opt->setValueCheckbox(value->BooleanValue());
+			if (!value.IsEmpty() && value->IsBoolean())
+				opt->setValueCheckbox(value->BooleanValue());
 			break;
 		case NUMBER:
-			opt->setValueNumber(value->Int32Value());
+			if (!value.IsEmpty() && value->IsInt32())
+				opt->setValueNumber(value->Int32Value());
 			break;
 		case TEXT:		
-			opt->setValueText(Utf8ToTchar(*String::Utf8Value(value)));
+			if (!value.IsEmpty() && value->IsString())
+				opt->setValueText(Utf8ToTchar(*String::Utf8Value(value)));
 			break;
 	}
 }

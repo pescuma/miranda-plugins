@@ -18,6 +18,15 @@ public:
 	std::vector<FieldState *> fields;
 	FieldState * getField(const char *name) const;
 
+	// Used inside script
+
+	virtual int getX() const;
+	virtual int getY() const;
+	virtual int getLeft() const;
+	virtual int getTop() const;
+	virtual int getRight() const;
+	virtual int getBottom() const;
+
 	int getWidth() const;
 	void setWidth(int width);
 
@@ -26,6 +35,11 @@ public:
 
 	BorderState * getBorders();
 	const BorderState * getBorders() const;
+
+	// Results
+
+	RECT getInsideRect() const;
+	RECT getRect() const;
 
 private:
 	DialogState(Dialog *dialog);

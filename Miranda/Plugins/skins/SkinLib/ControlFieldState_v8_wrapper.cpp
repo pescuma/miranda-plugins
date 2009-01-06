@@ -18,7 +18,13 @@ static Handle<Value> Get_ControlFieldState_text(Local<String> property, const Ac
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	ControlFieldState *tmp = (ControlFieldState *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return String::New((const V8_TCHAR *) tmp->getText());
 }
 
@@ -26,9 +32,18 @@ static void Set_ControlFieldState_text(Local<String> property, Local<Value> valu
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	ControlFieldState *tmp = (ControlFieldState *) wrap->Value();
-	String::Utf8Value utf8_value(value);
-	tmp->setText(Utf8ToTchar(*utf8_value));
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsString())
+	{
+		String::Utf8Value utf8_value(value);
+		tmp->setText(Utf8ToTchar(*utf8_value));
+	}
 }
 
 

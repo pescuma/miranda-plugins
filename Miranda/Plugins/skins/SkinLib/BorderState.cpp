@@ -1,8 +1,9 @@
 #include "globals.h"
+#include <windows.h>
 #include "BorderState.h"
 
-BorderState::BorderState(int aLeft, int aRight, int aTop, int aBottom) : left(aLeft), right(aRight), 
-																			top(aTop), bottom(aBottom)
+BorderState::BorderState(int aLeft, int aRight, int aTop, int aBottom) 
+		: left(aLeft), right(aRight), top(aTop), bottom(aBottom)
 {
 }
 
@@ -17,7 +18,7 @@ int BorderState::getLeft() const
 
 void BorderState::setLeft(int left)
 {
-	this->left = left;
+	this->left = max(0, left);
 }
 
 int BorderState::getRight() const
@@ -27,7 +28,7 @@ int BorderState::getRight() const
 
 void BorderState::setRight(int right)
 {
-	this->right = right;
+	this->right = max(0, right);
 }
 
 int BorderState::getTop() const
@@ -37,7 +38,7 @@ int BorderState::getTop() const
 
 void BorderState::setTop(int top)
 {
-	this->top = top;
+	this->top = max(0, top);
 }
 
 int BorderState::getBottom() const
@@ -47,11 +48,12 @@ int BorderState::getBottom() const
 
 void BorderState::setBottom(int bottom)
 {
-	this->bottom = bottom;
+	this->bottom = max(0, bottom);
 }
 
 void BorderState::setAll(int border)
 {
+	border = max(0, border);
 	left = border;
 	right = border; 
 	top = border;

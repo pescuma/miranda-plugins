@@ -37,6 +37,9 @@ public:
 	virtual const char * getName() const;
 	virtual FieldType getType() const = 0;
 
+	virtual bool isEnabled() const;
+	virtual void setEnabled(bool enabled);
+
 	virtual FieldState * createState(DialogState *dialogState) = 0;
 
 	virtual void setOnChangeCallback(FieldCallback cb, void *param = NULL);
@@ -47,6 +50,7 @@ protected:
 private:
 	Dialog *dlg;
 	const std::string name;
+	bool enabled;
 
 	FieldCallback onChangeCallback;
 	void *onChangeCallbackParam;

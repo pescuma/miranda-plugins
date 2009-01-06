@@ -17,7 +17,13 @@ static Handle<Value> Get_BorderState_left(Local<String> property, const Accessor
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	BorderState *tmp = (BorderState *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return Int32::New(tmp->getLeft());
 }
 
@@ -25,8 +31,15 @@ static void Set_BorderState_left(Local<String> property, Local<Value> value, con
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	BorderState *tmp = (BorderState *) wrap->Value();
-	tmp->setLeft(value->Int32Value());
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsInt32())
+		tmp->setLeft(value->Int32Value());
 }
 
 
@@ -34,7 +47,13 @@ static Handle<Value> Get_BorderState_right(Local<String> property, const Accesso
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	BorderState *tmp = (BorderState *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return Int32::New(tmp->getRight());
 }
 
@@ -42,8 +61,15 @@ static void Set_BorderState_right(Local<String> property, Local<Value> value, co
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	BorderState *tmp = (BorderState *) wrap->Value();
-	tmp->setRight(value->Int32Value());
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsInt32())
+		tmp->setRight(value->Int32Value());
 }
 
 
@@ -51,7 +77,13 @@ static Handle<Value> Get_BorderState_top(Local<String> property, const AccessorI
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	BorderState *tmp = (BorderState *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return Int32::New(tmp->getTop());
 }
 
@@ -59,8 +91,15 @@ static void Set_BorderState_top(Local<String> property, Local<Value> value, cons
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	BorderState *tmp = (BorderState *) wrap->Value();
-	tmp->setTop(value->Int32Value());
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsInt32())
+		tmp->setTop(value->Int32Value());
 }
 
 
@@ -68,7 +107,13 @@ static Handle<Value> Get_BorderState_bottom(Local<String> property, const Access
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
 	BorderState *tmp = (BorderState *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
 	return Int32::New(tmp->getBottom());
 }
 
@@ -76,8 +121,15 @@ static void Set_BorderState_bottom(Local<String> property, Local<Value> value, c
 {
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
 	BorderState *tmp = (BorderState *) wrap->Value();
-	tmp->setBottom(value->Int32Value());
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsInt32())
+		tmp->setBottom(value->Int32Value());
 }
 
 

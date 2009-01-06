@@ -14,7 +14,7 @@
 
 FieldState::FieldState(DialogState *aDialog, Field *aField) 
 		: field(aField), dialog(aDialog), size(-1, -1), pos(0, 0), 
-		  usingX(0), usingY(0), visible(true)
+		  usingX(0), usingY(0), visible(aField->isEnabled()), borders(0,0,0,0)
 {
 }
 
@@ -42,7 +42,7 @@ void FieldState::setX(int x)
 	if (usingX & END)
 	{
 		int diff = x - getX();
-		size.x = max(0, getWidth() - diff);
+		size.x = max(0, getWidth() - getHorizontalBorders() - diff);
 	}
 
 	pos.x = x;
@@ -60,7 +60,7 @@ void FieldState::setY(int y)
 	if (usingY & END)
 	{
 		int diff = y - getY();
-		size.y = max(0, getHeight() - diff);
+		size.y = max(0, getHeight() - getVerticalBorders() - diff);
 	}
 
 	pos.y = y;
@@ -71,14 +71,14 @@ void FieldState::setY(int y)
 int FieldState::getWidth() const
 {
 	if (size.x >= 0)
-		return size.x;
+		return size.x + getHorizontalBorders();
 
-	return getPreferedSize().x;
+	return getPreferedSize().x + getHorizontalBorders();
 }
 
 void FieldState::setWidth(int width)
 {
-	width = max(0, width);
+	width = max(0, width - getHorizontalBorders()) + getHorizontalBorders();
 
 	if (LAST_SET(usingX) == END)
 	{
@@ -86,7 +86,7 @@ void FieldState::setWidth(int width)
 		pos.x = getX() - diff;
 	}
 
-	size.x = width;
+	size.x = width - getHorizontalBorders();
 
 	usingX |= LEN;
 }
@@ -94,14 +94,14 @@ void FieldState::setWidth(int width)
 int FieldState::getHeight() const
 {
 	if (size.y >= 0)
-		return size.y;
+		return size.y + getVerticalBorders();
 
-	return getPreferedSize().y;
+	return getPreferedSize().y + getVerticalBorders();
 }
 
 void FieldState::setHeight(int height)
 {
-	height = max(0, height);
+	height = max(0, height - getVerticalBorders()) + getVerticalBorders();
 
 	if (LAST_SET(usingY) == END)
 	{
@@ -109,7 +109,7 @@ void FieldState::setHeight(int height)
 		pos.y = getY() - diff;
 	}
 
-	size.y = height;
+	size.y = height - getVerticalBorders();
 
 	usingY |= LEN;
 }
@@ -129,6 +129,11 @@ bool FieldState::isVisible() const
 void FieldState::setVisible(bool visible)
 {
 	this->visible = visible;
+}
+
+bool FieldState::isEnabled() const
+{
+	return field->isEnabled();
 }
 
 int FieldState::getLeft() const
@@ -189,6 +194,26 @@ void FieldState::setBottom(int botom)
 	SET(usingY, END);
 }
 
+BorderState * FieldState::getBorders()
+{
+	return &borders;
+}
+
+const BorderState * FieldState::getBorders() const
+{
+	return &borders;
+}
+
+int FieldState::getHorizontalBorders() const
+{
+	return borders.getLeft() + borders.getRight();
+}
+
+int FieldState::getVerticalBorders() const
+{
+	return borders.getTop() + borders.getBottom();
+}
+
 static inline int beetween(int val, int minVal, int maxVal)
 {
 	return max(minVal, min(maxVal, val));
@@ -196,21 +221,34 @@ static inline int beetween(int val, int minVal, int maxVal)
 
 RECT FieldState::getRect() const
 {
-	RECT ret = { 0, 0, 0, 0 };
+	RECT ret = {0};
 
 	if (!visible)
 		return ret;
 
-	BorderState *borders = dialog->getBorders();
-	int left = max(0, borders->getLeft());
-	int right = max(left, min(dialog->getWidth(), dialog->getWidth() - borders->getRight()));
-	int top = max(0, borders->getTop());
-	int bottom = max(top, min(dialog->getHeight(), dialog->getHeight() - borders->getBottom()));
+	RECT inside = dialog->getInsideRect();
 
-	ret.left = beetween(getLeft() + borders->getLeft(), left, right);
-	ret.right = beetween(getRight(), left, right);
-	ret.top = beetween(getTop() + borders->getTop(), top, bottom);
-	ret.bottom = beetween(getBottom(), top, bottom);
+	ret.left = beetween(getLeft() + inside.left, inside.left, inside.right);
+	ret.right = beetween(getRight() + inside.left, inside.left, inside.right);
+	ret.top = beetween(getTop() + inside.top, inside.top, inside.bottom);
+	ret.bottom = beetween(getBottom() + inside.top, inside.top, inside.bottom);
+
+	return ret;
+}
+
+RECT FieldState::getInsideRect() const
+{
+	RECT ret = {0};
+
+	if (!visible)
+		return ret;
+
+	RECT inside = dialog->getInsideRect();
+
+	ret.left = beetween(getLeft() + borders.getLeft() + inside.left, inside.left, inside.right);
+	ret.right = beetween(getRight() - borders.getRight() + inside.left, inside.left, inside.right);
+	ret.top = beetween(getTop() + borders.getTop() + inside.top, inside.top, inside.bottom);
+	ret.bottom = beetween(getBottom() - borders.getBottom() + inside.top, inside.top, inside.bottom);
 
 	return ret;
 }

@@ -28,6 +28,8 @@ Boston, MA 02111-1307, USA.
 
 typedef void * SKINNED_DIALOG;
 typedef void * SKINNED_FIELD;
+typedef void * SKINNED_DIALOG_STATE;
+typedef void * SKINNED_FIELD_STATE;
 
 
 #define SKN_HALIGN_LEFT 1
@@ -54,28 +56,46 @@ struct SKIN_INTERFACE
 	SKINNED_FIELD (*AddImageField)(SKINNED_DIALOG dlg, const char *name, const char *description);
 	SKINNED_FIELD (*GetField)(SKINNED_DIALOG dlg, const char *name);
 	void (*SetDialogSize)(SKINNED_DIALOG dlg, int width, int height);
-	RECT (*GetBorders)(SKINNED_DIALOG dlg);
 
 	// Field methods
-	RECT (*GetRect)(SKINNED_FIELD field);
-	BOOL (*IsVisible)(SKINNED_FIELD field);
+	void (*SetEnabled)(SKINNED_FIELD field, BOOL enabled);
 
 	// TextField methods
 	void (*SetTextA)(SKINNED_FIELD field, const char *text);
 	void (*SetTextW)(SKINNED_FIELD field, const WCHAR *text);
-	char * (*GetTextA)(SKINNED_FIELD field); // You have to free the result
-	WCHAR * (*GetTextW)(SKINNED_FIELD field); // You have to free the result
-	HFONT (*GetFont)(SKINNED_FIELD field);
-	COLORREF (*GetFontColor)(SKINNED_FIELD field);
-	int (*GetHorizontalAlign)(SKINNED_FIELD field); // one of SKN_HALIGN_*
 
 	// IconField methods
 	void (*SetIcon)(SKINNED_FIELD field, HICON hIcon);
-	HICON (*GetIcon)(SKINNED_FIELD field);
 
 	// ImageField methods
 	void (*SetImage)(SKINNED_FIELD field, HBITMAP hBmp);
-	HBITMAP (*GetImage)(SKINNED_FIELD field);
+
+	// Run the skin and get an state from it
+	SKINNED_DIALOG_STATE (*Run)(SKINNED_DIALOG dialog);
+//	void (*DeleteDialogState)(SKINNED_DIALOG_STATE dialog);
+
+	// Dialog State methods
+	SKINNED_FIELD_STATE (*GetFieldState)(SKINNED_DIALOG_STATE dlg, const char *name);
+	RECT (*GetDialogBorders)(SKINNED_DIALOG_STATE dlg);
+
+	// Field State methods
+	RECT (*GetRect)(SKINNED_FIELD_STATE field);  // With borders
+	RECT (*GetInsideRect)(SKINNED_FIELD_STATE field); // Without borders
+	RECT (*GetBorders)(SKINNED_FIELD_STATE field);
+	BOOL (*IsVisible)(SKINNED_FIELD_STATE field);
+
+	// TextField State methods
+	char * (*GetTextA)(SKINNED_FIELD_STATE field); // You have to free the result
+	WCHAR * (*GetTextW)(SKINNED_FIELD_STATE field); // You have to free the result
+	HFONT (*GetFont)(SKINNED_FIELD_STATE field);
+	COLORREF (*GetFontColor)(SKINNED_FIELD_STATE field);
+	int (*GetHorizontalAlign)(SKINNED_FIELD_STATE field); // one of SKN_HALIGN_*
+
+	// IconField State methods
+	HICON (*GetIcon)(SKINNED_FIELD_STATE field);
+
+	// ImageField State methods
+	HBITMAP (*GetImage)(SKINNED_FIELD_STATE field);
 };
 
 
