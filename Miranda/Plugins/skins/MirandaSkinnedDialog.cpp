@@ -87,6 +87,12 @@ void MirandaSkinnedDialog::loadFromDB(SkinOption *opt)
 	}
 }
 
+void MirandaSkinnedDialog::storeToDB(const SkinOptions *opts)
+{
+	for (unsigned int i = 0; i < opts->getNumOptions(); i++)
+		storeToDB(opts->getOption(i));
+}
+
 void MirandaSkinnedDialog::storeToDB(const SkinOption *opt)
 {
 	switch(opt->getType())
