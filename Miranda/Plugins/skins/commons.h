@@ -22,11 +22,13 @@ Boston, MA 02111-1307, USA.
 # define __COMMONS_H__
 
 
+#define OEMRESOURCE 
 #define _WIN32_WINNT 0x0400
 #include <windows.h>
 #include <tchar.h>
 #include <stdio.h>
 #include <time.h>
+#include <commctrl.h>
 
 
 // Disable "...truncated to '255' characters in the debug information" warnings

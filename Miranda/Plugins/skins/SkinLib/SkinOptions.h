@@ -75,7 +75,7 @@ public:
 	bool addOption(SkinOption *opt);
 	SkinOption * getOption(const char *name) const;
 	SkinOption * getOption(unsigned int pos) const;
-	unsigned int getNumOptions();
+	unsigned int getNumOptions() const;
 	void clearOptions();
 
 	void setOnOptionAddRemoveCallback(SkinOptionCallback cb, void *param = NULL);
