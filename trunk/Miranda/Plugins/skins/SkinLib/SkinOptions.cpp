@@ -176,7 +176,7 @@ SkinOption * SkinOptions::getOption(unsigned int pos) const
 	return options[pos];
 }
 
-unsigned int SkinOptions::getNumOptions()
+unsigned int SkinOptions::getNumOptions() const
 {
 	return options.size();
 }

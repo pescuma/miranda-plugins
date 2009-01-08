@@ -17,6 +17,7 @@ public:
 
 	virtual bool finishedConfiguring();
 
+	void storeToDB(const SkinOptions *opts);
 
 private:
 	std::string module;
