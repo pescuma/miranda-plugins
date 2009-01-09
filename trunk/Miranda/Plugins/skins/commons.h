@@ -101,6 +101,8 @@ extern TCHAR skinsFolder[1024];
 
 extern std::vector<MirandaSkinnedDialog *> dlgs;
 
+void getSkinnedDialogFilename(std::tstring &ret, const TCHAR *skin, const char *dialogName);
+void getAvaiableSkins(std::vector<std::tstring> &skins, MirandaSkinnedDialog *dlg = NULL);
 
 
 // See if a protocol service exists

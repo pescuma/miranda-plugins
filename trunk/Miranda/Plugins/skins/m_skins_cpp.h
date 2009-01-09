@@ -156,6 +156,8 @@ public:
 
 	BOOL isValid() { return dlg != NULL; }
 
+	void setSkinChangedCallback(SkinOptionsChangedCallback cb, void *param) { mski.SetSkinChangedCallback(dlg, cb, param); }
+
 	void finishedConfiguring() { mski.FinishedConfiguring(dlg); }
 
 	void setSize(int width, int height) { mski.SetDialogSize(dlg, width, height); }

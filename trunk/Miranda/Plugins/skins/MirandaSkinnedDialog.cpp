@@ -5,8 +5,9 @@
 
 
 MirandaSkinnedDialog::MirandaSkinnedDialog(const char *name, const char *aModule) 
-		: SkinnedDialog(name), module(aModule)
+		: SkinnedDialog(name), module(aModule), skinChangedCallback(NULL), skinChangedCallbackParam(NULL)
 {
+	getSettting("Skin", _T(DEFAULT_SKIN_NAME), skinName);
 }
 
 MirandaSkinnedDialog::~MirandaSkinnedDialog()
@@ -18,19 +19,26 @@ const char * MirandaSkinnedDialog::getModule() const
 	return module.c_str();
 }
 
-const TCHAR * MirandaSkinnedDialog::getSkinName()
+const TCHAR * MirandaSkinnedDialog::getSkinName() const
 {
-	getSettting("Skin", _T(DEFAULT_SKIN_NAME), skinName);
-
 	return skinName.c_str();
+}
+
+void MirandaSkinnedDialog::setSkinName(const TCHAR *name)
+{
+	if (skinName == name)
+		return;
+
+	skinName = name;
+	setSettting("Skin", skinName.c_str());
+	updateFilename();
 }
 
 bool MirandaSkinnedDialog::finishedConfiguring()
 {
 	updateFilename();
 
-	SkinOptions * opts = getOpts();
-	if (getDefaultState() == NULL || opts == NULL)
+	if (getDefaultState() == NULL || getOpts() == NULL)
 		return false;
 
 	for(unsigned int i = 0; i < getFieldCount(); ++i)
@@ -39,27 +47,13 @@ bool MirandaSkinnedDialog::finishedConfiguring()
 		field->configure();
 	}
 
-	for(unsigned int i = 0; i < opts->getNumOptions(); ++i)
-	{
-		SkinOption *opt = opts->getOption(i);
-		loadFromDB(opt);
-		opt->setOnChangeCallback(&staticOnOptionChange, this);
-	}
-
 	return true;
 }
 
 void MirandaSkinnedDialog::updateFilename()
 {
 	std::tstring filename;
-	filename = skinsFolder;
-	filename += _T("\\");
-	filename += getSkinName();
-	filename += _T("\\");
-	filename += Utf8ToTchar(getName());
-	filename += _T(".");
-	filename += _T(SKIN_EXTENSION);
-
+	getSkinnedDialogFilename(filename, getSkinName(), getName());
 	setFilename(filename.c_str());
 }
 
@@ -91,6 +85,8 @@ void MirandaSkinnedDialog::storeToDB(const SkinOptions *opts)
 {
 	for (unsigned int i = 0; i < opts->getNumOptions(); i++)
 		storeToDB(opts->getOption(i));
+
+	fireOnSkinChanged();
 }
 
 void MirandaSkinnedDialog::storeToDB(const SkinOption *opt)
@@ -198,6 +194,40 @@ void MirandaSkinnedDialog::setSettting(const char *name, const char *val)
 void MirandaSkinnedDialog::getSettingName(char *setting, const char * name)
 {
 	_snprintf(setting, SETTING_NAME_SIZE, "%s_%s", getName(), name);
+}
+
+void MirandaSkinnedDialog::setOnSkinChangedCallback(MirandaSkinnedCallback cb, void *param)
+{
+	skinChangedCallback = cb;
+	skinChangedCallbackParam = param;
+}
+
+void MirandaSkinnedDialog::fireOnSkinChanged()
+{
+	if (skinChangedCallback != NULL)
+		skinChangedCallback(skinChangedCallbackParam, this);
+}
+
+int MirandaSkinnedDialog::compile()
+{
+	int ret = SkinnedDialog::compile();
+
+	if (ret == 2)
+	{
+		SkinOptions * opts = getOpts();
+		_ASSERT(opts != NULL);
+		
+		for(unsigned int i = 0; i < opts->getNumOptions(); ++i)
+		{
+			SkinOption *opt = opts->getOption(i);
+			loadFromDB(opt);
+			opt->setOnChangeCallback(&staticOnOptionChange, this);
+		}
+
+		fireOnSkinChanged();
+	}
+
+	return ret;
 }
 
 void MirandaSkinnedDialog::onOptionChange(const SkinOption *opt)

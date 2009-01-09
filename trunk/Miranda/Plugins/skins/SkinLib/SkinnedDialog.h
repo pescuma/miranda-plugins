@@ -60,7 +60,7 @@ public:
 
 protected:
 	virtual bool fileChanged();
-	virtual bool compile();
+	virtual int compile(); /// @return 0 error, 1 no change, 2 compiled
 
 	virtual void trace(TCHAR *msg, ...);
 
