@@ -307,6 +307,50 @@ MirandaSkinnedDialog *GetDialog(const char *name)
 	return NULL;
 }
 
+void getSkinnedDialogFilename(std::tstring &ret, const TCHAR *skin, const char *dialogName)
+{
+	ret = skinsFolder;
+	ret += _T("\\");
+	ret += skin;
+	ret += _T("\\");
+	ret += CharToTchar(dialogName);
+	ret += _T(".");
+	ret += _T(SKIN_EXTENSION);
+}
+
+void getAvaiableSkins(std::vector<std::tstring> &skins, MirandaSkinnedDialog *dlg)
+{
+	TCHAR file[1024];
+	mir_sntprintf(file, MAX_REGS(file), _T("%s\\*"), skinsFolder);
+
+	WIN32_FIND_DATA ffd = {0};
+	HANDLE hFFD = FindFirstFile(file, &ffd);
+	if (hFFD == INVALID_HANDLE_VALUE)
+		return;
+
+	do
+	{
+		if (lstrcmp(ffd.cFileName, _T(".")) == 0 || lstrcmp(ffd.cFileName, _T("..")) == 0)
+			continue;
+
+		mir_sntprintf(file, MAX_REGS(file), _T("%s\\%s"), skinsFolder, ffd.cFileName);
+		if (!DirExists(file))
+			continue;
+
+		if (dlg != NULL)
+		{
+			std::tstring filename;
+			getSkinnedDialogFilename(filename, ffd.cFileName, dlg->getName());
+			if (!FileExists(filename.c_str()))
+				continue;
+		}
+
+		skins.push_back(std::tstring(ffd.cFileName));
+	}
+	while(FindNextFile(hFFD, &ffd));
+
+	FindClose(hFFD);
+}
 
 void OnError(void *param, const TCHAR *err)
 {
@@ -361,6 +405,15 @@ void Interface_DeleteDialog(SKINNED_DIALOG aDlg)
 	}
 
 	delete dlg;
+}
+
+void Interface_SetSkinChangedCallback(SKINNED_DIALOG aDlg, SkinOptionsChangedCallback cb, void *param)
+{
+	if (aDlg == NULL)
+		return;
+
+	MirandaSkinnedDialog * dlg = (MirandaSkinnedDialog *) aDlg;
+	dlg->setOnSkinChangedCallback((MirandaSkinnedCallback) cb, param);
 }
 
 void Interface_FinishedConfiguring(SKINNED_DIALOG aDlg)
@@ -758,6 +811,7 @@ static int Service_GetInterface(WPARAM wParam, LPARAM lParam)
 
 	mski->RegisterDialog = &Interface_RegisterDialog;
 	mski->DeleteDialog = &Interface_DeleteDialog;
+	mski->SetSkinChangedCallback = &Interface_SetSkinChangedCallback;
 	mski->FinishedConfiguring = &Interface_FinishedConfiguring;
 
 	mski->AddTextField = &Interface_AddTextField;

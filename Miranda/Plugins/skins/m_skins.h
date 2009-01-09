@@ -31,10 +31,13 @@ typedef void * SKINNED_FIELD;
 typedef void * SKINNED_DIALOG_STATE;
 typedef void * SKINNED_FIELD_STATE;
 
+typedef void (*SkinOptionsChangedCallback)(void *param, SKINNED_DIALOG dlg);
+
 
 #define SKN_HALIGN_LEFT 1
 #define SKN_HALIGN_CENTER 2
 #define SKN_HALIGN_RIGHT 3
+
 
 /// Some common parameters:
 ///  - name : internal name and name used inside skin file
@@ -48,6 +51,7 @@ struct SKIN_INTERFACE
 	// Global methods
 	SKINNED_DIALOG (*RegisterDialog)(const char *name, const char *description, const char *module);
 	void (*DeleteDialog)(SKINNED_DIALOG dlg);
+	void (*SetSkinChangedCallback)(SKINNED_DIALOG dlg, SkinOptionsChangedCallback cb, void *param);
 	void (*FinishedConfiguring)(SKINNED_DIALOG dlg);
 
 	// Dialog methods

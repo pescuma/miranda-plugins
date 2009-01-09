@@ -133,6 +133,15 @@ static BOOL CALLBACK SkinOptDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 			_ASSERT(dlg != NULL);
 			SetWindowLong(hwndDlg, GWL_USERDATA, (LONG) NULL);
 
+			std::vector<std::tstring> skins;
+			getAvaiableSkins(skins, dlg);
+			for(unsigned int i = 0; i < skins.size(); i++)
+			{
+				std::tstring &sk = skins[i];
+				SendDlgItemMessage(hwndDlg, IDC_SKIN, CB_ADDSTRING, 0, (LONG) skins[i].c_str());
+			}
+			SendDlgItemMessage(hwndDlg, IDC_SKIN, CB_SELECTSTRING, (WPARAM)-1, (LPARAM)dlg->getSkinName());
+
 			HWND skinOptsLabel = GetDlgItem(hwndDlg, IDC_SKIN_OPTS_L);
 
 			SkinOptions *opts = dlg->getOpts();
@@ -348,6 +357,13 @@ static BOOL CALLBACK SkinOptDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 			if (dlg == NULL)
 				break;
 
+			if (LOWORD(wParam) == IDC_SKIN)
+			{
+				if (HIWORD(wParam) == CBN_SELCHANGE && (HWND)lParam == GetFocus())
+					SendMessage(GetParent(hwndDlg), PSM_CHANGED, 0, 0);
+				break;
+			}
+
 			SkinOptions *opts = dlg->getOpts();
 			if (opts == NULL)
 				break;
@@ -430,6 +446,15 @@ static BOOL CALLBACK SkinOptDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 				}
 
 				dlg->storeToDB(opts);
+
+				// TODO Correctly handle changing skins
+				int pos = SendDlgItemMessage(hwndDlg, IDC_SKIN, CB_GETCURSEL, 0, 0);
+				if (pos != CB_ERR)
+				{
+					TCHAR tmp[1024];
+					GetWindowText(GetDlgItem(hwndDlg, IDC_SKIN), tmp, MAX_REGS(tmp));
+					dlg->setSkinName(tmp);
+				}
 
 				return TRUE;
 			}
