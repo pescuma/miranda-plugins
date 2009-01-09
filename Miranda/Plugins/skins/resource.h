@@ -4,9 +4,6 @@
 //
 #define IDD_OPTIONS                     119
 #define IDD_SKIN_OPT                    119
-#define IDC_AUTO_USER                   1066
-#define IDC_ONLY_ISOLATED2              1087
-#define IDC_COMBO1                      1087
 #define IDC_SKIN                        1087
 #define IDC_SKIN_OPTS_L                 1088
 #define IDC_SKIN_L                      -1

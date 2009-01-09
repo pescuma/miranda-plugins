@@ -4,6 +4,9 @@
 #include "SkinLib\SkinnedDialog.h"
 
 class SkinOption;
+class MirandaSkinnedDialog;
+
+typedef void (*MirandaSkinnedCallback)(void *param, const MirandaSkinnedDialog *dlg);
 
 
 class MirandaSkinnedDialog : public SkinnedDialog
@@ -13,15 +16,24 @@ public:
 	virtual ~MirandaSkinnedDialog();
 
 	virtual const char * getModule() const;
-	virtual const TCHAR * getSkinName();
+
+	virtual const TCHAR * getSkinName() const;
+	virtual void setSkinName(const TCHAR *name);
 
 	virtual bool finishedConfiguring();
 
-	void storeToDB(const SkinOptions *opts);
+	virtual void storeToDB(const SkinOptions *opts);
+
+	virtual void setOnSkinChangedCallback(MirandaSkinnedCallback cb, void *param);
+
+protected:
+	virtual int compile();
 
 private:
 	std::string module;
 	std::tstring skinName;
+	MirandaSkinnedCallback skinChangedCallback;
+	void *skinChangedCallbackParam;
 
 	void updateFilename();
 
@@ -38,6 +50,8 @@ private:
 	void setSettting(const char *name, const char *val);
 
 	inline void getSettingName(char *setting, const char * name);
+
+	void fireOnSkinChanged();
 
 	void onOptionChange(const SkinOption *opt);
 

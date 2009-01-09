@@ -58,22 +58,21 @@ void SkinnedDialog::setSize(const Size &size)
 	releaseState();
 }
 
-bool SkinnedDialog::compile()
+int SkinnedDialog::compile()
 {
-	bool changed = fileChanged();
-	if (!changed)
-		return true;
+	if (!fileChanged())
+		return 1;
 
 	releaseCompiledScript();
 
 	struct _stat st = {0};
 	if (_tstat(filename.c_str(), &st) != 0)
-		return false;
+		return 0;
 
 	std::tstring text;
 	readFile(text);
 	if (text.size() <= 0)
-		return false;
+		return 0;
 
 	script = new V8Script();
 	script->setExceptionCallback(errorCallback, errorCallbackParam);
@@ -81,7 +80,7 @@ bool SkinnedDialog::compile()
 	if (!script->compile(text.c_str(), this))
 	{
 		releaseCompiledScript();
-		return false;
+		return 0;
 	}
 
 	std::pair<SkinOptions *,DialogState *> pair = script->configure(this);
@@ -90,12 +89,12 @@ bool SkinnedDialog::compile()
 	if (opts == NULL)
 	{
 		releaseCompiledScript();
-		return false;
+		return 0;
 	}
 
 	fileChangedTime = st.st_mtime;
 
-	return true;
+	return 2;
 }
 
 DialogState * SkinnedDialog::getState()
