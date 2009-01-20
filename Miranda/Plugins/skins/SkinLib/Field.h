@@ -40,6 +40,9 @@ public:
 	virtual bool isEnabled() const;
 	virtual void setEnabled(bool enabled);
 
+	virtual const TCHAR * getToolTip() const;
+	virtual void setToolTip(const TCHAR *tooltip);
+
 	virtual FieldState * createState(DialogState *dialogState) = 0;
 
 	virtual void setOnChangeCallback(FieldCallback cb, void *param = NULL);
@@ -51,6 +54,7 @@ private:
 	Dialog *dlg;
 	const std::string name;
 	bool enabled;
+	std::tstring tooltip;
 
 	FieldCallback onChangeCallback;
 	void *onChangeCallbackParam;

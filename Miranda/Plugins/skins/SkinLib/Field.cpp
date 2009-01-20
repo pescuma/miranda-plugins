@@ -33,6 +33,16 @@ void Field::setEnabled(bool enabled)
 	fireOnChange();
 }
 
+const TCHAR * Field::getToolTip() const
+{
+	return tooltip.c_str();
+}
+
+void Field::setToolTip(const TCHAR *tooltip)
+{
+	this->tooltip = tooltip;
+}
+
 void Field::setOnChangeCallback(FieldCallback cb, void *param /*= NULL*/)
 {
 	onChangeCallback = cb;

@@ -27,7 +27,7 @@ void MirandaFont::registerFont(FontState *font)
 	strncpy(fid.dbSettingsGroup, dlg->getModule(), sizeof(fid.dbSettingsGroup));
 
 	char tmp[sizeof(fid.prefix)];
-	mir_snprintf(tmp, sizeof(tmp), "%s_%s_Font_", field->getDialog()->getName(), field->getName());
+	mir_snprintf(tmp, sizeof(tmp), "%s_%s_%s_Font_", TcharToChar(dlg->getSkinName()), field->getDialog()->getName(), field->getName());
 	strncpy(fid.prefix, tmp, sizeof(fid.prefix));
 
 	fid.deffontsettings.colour = font->getColor();

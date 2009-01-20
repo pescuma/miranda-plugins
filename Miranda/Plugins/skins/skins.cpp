@@ -504,6 +504,24 @@ void Interface_SetEnabled(SKINNED_FIELD aField, BOOL enabled)
 	field->setEnabled(enabled != 0);
 }
 
+void Interface_SetToolTipA(SKINNED_FIELD aField, const char *tooltip)
+{
+	if (aField == NULL)
+		return;
+
+	Field *field = (Field *) aField;
+	field->setToolTip(CharToTchar(tooltip));
+}
+
+void Interface_SetToolTipW(SKINNED_FIELD aField, const WCHAR *tooltip)
+{
+	if (aField == NULL)
+		return;
+
+	Field *field = (Field *) aField;
+	field->setToolTip(WcharToTchar(tooltip));
+}
+
 void Interface_SetTextA(SKINNED_FIELD aField, const char *text)
 {
 	if (aField == NULL)
@@ -673,6 +691,24 @@ BOOL Interface_IsVisible(SKINNED_FIELD_STATE field)
 	return fieldState->isVisible();
 }
 
+char * Interface_GetToolTipA(SKINNED_FIELD_STATE field)
+{
+	if (field == NULL)
+		return NULL;
+
+	FieldState *fieldState = (FieldState *) field;
+	return TcharToChar(fieldState->getToolTip()).detach();
+}
+
+WCHAR * Interface_GetToolTipW(SKINNED_FIELD_STATE field) 
+{
+	if (field == NULL)
+		return NULL;
+
+	FieldState *fieldState = (FieldState *) field;
+	return TcharToWchar(fieldState->getToolTip()).detach();
+}
+
 char * Interface_GetTextA(SKINNED_FIELD_STATE field)
 {
 	if (field == NULL)
@@ -821,6 +857,8 @@ static int Service_GetInterface(WPARAM wParam, LPARAM lParam)
 	mski->SetDialogSize = &Interface_SetDialogSize;
 
 	mski->SetEnabled = &Interface_SetEnabled;
+	mski->SetToolTipA = &Interface_SetToolTipA;
+	mski->SetToolTipW = &Interface_SetToolTipW;
 
 	mski->SetTextA = &Interface_SetTextA;
 	mski->SetTextW = &Interface_SetTextW;
@@ -830,7 +868,6 @@ static int Service_GetInterface(WPARAM wParam, LPARAM lParam)
 	mski->SetImage = &Interface_SetImage;
 
 	mski->Run = &Interface_Run;
-//	mski->DeleteDialogState = &Interface_DeleteDialogState;
 
 	mski->GetFieldState = &Interface_GetFieldState;
 	mski->GetDialogBorders = &Interface_GetDialogBorders;
@@ -839,6 +876,8 @@ static int Service_GetInterface(WPARAM wParam, LPARAM lParam)
 	mski->GetInsideRect = &Interface_GetInsideRect;
 	mski->GetBorders = &Interface_GetBorders;
 	mski->IsVisible = &Interface_IsVisible;
+	mski->GetToolTipA = &Interface_GetToolTipA;
+	mski->GetToolTipW = &Interface_GetToolTipW;
 
 	mski->GetTextA = &Interface_GetTextA;
 	mski->GetTextW = &Interface_GetTextW;
