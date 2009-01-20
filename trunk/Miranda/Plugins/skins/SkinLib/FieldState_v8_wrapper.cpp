@@ -16,20 +16,24 @@ using namespace v8;
 
 static Handle<Value> Get_FieldState_x(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FieldState *tmp = (FieldState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getX());
+	return scope.Close( Int32::New(tmp->getX()) );
 }
 
 static void Set_FieldState_x(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -46,20 +50,24 @@ static void Set_FieldState_x(Local<String> property, Local<Value> value, const A
 
 static Handle<Value> Get_FieldState_y(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FieldState *tmp = (FieldState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getY());
+	return scope.Close( Int32::New(tmp->getY()) );
 }
 
 static void Set_FieldState_y(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -76,20 +84,24 @@ static void Set_FieldState_y(Local<String> property, Local<Value> value, const A
 
 static Handle<Value> Get_FieldState_width(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FieldState *tmp = (FieldState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getWidth());
+	return scope.Close( Int32::New(tmp->getWidth()) );
 }
 
 static void Set_FieldState_width(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -106,20 +118,24 @@ static void Set_FieldState_width(Local<String> property, Local<Value> value, con
 
 static Handle<Value> Get_FieldState_height(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FieldState *tmp = (FieldState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getHeight());
+	return scope.Close( Int32::New(tmp->getHeight()) );
 }
 
 static void Set_FieldState_height(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -136,20 +152,24 @@ static void Set_FieldState_height(Local<String> property, Local<Value> value, co
 
 static Handle<Value> Get_FieldState_left(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FieldState *tmp = (FieldState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getLeft());
+	return scope.Close( Int32::New(tmp->getLeft()) );
 }
 
 static void Set_FieldState_left(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -166,20 +186,24 @@ static void Set_FieldState_left(Local<String> property, Local<Value> value, cons
 
 static Handle<Value> Get_FieldState_top(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FieldState *tmp = (FieldState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getTop());
+	return scope.Close( Int32::New(tmp->getTop()) );
 }
 
 static void Set_FieldState_top(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -196,20 +220,24 @@ static void Set_FieldState_top(Local<String> property, Local<Value> value, const
 
 static Handle<Value> Get_FieldState_right(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FieldState *tmp = (FieldState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getRight());
+	return scope.Close( Int32::New(tmp->getRight()) );
 }
 
 static void Set_FieldState_right(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -226,20 +254,24 @@ static void Set_FieldState_right(Local<String> property, Local<Value> value, con
 
 static Handle<Value> Get_FieldState_bottom(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FieldState *tmp = (FieldState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getBottom());
+	return scope.Close( Int32::New(tmp->getBottom()) );
 }
 
 static void Set_FieldState_bottom(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -256,20 +288,24 @@ static void Set_FieldState_bottom(Local<String> property, Local<Value> value, co
 
 static Handle<Value> Get_FieldState_visible(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FieldState *tmp = (FieldState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Boolean::New(tmp->isVisible());
+	return scope.Close( Boolean::New(tmp->isVisible()) );
 }
 
 static void Set_FieldState_visible(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -286,35 +322,41 @@ static void Set_FieldState_visible(Local<String> property, Local<Value> value, c
 
 static Handle<Value> Get_FieldState_enabled(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FieldState *tmp = (FieldState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Boolean::New(tmp->isEnabled());
+	return scope.Close( Boolean::New(tmp->isEnabled()) );
 }
 
 
 static Handle<Value> Get_FieldState_toolTip(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FieldState *tmp = (FieldState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return String::New((const V8_TCHAR *) tmp->getToolTip());
+	return scope.Close( String::New((const V8_TCHAR *) tmp->getToolTip()) );
 }
 
 static void Set_FieldState_toolTip(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -332,8 +374,44 @@ static void Set_FieldState_toolTip(Local<String> property, Local<Value> value, c
 }
 
 
+static Handle<Value> Get_FieldState_borders(Local<String> property, const AccessorInfo &info) 
+{
+	HandleScope scope;
+	
+	Local<Object> self = info.Holder();
+	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return scope.Close( Undefined() );
+
+	FieldState *tmp = (FieldState *) wrap->Value();
+	if (tmp == NULL)
+		return scope.Close( Undefined() );
+	
+	return scope.Close( self->Get(String::New("bordersRaw")) );
+}
+
+static void Set_FieldState_borders(Local<String> property, Local<Value> value, const AccessorInfo& info) 
+{
+	HandleScope scope;
+	
+	Local<Object> self = info.Holder();
+	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
+	FieldState *tmp = (FieldState *) wrap->Value();
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsInt32())
+		tmp->getBorders()->setAll(value->Int32Value()); 
+}
+
+
 void AddFieldStateAcessors(Handle<ObjectTemplate> &templ)
 {
+	HandleScope scope;
+	
 	templ->SetAccessor(String::New("x"), Get_FieldState_x, Set_FieldState_x);
 	templ->SetAccessor(String::New("y"), Get_FieldState_y, Set_FieldState_y);
 	templ->SetAccessor(String::New("width"), Get_FieldState_width, Set_FieldState_width);
@@ -345,4 +423,5 @@ void AddFieldStateAcessors(Handle<ObjectTemplate> &templ)
 	templ->SetAccessor(String::New("visible"), Get_FieldState_visible, Set_FieldState_visible);
 	templ->SetAccessor(String::New("enabled"), Get_FieldState_enabled, NULL, Handle<Value>(), DEFAULT, ReadOnly);
 	templ->SetAccessor(String::New("toolTip"), Get_FieldState_toolTip, Set_FieldState_toolTip);
+	templ->SetAccessor(String::New("borders"), Get_FieldState_borders, Set_FieldState_borders);
 }

@@ -8,6 +8,7 @@ struct DialogState
 	const Int32 top;
 	const Int32 right;
 	const Int32 bottom;
+	BorderState borders [setter: if (!value.IsEmpty() && value->IsInt32())\n\ttmp->getBorders()->setAll(value->Int32Value()); ];
 };
 
 struct FieldState
@@ -23,17 +24,40 @@ struct FieldState
 	Boolean visible;
 	const Boolean enabled;
 	Char toolTip[128];
+	BorderState borders [setter: if (!value.IsEmpty() && value->IsInt32())\n\ttmp->getBorders()->setAll(value->Int32Value()); ];
 };
 
-struct ControlFieldState
+struct ControlFieldState : FieldState
 {
 	Char text[1024];
+	FontState font;
 };
 
-struct TextFieldState
+struct LabelFieldState : ControlFieldState
+{
+};
+
+struct ButtonFieldState : ControlFieldState
+{
+};
+
+struct EditFieldState : ControlFieldState
+{
+};
+
+struct IconFieldState : FieldState
+{
+};
+
+struct ImageFieldState : FieldState
+{
+};
+
+struct TextFieldState : FieldState
 {
 	Char text[1024];
 	Int32 hAlign | LEFT | CENTER | RIGHT;
+	FontState font;
 };
 
 struct FontState

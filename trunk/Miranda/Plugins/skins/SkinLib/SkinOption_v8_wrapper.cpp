@@ -16,20 +16,24 @@ using namespace v8;
 
 static Handle<Value> Get_SkinOption_description(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	SkinOption *tmp = (SkinOption *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return String::New((const V8_TCHAR *) tmp->getDescription());
+	return scope.Close( String::New((const V8_TCHAR *) tmp->getDescription()) );
 }
 
 static void Set_SkinOption_description(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -49,20 +53,24 @@ static void Set_SkinOption_description(Local<String> property, Local<Value> valu
 
 static Handle<Value> Get_SkinOption_min(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	SkinOption *tmp = (SkinOption *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getMin());
+	return scope.Close( Int32::New(tmp->getMin()) );
 }
 
 static void Set_SkinOption_min(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -79,20 +87,24 @@ static void Set_SkinOption_min(Local<String> property, Local<Value> value, const
 
 static Handle<Value> Get_SkinOption_max(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	SkinOption *tmp = (SkinOption *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getMax());
+	return scope.Close( Int32::New(tmp->getMax()) );
 }
 
 static void Set_SkinOption_max(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -109,26 +121,30 @@ static void Set_SkinOption_max(Local<String> property, Local<Value> value, const
 
 static Handle<Value> Get_SkinOption_type(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	SkinOption *tmp = (SkinOption *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	switch(tmp->getType())
 	{
-		case CHECKBOX: return String::New((const V8_TCHAR *) _T("CHECKBOX"));
-		case NUMBER: return String::New((const V8_TCHAR *) _T("NUMBER"));
-		case TEXT: return String::New((const V8_TCHAR *) _T("TEXT"));
+		case CHECKBOX: return scope.Close( String::New((const V8_TCHAR *) _T("CHECKBOX")) );
+		case NUMBER: return scope.Close( String::New((const V8_TCHAR *) _T("NUMBER")) );
+		case TEXT: return scope.Close( String::New((const V8_TCHAR *) _T("TEXT")) );
 	}
-	return Undefined();
+	return scope.Close( Undefined() );
 }
 
 static void Set_SkinOption_type(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -154,6 +170,8 @@ static void Set_SkinOption_type(Local<String> property, Local<Value> value, cons
 
 void AddSkinOptionAcessors(Handle<ObjectTemplate> &templ)
 {
+	HandleScope scope;
+	
 	templ->SetAccessor(String::New("description"), Get_SkinOption_description, Set_SkinOption_description);
 	templ->SetAccessor(String::New("min"), Get_SkinOption_min, Set_SkinOption_min);
 	templ->SetAccessor(String::New("max"), Get_SkinOption_max, Set_SkinOption_max);

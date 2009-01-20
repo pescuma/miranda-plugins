@@ -29,7 +29,7 @@ extern struct SKIN_INTERFACE mski;
 class SkinFieldState
 {
 public:
-	SkinFieldState(SKINNED_FIELD_STATE field) { this->field = field; }
+	SkinFieldState(SKINNED_FIELD_STATE field) : tooltip(NULL) { this->field = field; }
 	virtual ~SkinFieldState() { if (tooltip != NULL) mir_free(tooltip); }
 
 	BOOL isValid() { return field != NULL; }
