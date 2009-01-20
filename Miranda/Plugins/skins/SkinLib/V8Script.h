@@ -5,12 +5,16 @@
 #include <utility>
 #include "V8Wrappers.h"
 
+
 typedef void (*ExceptionCallback)(void *param, const TCHAR *err);
 
 
 class V8Script
 {
 public:
+	static void initializeEngine();
+
+
 	V8Script();
 	~V8Script();
 
@@ -26,15 +30,15 @@ public:
 	void setExceptionCallback(ExceptionCallback cb, void *param = NULL);
 
 private:
-	V8Wrappers wrappers;
 	v8::Persistent<v8::Context> context;
-	v8::Persistent<v8::Script> script;
+	v8::Persistent<v8::Function> configureFunction;
+	v8::Persistent<v8::Function> drawFunction;
 
 	ExceptionCallback exceptionCallback;
 	void *exceptionCallbackParam;
 
-	v8::Handle<v8::Function> getConfigureFunction(Dialog *dlg);
 	void reportException(v8::TryCatch *try_catch);
+	void fillWrappers(DialogState *state, SkinOptions *opts, bool configure);
 };
 
 

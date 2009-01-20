@@ -16,20 +16,24 @@ using namespace v8;
 
 static Handle<Value> Get_FontState_face(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FontState *tmp = (FontState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return String::New((const V8_TCHAR *) tmp->getFace());
+	return scope.Close( String::New((const V8_TCHAR *) tmp->getFace()) );
 }
 
 static void Set_FontState_face(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -49,20 +53,24 @@ static void Set_FontState_face(Local<String> property, Local<Value> value, const
 
 static Handle<Value> Get_FontState_size(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FontState *tmp = (FontState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getSize());
+	return scope.Close( Int32::New(tmp->getSize()) );
 }
 
 static void Set_FontState_size(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -79,20 +87,24 @@ static void Set_FontState_size(Local<String> property, Local<Value> value, const
 
 static Handle<Value> Get_FontState_italic(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FontState *tmp = (FontState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Boolean::New(tmp->isItalic());
+	return scope.Close( Boolean::New(tmp->isItalic()) );
 }
 
 static void Set_FontState_italic(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -109,20 +121,24 @@ static void Set_FontState_italic(Local<String> property, Local<Value> value, con
 
 static Handle<Value> Get_FontState_bold(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FontState *tmp = (FontState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Boolean::New(tmp->isBold());
+	return scope.Close( Boolean::New(tmp->isBold()) );
 }
 
 static void Set_FontState_bold(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -139,20 +155,24 @@ static void Set_FontState_bold(Local<String> property, Local<Value> value, const
 
 static Handle<Value> Get_FontState_underline(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FontState *tmp = (FontState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Boolean::New(tmp->isUnderline());
+	return scope.Close( Boolean::New(tmp->isUnderline()) );
 }
 
 static void Set_FontState_underline(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -169,20 +189,24 @@ static void Set_FontState_underline(Local<String> property, Local<Value> value, 
 
 static Handle<Value> Get_FontState_strikeOut(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FontState *tmp = (FontState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Boolean::New(tmp->isStrikeOut());
+	return scope.Close( Boolean::New(tmp->isStrikeOut()) );
 }
 
 static void Set_FontState_strikeOut(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -199,20 +223,24 @@ static void Set_FontState_strikeOut(Local<String> property, Local<Value> value, 
 
 static Handle<Value> Get_FontState_color(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	FontState *tmp = (FontState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getColor());
+	return scope.Close( Int32::New(tmp->getColor()) );
 }
 
 static void Set_FontState_color(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -229,6 +257,8 @@ static void Set_FontState_color(Local<String> property, Local<Value> value, cons
 
 void AddFontStateAcessors(Handle<ObjectTemplate> &templ)
 {
+	HandleScope scope;
+	
 	templ->SetAccessor(String::New("face"), Get_FontState_face, Set_FontState_face);
 	templ->SetAccessor(String::New("size"), Get_FontState_size, Set_FontState_size);
 	templ->SetAccessor(String::New("italic"), Get_FontState_italic, Set_FontState_italic);

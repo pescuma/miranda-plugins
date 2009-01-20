@@ -1,10 +1,28 @@
 #include "globals.h"
 #include "V8Script.h"
+#include "V8Wrappers.h"
 
 #include <utf8_helpers.h>
 
 using namespace v8;
 
+#ifdef UNICODE
+# define V8_TCHAR uint16_t
+#else
+# define V8_TCHAR char
+#endif
+
+
+V8Wrappers *wrappers = NULL;
+
+
+void V8Script::initializeEngine()
+{
+	if (wrappers != NULL)
+		return;
+
+	wrappers = new V8Wrappers();
+}
 
 
 V8Script::V8Script() : exceptionCallback(NULL), exceptionCallbackParam(NULL)
@@ -16,141 +34,73 @@ V8Script::~V8Script()
 	dispose();
 }
 
-static Handle<Value> IsEmptyCallback(const Arguments& args)
-{
-	if (args.Length() < 1) 
-		return Undefined();
-	
-	HandleScope scope;
-
-	for(int i = 0; i < args.Length(); i++)
-	{
-		Local<Value> arg = args[0];
-
-		if (arg.IsEmpty() || arg->IsNull() || arg->IsUndefined())
-		{
-			return Boolean::New(true);
-		}
-		else if (arg->IsObject())
-		{
-			Local<Object> self = Local<Object>::Cast(arg);
-			if (self->InternalFieldCount() < 1)
-				continue;
-
-			Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
-			FieldState *field = (FieldState *) wrap->Value();
-			if (field == NULL)
-				continue;
-
-			if (field->isEmpty())
-				return Boolean::New(true);
-		}
-		else if (arg->IsString())
-		{
-			Local<String> str = Local<String>::Cast(arg);
-			if (str->Length() <= 0)
-				return Boolean::New(true);
-		}
-	}
-
-	return Boolean::New(false);
-}
-
-static Handle<Value> RGBCallback(const Arguments& args)
-{
-	if (args.Length() != 3) 
-		return Undefined();
-
-	COLORREF color = RGB(args[0]->Int32Value(), args[1]->Int32Value(), args[2]->Int32Value());
-	return Int32::New(color);
-}
-
-static Handle<Value> AlertCallback(const Arguments& args)
-{
-	Local<External> wrap = Local<External>::Cast(args.Data());
-	if (wrap.IsEmpty())
-		return Int32::New(-1);
-
-	Dialog *dialog = (Dialog *) wrap->Value();
-	if (dialog == NULL)
-		return Int32::New(-1);
-
-	if (args.Length() < 1) 
-		return Int32::New(-1);
-
-	Local<Value> arg = args[0];
-	if (!arg->IsString())
-		return Int32::New(-1);
-
-	Local<String> str = Local<String>::Cast(arg);
-	String::Utf8Value utf8_value(str);
-
-	std::tstring title;
-	title = CharToTchar(dialog->getName());
-	title += _T(" - Skin alert");
-	MessageBox(NULL, Utf8ToTchar(*utf8_value), title.c_str(), MB_OK);
-
-	return Int32::New(0);
-}
-
 bool V8Script::compile(const TCHAR *source, Dialog *dlg)
 {
 	dispose();
 
 	HandleScope handle_scope;
 
-	Handle<ObjectTemplate> global = ObjectTemplate::New();
-	
-	global->Set(String::New("IsEmpty"), FunctionTemplate::New(&IsEmptyCallback));
-	global->Set(String::New("RGB"), FunctionTemplate::New(&RGBCallback));
-	global->Set(String::New("alert"), FunctionTemplate::New(&AlertCallback, External::New(dlg)));
-
-	global->Set(String::New("NUMBER"), String::New("NUMBER"));
-	global->Set(String::New("CHECKBOX"), String::New("CHECKBOX"));
-	global->Set(String::New("TEXT"), String::New("TEXT"));
-	global->Set(String::New("LEFT"), String::New("LEFT"));
-	global->Set(String::New("CENTER"), String::New("CENTER"));
-	global->Set(String::New("RIGHT"), String::New("RIGHT"));
-
-	context = Context::New(NULL, global);
+	context = Context::New(NULL, wrappers->getGlobalTemplate());
 
 	Context::Scope context_scope(context);
 
-	context->Global()->Set(String::New("window"), wrappers.createDialogWrapper(), ReadOnly);
-	context->Global()->Set(String::New("opts"), wrappers.createOptionsWrapper(), ReadOnly);
+	context->Global()->Set(String::New("window"), wrappers->newDialogState(), ReadOnly);
+	context->Global()->Set(String::New("opts"), wrappers->newOptions(), ReadOnly);
 	for(unsigned int i = 0; i < dlg->getFieldCount(); i++)
 	{
 		Field *field = dlg->getField(i);
-		context->Global()->Set(String::New(field->getName()), wrappers.createWrapper(field->getType()), ReadOnly);
+		context->Global()->Set(String::New(field->getName()), wrappers->newState(field->getType()), ReadOnly);
 	}
-	wrappers.clearTemplates();
 
 	TryCatch try_catch;
-	Local<Script> tmpScript = Script::Compile(String::New((const V8_TCHAR *) source), String::New(dlg->getName()));
-	if (tmpScript.IsEmpty()) 
+	Local<Script> script = Script::Compile(String::New((const V8_TCHAR *) source), String::New(dlg->getName()));
+	if (script.IsEmpty()) 
 	{
 		reportException(&try_catch);
 		dispose();
 		return false;
 	}
 
-	script = Persistent<Script>::New(tmpScript);
+	// Run once to get the functions
+	Handle<Value> result = script->Run();
+	if (script.IsEmpty()) 
+	{
+		reportException(&try_catch);
+		dispose();
+		return false;
+	}
+
+	Handle<Value> configureFunction = context->Global()->Get(String::New("configure"));
+	if (!configureFunction.IsEmpty() && !configureFunction->IsFunction()) 
+		configureFunction.Clear();
+
+	Handle<Value> drawFunction = context->Global()->Get(String::New("draw"));
+	if (drawFunction.IsEmpty() || !drawFunction->IsFunction()) 
+	{
+		dispose();
+		return false;
+	}
+
+	this->configureFunction = Persistent<Function>::New(Handle<Function>::Cast(configureFunction));
+	this->drawFunction = Persistent<Function>::New(Handle<Function>::Cast(drawFunction));
 
 	return true;
 }
 
 void V8Script::dispose()
 {
-	script.Dispose();
-	script.Clear();
-
 	context.Dispose();
+	configureFunction.Dispose();
+	drawFunction.Dispose();
+
 	context.Clear();
+	configureFunction.Clear();
+	drawFunction.Clear();
 }
 
 bool V8Script::isValid()
 {
-	return !context.IsEmpty() && !script.IsEmpty();
+	return !context.IsEmpty() && !drawFunction.IsEmpty();
 }
 
 static Handle<Object> get(Local<Object> obj, const char *field)
@@ -158,37 +108,16 @@ static Handle<Object> get(Local<Object> obj, const char *field)
 	return Handle<Object>::Cast(obj->Get(String::New(field)));
 }
 
-Handle<Function> V8Script::getConfigureFunction(Dialog *dlg)
+void V8Script::fillWrappers(DialogState *state, SkinOptions *opts, bool configure)
 {
-	DialogState *state = dlg->createState();
-
-	HandleScope handle_scope;
-
-	Context::Scope context_scope(context);
-
-	// Run once to get function
 	Local<Object> global = context->Global();
-	wrappers.fillWrapper(get(global, "window"), state);
-	wrappers.fillWrapper(get(global, "opts"), (SkinOptions *) NULL, false);
+	wrappers->fillOptions(get(global, "opts"), opts, configure);
+	wrappers->fillDialogState(get(global, "window"), state);
 	for(unsigned int i = 0; i < state->fields.size(); i++)
 	{
 		FieldState *field = state->fields[i];
-		wrappers.fillWrapper(get(global, field->getField()->getName()), field);
+		wrappers->fillState(get(global, field->getField()->getName()), field);
 	}
-
-	// I don't care for the catch here
-	TryCatch try_catch;
-	script->Run();
-
-	delete state;
-
-	Handle<Value> configure_val = context->Global()->Get(String::New("configure"));
-	if (configure_val.IsEmpty() || !configure_val->IsFunction()) 
-		return Handle<Function>();
-
-	Handle<Function> configure = Handle<Function>::Cast(configure_val);
-
-	return handle_scope.Close(configure);
 }
 
 std::pair<SkinOptions *,DialogState *> V8Script::configure(Dialog *dlg)
@@ -199,32 +128,24 @@ std::pair<SkinOptions *,DialogState *> V8Script::configure(Dialog *dlg)
 	SkinOptions *opts = new SkinOptions();
 	DialogState *state = dlg->createState();
 
-	HandleScope handle_scope;
-
-	Context::Scope context_scope(context);
-
-	Handle<Function> configure = getConfigureFunction(dlg);
-	if (configure.IsEmpty())
-		return std::pair<SkinOptions *,DialogState *>(opts, state);
-
-	Local<Object> global = context->Global();
-	wrappers.fillWrapper(get(global, "opts"), opts, true);
-	wrappers.fillWrapper(get(global, "window"), state);
-	for(unsigned int i = 0; i < state->fields.size(); i++)
+	if (!configureFunction.IsEmpty())
 	{
-		FieldState *field = state->fields[i];
-		wrappers.fillWrapper(get(global, field->getField()->getName()), field);
+		HandleScope handle_scope;
+
+		Context::Scope context_scope(context);
+
+		fillWrappers(state, opts, true);
+
+		TryCatch try_catch;
+		Handle<Value> result = configureFunction->Call(context->Global(), 0, NULL);
+		if (result.IsEmpty()) 
+		{
+			reportException(&try_catch);
+			delete opts;
+			delete state;
+			return std::pair<SkinOptions *,DialogState *>(NULL, NULL);;
+		}
 	}
-
-	TryCatch try_catch;
-	Handle<Value> result = configure->Call(global, 0, NULL);
-	if (result.IsEmpty()) 
-	{
-		reportException(&try_catch);
-		delete opts;
-		delete state;
-		return std::pair<SkinOptions *,DialogState *>(NULL, NULL);;
-	} 
 
 	return std::pair<SkinOptions *,DialogState *>(opts, state);
 }
@@ -238,18 +159,10 @@ bool V8Script::run(DialogState * state, SkinOptions *opts)
 
 	Context::Scope context_scope(context);
 
-	Local<Object> global = context->Global();
-
-	wrappers.fillWrapper(get(global, "window"), state);
-	wrappers.fillWrapper(get(global, "opts"), opts, false);
-	for(unsigned int i = 0; i < state->fields.size(); i++)
-	{
-		FieldState *field = state->fields[i];
-		wrappers.fillWrapper(get(global, field->getField()->getName()), field);
-	}
+	fillWrappers(state, opts, false);
 
 	TryCatch try_catch;
-	Handle<Value> result = script->Run();
+	Handle<Value> result = drawFunction->Call(context->Global(), 0, NULL);
 	if (result.IsEmpty()) 
 	{
 		reportException(&try_catch);
