@@ -41,12 +41,6 @@ bool MirandaSkinnedDialog::finishedConfiguring()
 	if (getDefaultState() == NULL || getOpts() == NULL)
 		return false;
 
-	for(unsigned int i = 0; i < getFieldCount(); ++i)
-	{
-		MirandaField *field = dynamic_cast<MirandaField *>(getField(i));
-		field->configure();
-	}
-
 	return true;
 }
 
@@ -222,6 +216,12 @@ int MirandaSkinnedDialog::compile()
 			SkinOption *opt = opts->getOption(i);
 			loadFromDB(opt);
 			opt->setOnChangeCallback(&staticOnOptionChange, this);
+		}
+
+		for(unsigned int i = 0; i < getFieldCount(); ++i)
+		{
+			MirandaField *field = dynamic_cast<MirandaField *>(getField(i));
+			field->configure();
 		}
 
 		fireOnSkinChanged();

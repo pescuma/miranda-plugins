@@ -30,6 +30,7 @@ class SkinFieldState
 {
 public:
 	SkinFieldState(SKINNED_FIELD_STATE field) { this->field = field; }
+	virtual ~SkinFieldState() { if (tooltip != NULL) mir_free(tooltip); }
 
 	BOOL isValid() { return field != NULL; }
 
@@ -38,15 +39,28 @@ public:
 	RECT getBorders() { return mski.GetBorders(field); }
 	BOOL isVisible() { return mski.IsVisible(field); }
 
+	const TCHAR * getToolTip() { 
+		if (tooltip != NULL) 
+			mir_free(tooltip);
+
+#ifdef UNICODE 
+		tooltip = mski.GetToolTipW(field); 
+#else 
+		tooltip = mski.GetToolTipA(field); 
+#endif 
+		return tooltip;
+	}
+
 protected:
 	SKINNED_FIELD_STATE field;
+	TCHAR *tooltip;
 };
 
 class SkinTextFieldState : public SkinFieldState
 {
 public:
 	SkinTextFieldState(SKINNED_FIELD_STATE field) : SkinFieldState(field), text(NULL) {}
-	~SkinTextFieldState() { if (text != NULL) mir_free(text); }
+	virtual ~SkinTextFieldState() { if (text != NULL) mir_free(text); }
 
 	const TCHAR * getText() { 
 		if (text != NULL) 
@@ -57,7 +71,7 @@ public:
 #else 
 		text = mski.GetTextA(field); 
 #endif 
-		return  text;
+		return text;
 	}
 
 	HFONT getFont() { return mski.GetFont(field); }
@@ -89,12 +103,12 @@ class SkinDialogState
 {
 public:
 	SkinDialogState(SKINNED_DIALOG_STATE dlg) { this->dlg = dlg; }
-//	~SkinDialogState() { mski.DeleteDialogState(dlg); dlg = NULL; }
 
 	BOOL isValid() { return dlg != NULL; }
 
 	RECT getBorders() { return mski.GetDialogBorders(dlg); }
 
+	SkinFieldState getField(const char *name) { return SkinFieldState( mski.GetFieldState(dlg, name) ); }
 	SkinTextFieldState getTextField(const char *name) { return SkinTextFieldState( mski.GetFieldState(dlg, name) ); }
 	SkinIconFieldState getIconField(const char *name) { return SkinIconFieldState( mski.GetFieldState(dlg, name) ); }
 	SkinImageFieldState getImageField(const char *name) { return SkinImageFieldState( mski.GetFieldState(dlg, name) ); }
@@ -112,6 +126,14 @@ public:
 	BOOL isValid() { return field != NULL; }
 	
 	void setEnabled(BOOL enabled) { mski.SetEnabled(field, enabled); }
+
+	void setToolTip(const TCHAR *tooltip) { 
+#ifdef UNICODE 
+		mski.SetToolTipW(field, tooltip); 
+#else 
+		mski.SetToolTipA(field, tooltip); 
+#endif
+	}
 
 protected:
 	SKINNED_FIELD field;
@@ -166,6 +188,7 @@ public:
 	SkinIconField addIconField(const char *name, const char *description) { return SkinIconField( mski.AddIconField(dlg, name, description) ); }
 	SkinImageField addImageField(const char *name, const char *description) { return SkinImageField( mski.AddImageField(dlg, name, description) ); }
 
+	SkinField getField(const char *name) { return SkinField( mski.GetField(dlg, name) ); }
 	SkinTextField getTextField(const char *name) { return SkinTextField( mski.GetField(dlg, name) ); }
 	SkinIconField getIconField(const char *name) { return SkinIconField( mski.GetField(dlg, name) ); }
 	SkinImageField getImageField(const char *name) { return SkinImageField( mski.GetField(dlg, name) ); }

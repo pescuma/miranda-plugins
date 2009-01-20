@@ -63,6 +63,8 @@ struct SKIN_INTERFACE
 
 	// Field methods
 	void (*SetEnabled)(SKINNED_FIELD field, BOOL enabled);
+	void (*SetToolTipA)(SKINNED_FIELD field, const char *tooltip);
+	void (*SetToolTipW)(SKINNED_FIELD field, const WCHAR *tooltip);
 
 	// TextField methods
 	void (*SetTextA)(SKINNED_FIELD field, const char *text);
@@ -76,7 +78,6 @@ struct SKIN_INTERFACE
 
 	// Run the skin and get an state from it
 	SKINNED_DIALOG_STATE (*Run)(SKINNED_DIALOG dialog);
-//	void (*DeleteDialogState)(SKINNED_DIALOG_STATE dialog);
 
 	// Dialog State methods
 	SKINNED_FIELD_STATE (*GetFieldState)(SKINNED_DIALOG_STATE dlg, const char *name);
@@ -87,6 +88,8 @@ struct SKIN_INTERFACE
 	RECT (*GetInsideRect)(SKINNED_FIELD_STATE field); // Without borders
 	RECT (*GetBorders)(SKINNED_FIELD_STATE field);
 	BOOL (*IsVisible)(SKINNED_FIELD_STATE field);
+	char * (*GetToolTipA)(SKINNED_FIELD field); // You have to free the result
+	WCHAR * (*GetToolTipW)(SKINNED_FIELD field); // You have to free the result
 
 	// TextField State methods
 	char * (*GetTextA)(SKINNED_FIELD_STATE field); // You have to free the result

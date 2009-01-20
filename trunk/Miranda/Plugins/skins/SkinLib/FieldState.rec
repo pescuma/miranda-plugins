@@ -22,6 +22,7 @@ struct FieldState
 	Int32 bottom;
 	Boolean visible;
 	const Boolean enabled;
+	Char toolTip[128];
 };
 
 struct ControlFieldState

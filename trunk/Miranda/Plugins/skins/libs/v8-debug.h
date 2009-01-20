@@ -28,10 +28,6 @@
 #ifndef V8_DEBUG_H_
 #define V8_DEBUG_H_
 
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-
 #include "v8.h"
 
 #ifdef _WIN32

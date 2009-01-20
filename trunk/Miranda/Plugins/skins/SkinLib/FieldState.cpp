@@ -14,7 +14,8 @@
 
 FieldState::FieldState(DialogState *aDialog, Field *aField) 
 		: field(aField), dialog(aDialog), size(-1, -1), pos(0, 0), 
-		  usingX(0), usingY(0), visible(aField->isEnabled()), borders(0,0,0,0)
+		  usingX(0), usingY(0), visible(aField->isEnabled()), borders(0,0,0,0),
+		  tooltipSet(false)
 {
 }
 
@@ -192,6 +193,20 @@ void FieldState::setBottom(int botom)
 	}
 
 	SET(usingY, END);
+}
+
+const TCHAR * FieldState::getToolTip() const
+{
+	if (tooltipSet)
+		return tooltip.c_str();
+	else
+		return field->getToolTip();
+}
+
+void FieldState::setToolTip(const TCHAR *tooltip)
+{
+	this->tooltip = tooltip;
+	tooltipSet = true;
 }
 
 BorderState * FieldState::getBorders()
