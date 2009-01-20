@@ -1,499 +1,184 @@
 #include "globals.h"
 #include "V8Wrappers.h"
 
-#include "FieldState_v8_wrapper.h"
-#include "ControlFieldState_v8_wrapper.h"
-#include "TextFieldState_v8_wrapper.h"
-#include "FontState_v8_wrapper.h"
-#include "DialogState_v8_wrapper.h"
-#include "BorderState_v8_wrapper.h"
-#include "SkinOption_v8_wrapper.h"
 #include <utf8_helpers.h>
-
-
-#define OPTION (USER_DEFINED-5)
-#define OPTIONS (USER_DEFINED-4)
-#define BORDER (USER_DEFINED-3)
-#define FONT (USER_DEFINED-2)
-#define DIALOG (USER_DEFINED-1)
 
 
 using namespace v8;
 
 
-void V8Wrappers::createTemplateFor(FieldType type)
+#ifdef UNICODE
+# define V8_TCHAR uint16_t
+#else
+# define V8_TCHAR char
+#endif
+
+
+
+static Handle<Value> IsEmptyCallback(const Arguments& args)
 {
-	switch(type)
+	HandleScope scope;
+	
+	if (args.Length() < 1) 
+		return scope.Close( Undefined() );
+
+	for(int i = 0; i < args.Length(); i++)
 	{
-		case SIMPLE_TEXT:
-			createTextTemplate();
-			break;
-		case SIMPLE_IMAGE:
-			createImageTemplate();
-			break;
-		case SIMPLE_ICON:
-			createIconTemplate();
-			break;
-		case CONTROL_LABEL:
-			createLabelTemplate();
-			break;
-		case CONTROL_BUTTON:
-			createButtonTemplate();
-			break;
-		case CONTROL_EDIT:
-			createEditTemplate();
-			break;
+		Local<Value> arg = args[0];
+
+		if (arg.IsEmpty() || arg->IsNull() || arg->IsUndefined())
+		{
+			return scope.Close( Boolean::New(true) );
+		}
+		else if (arg->IsObject())
+		{
+			Local<Object> self = Local<Object>::Cast(arg);
+			if (self->InternalFieldCount() < 1)
+				continue;
+
+			Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+			FieldState *field = (FieldState *) wrap->Value();
+			if (field == NULL)
+				continue;
+
+			if (field->isEmpty())
+				return scope.Close( Boolean::New(true) );
+		}
+		else if (arg->IsString())
+		{
+			Local<String> str = Local<String>::Cast(arg);
+			if (str->Length() <= 0)
+				return scope.Close( Boolean::New(true) );
+		}
 	}
+
+	return scope.Close( Boolean::New(false) );
 }
 
-
-static Handle<Value> Get_DialogState_borders(Local<String> property, const AccessorInfo &info) 
+static Handle<Value> RGBCallback(const Arguments& args)
 {
-	Local<Object> self = info.Holder();
-	return self->GetInternalField(1);
+	HandleScope scope;
+	
+	if (args.Length() != 3) 
+		return scope.Close( Undefined() );
+
+	COLORREF color = RGB(args[0]->Int32Value(), args[1]->Int32Value(), args[2]->Int32Value());
+	return scope.Close( Int32::New(color) );
 }
 
-
-static void Set_DialogState_borders(Local<String> property, Local<Value> value, const AccessorInfo& info) 
+static Handle<Value> AlertCallback(const Arguments& args)
 {
-	Local<Object> self = info.Holder();
-	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	HandleScope scope;
+
+	Local<External> wrap = Local<External>::Cast(args.Data());
 	if (wrap.IsEmpty())
-		return;
+		return scope.Close( Boolean::New(false) );
 
-	DialogState *tmp = (DialogState *) wrap->Value();
-	if (tmp == NULL)
-		return;
+	if (args.Length() < 1) 
+		return scope.Close( Boolean::New(false) );
 
-	if (!value.IsEmpty() && value->IsInt32())
-		tmp->getBorders()->setAll(value->Int32Value());
+	Local<Value> arg = args[0];
+	if (!arg->IsString())
+		return scope.Close( Boolean::New(false) );
+
+	Local<String> str = Local<String>::Cast(arg);
+	String::Utf8Value utf8_value(str);
+
+	MessageBox(NULL, Utf8ToTchar(*utf8_value), _T("Skin alert"), MB_OK);
+
+	return scope.Close( Boolean::New(true) );
 }
 
-
-void V8Wrappers::createDialogTemplate()
+void V8Wrappers::addGlobalTemplateFields(Handle<ObjectTemplate> &templ)
 {
-	if (templs.find(DIALOG) != templs.end())
-		return;
+	HandleScope scope;
 
-	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(2);
-	AddDialogStateAcessors(templ);
-	templ->SetAccessor(String::New("borders"), Get_DialogState_borders, Set_DialogState_borders);
-	templs[DIALOG] = templ;
-
-	createBorderTemplate();
+	templ->Set(String::New("IsEmpty"), FunctionTemplate::New(&IsEmptyCallback));
+	templ->Set(String::New("RGB"), FunctionTemplate::New(&RGBCallback));
+	templ->Set(String::New("alert"), FunctionTemplate::New(&AlertCallback));
 }
 
-static Handle<Value> Get_FieldState_borders(Local<String> property, const AccessorInfo &info) 
+
+Handle<Object> V8Wrappers::newState(FieldType type)
 {
-	Local<Object> self = info.Holder();
-	return self->GetInternalField(1);
-}
-
-
-static void Set_FieldState_borders(Local<String> property, Local<Value> value, const AccessorInfo& info) 
-{
-	Local<Object> self = info.Holder();
-	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
-	if (wrap.IsEmpty())
-		return;
-
-	FieldState *tmp = (FieldState *) wrap->Value();
-	if (tmp == NULL)
-		return;
-
-	if (!value.IsEmpty() && value->IsInt32())
-		tmp->getBorders()->setAll(value->Int32Value());
-}
-
-void V8Wrappers::createTextTemplate()
-{	
-	if (templs.find(SIMPLE_TEXT) != templs.end())
-		return;
-
-	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(2);
-	AddFieldStateAcessors(templ);
-	AddTextFieldStateAcessors(templ);
-	templ->SetAccessor(String::New("borders"), Get_FieldState_borders, Set_FieldState_borders);
-	templs[SIMPLE_TEXT] = templ;
-
-	createFontTemplate();
-	createBorderTemplate();
-}
-
-void V8Wrappers::createImageTemplate()
-{
-	if (templs.find(SIMPLE_IMAGE) != templs.end())
-		return;
-
-	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(2);
-	AddFieldStateAcessors(templ);
-	templ->SetAccessor(String::New("borders"), Get_FieldState_borders, Set_FieldState_borders);
-	templs[SIMPLE_IMAGE] = templ;
-
-	createBorderTemplate();
-}
-
-void V8Wrappers::createIconTemplate()
-{
-	if (templs.find(SIMPLE_ICON) != templs.end())
-		return;
-
-	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(2);
-	AddFieldStateAcessors(templ);
-	templ->SetAccessor(String::New("borders"), Get_FieldState_borders, Set_FieldState_borders);
-	templs[SIMPLE_ICON] = templ;
-
-	createBorderTemplate();
-}
-
-void V8Wrappers::createLabelTemplate()
-{
-	if (templs.find(CONTROL_LABEL) != templs.end())
-		return;
-
-	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(2);
-	AddFieldStateAcessors(templ);
-	AddControlFieldStateAcessors(templ);
-	templ->SetAccessor(String::New("borders"), Get_FieldState_borders, Set_FieldState_borders);
-	templs[CONTROL_LABEL] = templ;
-
-	createFontTemplate();
-
-	createBorderTemplate();
-}
-
-void V8Wrappers::createButtonTemplate()
-{
-	if (templs.find(CONTROL_BUTTON) != templs.end())
-		return;
-
-	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(2);
-	AddFieldStateAcessors(templ);
-	AddControlFieldStateAcessors(templ);
-	templ->SetAccessor(String::New("borders"), Get_FieldState_borders, Set_FieldState_borders);
-	templs[CONTROL_BUTTON] = templ;
-
-	createFontTemplate();
-	createBorderTemplate();
-}
-
-void V8Wrappers::createEditTemplate()
-{
-	if (templs.find(CONTROL_EDIT) != templs.end())
-		return;
-
-	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(2);
-	AddFieldStateAcessors(templ);
-	AddControlFieldStateAcessors(templ);
-	templ->SetAccessor(String::New("borders"), Get_FieldState_borders, Set_FieldState_borders);
-	templs[CONTROL_EDIT] = templ;
-
-	createFontTemplate();
-	createBorderTemplate();
-}
-
-void V8Wrappers::createFontTemplate()
-{
-	if (templs.find(FONT) != templs.end())
-		return;
-
-	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(1);
-	AddFontStateAcessors(templ);
-	templs[FONT] = templ;
-}
-
-
-void V8Wrappers::createBorderTemplate()
-{
-	if (templs.find(BORDER) != templs.end())
-		return;
-
-	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(1);
-	AddBorderStateAcessors(templ);
-	templs[BORDER] = templ;
-}
-
-
-Handle<Object> V8Wrappers::createWrapper(FieldType type)
-{
-	createTemplateFor(type);
-
 	switch(type)
 	{
 		case SIMPLE_TEXT:
-			return createTextWrapper();
-			break;
+			return newTextFieldState();
 		case SIMPLE_IMAGE:
-			return createImageWrapper();
-			break;
+			return newImageFieldState();
 		case SIMPLE_ICON:
-			return createIconWrapper();
-			break;
+			return newIconFieldState();
 		case CONTROL_LABEL:
-			return createLabelWrapper();
-			break;
+			return newLabelFieldState();
 		case CONTROL_BUTTON:
-			return createButtonWrapper();
-			break;
+			return newButtonFieldState();
 		case CONTROL_EDIT:
-			return createEditWrapper();
-			break;
+			return newEditFieldState();
 	}
 	throw "Unknown type";
 }
 
-Handle<Object> V8Wrappers::fillWrapper(Handle<Object> obj, FieldState *state)
+void V8Wrappers::fillState(Handle<Object> obj, FieldState *state)
 {
-	if (obj.IsEmpty())
-		throw "Empty object";
-
 	switch(state->getField()->getType())
 	{
-	case SIMPLE_TEXT:
-		return fillTextWrapper(obj, (TextFieldState *) state);
-		break;
-	case SIMPLE_IMAGE:
-		return fillImageWrapper(obj, (ImageFieldState *) state);
-		break;
-	case SIMPLE_ICON:
-		return fillIconWrapper(obj, (IconFieldState *) state);
-		break;
-	case CONTROL_LABEL:
-		return fillLabelWrapper(obj, (LabelFieldState *) state);
-		break;
-	case CONTROL_BUTTON:
-		return fillButtonWrapper(obj, (ButtonFieldState *) state);
-		break;
-	case CONTROL_EDIT:
-		return fillEditWrapper(obj, (EditFieldState *) state);
-		break;
+		case SIMPLE_TEXT:
+			fillTextFieldState(obj, (TextFieldState *) state);
+			break;
+		case SIMPLE_IMAGE:
+			fillImageFieldState(obj, (ImageFieldState *) state);
+			break;
+		case SIMPLE_ICON:
+			fillIconFieldState(obj, (IconFieldState *) state);
+			break;
+		case CONTROL_LABEL:
+			fillLabelFieldState(obj, (LabelFieldState *) state);
+			break;
+		case CONTROL_BUTTON:
+			fillButtonFieldState(obj, (ButtonFieldState *) state);
+			break;
+		case CONTROL_EDIT:
+			fillEditFieldState(obj, (EditFieldState *) state);
+			break;
+		default:
+			throw "Unknown type";
 	}
-	throw "Unknown type";
 }
 
-Handle<Object> V8Wrappers::createDialogWrapper()
+static Handle<Value> Get_SkinOption_value(SkinOption *opt) 
 {
-	createDialogTemplate();
+	HandleScope scope;
+	
+	if (opt == NULL)
+		return scope.Close( Undefined() );
 
-	Handle<Object> obj = newInstance(DIALOG);
-	Handle<Object> borders = newInstance(BORDER);
-	obj->SetInternalField(1, borders);
+	switch (opt->getType())
+	{
+		case CHECKBOX:	return scope.Close( Boolean::New(opt->getValueCheckbox()) );
+		case NUMBER:	return scope.Close( Int32::New(opt->getValueNumber()) );
+		case TEXT:		return scope.Close( String::New((const V8_TCHAR *) opt->getValueText()) );
+	}
 
-	return obj;
+	return scope.Close( Undefined() );
 }
-
-Handle<Object> V8Wrappers::fillWrapper(Handle<Object> obj, DialogState *state)
-{
-	if (obj.IsEmpty())
-		throw "Empty object";
-
-	obj->SetInternalField(0, External::New(state));
-
-	Handle<Object> borders = Handle<Object>::Cast(obj->GetInternalField(1));
-	borders->SetInternalField(0, External::New(state->getBorders()));
-
-	return obj;
-}
-
-Handle<Object> V8Wrappers::newInstance(int type)
-{
-	if (templs.find(type) == templs.end())
-		throw "Unknown template";
-
-	return templs[type]->NewInstance();
-}
-
-Handle<Object> V8Wrappers::createTextWrapper()
-{
-	Handle<Object> obj = newInstance(SIMPLE_TEXT);
-
-	Handle<Object> borders = newInstance(BORDER);
-	obj->SetInternalField(1, borders);
-
-	Handle<Object> font = newInstance(FONT);
-	obj->Set(String::New("font"), font, ReadOnly);
-
-	return obj;
-}
-
-Handle<Object> V8Wrappers::fillTextWrapper(Handle<Object> obj, TextFieldState *state)
-{
-	if (obj.IsEmpty())
-		throw "Empty object";
-
-	obj->SetInternalField(0, External::New(state));
-
-	Handle<Object> borders = Handle<Object>::Cast(obj->GetInternalField(1));
-	borders->SetInternalField(0, External::New(state->getBorders()));
-
-	Handle<Object> font = Handle<Object>::Cast(obj->Get(String::New("font")));
-	font->SetInternalField(0, External::New(state->getFont()));
-
-	return obj;
-}
-
-Handle<Object> V8Wrappers::createIconWrapper()
-{
-	Handle<Object> obj = newInstance(SIMPLE_ICON);
-
-	Handle<Object> borders = newInstance(BORDER);
-	obj->SetInternalField(1, borders);
-
-	return obj;
-}
-
-Handle<Object> V8Wrappers::fillIconWrapper(Handle<Object> obj, IconFieldState *state)
-{
-	if (obj.IsEmpty())
-		throw "Empty object";
-
-	obj->SetInternalField(0, External::New(state));
-
-	Handle<Object> borders = Handle<Object>::Cast(obj->GetInternalField(1));
-	borders->SetInternalField(0, External::New(state->getBorders()));
-
-	return obj;
-}
-
-Handle<Object> V8Wrappers::createImageWrapper()
-{
-	Handle<Object> obj = newInstance(SIMPLE_IMAGE);
-
-	Handle<Object> borders = newInstance(BORDER);
-	obj->SetInternalField(1, borders);
-
-	return obj;
-}
-
-Handle<Object> V8Wrappers::fillImageWrapper(Handle<Object> obj, ImageFieldState *state)
-{
-	if (obj.IsEmpty())
-		throw "Empty object";
-
-	obj->SetInternalField(0, External::New(state));
-
-	Handle<Object> borders = Handle<Object>::Cast(obj->GetInternalField(1));
-	borders->SetInternalField(0, External::New(state->getBorders()));
-
-	return obj;
-}
-
-Handle<Object> V8Wrappers::createLabelWrapper()
-{
-	Handle<Object> obj = newInstance(CONTROL_LABEL);
-
-	Handle<Object> borders = newInstance(BORDER);
-	obj->SetInternalField(1, borders);
-
-	Handle<Object> font = newInstance(FONT);
-	obj->Set(String::New("font"), font, ReadOnly);
-
-	return obj;
-}
-
-Handle<Object> V8Wrappers::fillLabelWrapper(Handle<Object> obj, LabelFieldState *state)
-{
-	if (obj.IsEmpty())
-		throw "Empty object";
-
-	obj->SetInternalField(0, External::New(state));
-
-	Handle<Object> borders = Handle<Object>::Cast(obj->GetInternalField(1));
-	borders->SetInternalField(0, External::New(state->getBorders()));
-
-	Handle<Object> font = Handle<Object>::Cast(obj->Get(String::New("font")));
-	font->SetInternalField(0, External::New(state->getFont()));
-
-	return obj;
-}
-
-Handle<Object> V8Wrappers::createButtonWrapper()
-{
-	Handle<Object> obj = newInstance(CONTROL_BUTTON);
-
-	Handle<Object> borders = newInstance(BORDER);
-	obj->SetInternalField(1, borders);
-
-	Handle<Object> font = newInstance(FONT);
-	obj->Set(String::New("font"), font, ReadOnly);
-
-	return obj;
-}
-
-Handle<Object> V8Wrappers::fillButtonWrapper(Handle<Object> obj, ButtonFieldState *state)
-{
-	if (obj.IsEmpty())
-		throw "Empty object";
-
-	obj->SetInternalField(0, External::New(state));
-
-	Handle<Object> borders = Handle<Object>::Cast(obj->GetInternalField(1));
-	borders->SetInternalField(0, External::New(state->getBorders()));
-
-	Handle<Object> font = Handle<Object>::Cast(obj->Get(String::New("font")));
-	font->SetInternalField(0, External::New(state->getFont()));
-
-	return obj;
-}
-
-Handle<Object> V8Wrappers::createEditWrapper()
-{
-	Handle<Object> obj = newInstance(CONTROL_EDIT);
-
-	Handle<Object> borders = newInstance(BORDER);
-	obj->SetInternalField(1, borders);
-
-	Handle<Object> font = newInstance(FONT);
-	obj->Set(String::New("font"), font, ReadOnly);
-
-	return obj;
-}
-
-Handle<Object> V8Wrappers::fillEditWrapper(Handle<Object> obj, EditFieldState *state)
-{
-	if (obj.IsEmpty())
-		throw "Empty object";
-
-	obj->SetInternalField(0, External::New(state));
-
-	Handle<Object> borders = Handle<Object>::Cast(obj->GetInternalField(1));
-	borders->SetInternalField(0, External::New(state->getBorders()));
-
-	Handle<Object> font = Handle<Object>::Cast(obj->Get(String::New("font")));
-	font->SetInternalField(0, External::New(state->getFont()));
-
-	return obj;
-}
-
-void V8Wrappers::clearTemplates()
-{
-	templs.clear();
-}
-
 
 static Handle<Value> Get_Options_Fields(Local<String> aName, const AccessorInfo &info)
 {
+	HandleScope scope;
+
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	SkinOptions *opts = (SkinOptions *) wrap->Value();
 	if (opts == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	String::AsciiValue name(aName);
 	if (name.length() <= 0)
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	bool configure = self->GetInternalField(1)->BooleanValue();
 	if (configure)
@@ -506,66 +191,76 @@ static Handle<Value> Get_Options_Fields(Local<String> aName, const AccessorInfo 
 			opts->addOption(opt);
 		}
 
-		V8Wrappers wrappers;
-		return wrappers.fillWrapper(wrappers.createOptionWrapper(), opt);
+		wrap = Local<External>::Cast(info.Data());
+		if (wrap.IsEmpty())
+			return scope.Close( Undefined() );
+
+		V8Wrappers *wrappers = (V8Wrappers *) wrap->Value();
+		if (wrappers == NULL)
+			return scope.Close( Undefined() );
+
+		Handle<Object> ret = wrappers->newSkinOption();
+		wrappers->fillSkinOption(ret, opt);
+		return scope.Close( ret );
 	}
 	else
 	{
 		SkinOption * opt = opts->getOption(*name);
-		if (opt == NULL)
-			return Undefined();
-
-		switch (opt->getType())
-		{
-			case CHECKBOX:	return Boolean::New(opt->getValueCheckbox());
-			case NUMBER:	return Int32::New(opt->getValueNumber());
-			case TEXT:		return String::New((const V8_TCHAR *) opt->getValueText());
-		}
-
-		return Undefined();
+		return scope.Close( Get_SkinOption_value(opt) );
 	}
 }
 
-void V8Wrappers::createOptionsTemplate()
+Handle<ObjectTemplate> V8Wrappers::getOptionsTemplate()
 {
-	if (templs.find(OPTIONS) != templs.end())
-		return;
-
+	HandleScope scope;
+	
+	if (!optionsTemplate.IsEmpty())
+		return optionsTemplate; 
+	
 	Handle<ObjectTemplate> templ = ObjectTemplate::New();
 	templ->SetInternalFieldCount(2);
-	templ->SetNamedPropertyHandler(&Get_Options_Fields);
-	templs[OPTIONS] = templ;
+	templ->SetNamedPropertyHandler(&Get_Options_Fields, 0, 0, 0, 0, External::New(this));
+	
+	optionsTemplate = Persistent<ObjectTemplate>::New(templ);
+	
+	return optionsTemplate;
 }
 
-Handle<Object> V8Wrappers::createOptionsWrapper()
+Handle<Object> V8Wrappers::newOptions()
 {
-	createOptionsTemplate();
+	HandleScope scope;
+	
+	Handle<Object> obj = getOptionsTemplate()->NewInstance();
+	
+	return scope.Close(obj);
+}
 
-	return newInstance(OPTIONS);
+void V8Wrappers::fillOptions(Handle<Object> v8Obj, SkinOptions *obj, bool configure)
+{
+	HandleScope scope;
+	
+	_ASSERT(!v8Obj.IsEmpty());
+
+	v8Obj->SetInternalField(0, External::New(obj));
+	v8Obj->SetInternalField(1, Boolean::New(configure));
 }
 
 static Handle<Value> Get_SkinOption_value(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	SkinOption *opt = (SkinOption *) wrap->Value();
-	if (opt == NULL)
-		return Undefined();
-
-	switch (opt->getType())
-	{
-		case CHECKBOX:	return Boolean::New(opt->getValueCheckbox());
-		case NUMBER:	return Int32::New(opt->getValueNumber());
-		case TEXT:		return String::New((const V8_TCHAR *) opt->getValueText());
-	}
-	return Undefined();
+	return scope.Close( Get_SkinOption_value((SkinOption *) wrap->Value()) );
 }
 
 static void Set_SkinOption_value(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -592,42 +287,9 @@ static void Set_SkinOption_value(Local<String> property, Local<Value> value, con
 	}
 }
 
-void V8Wrappers::createOptionTemplate()
+void V8Wrappers::addSkinOptionTemplateFields(Handle<ObjectTemplate> &templ)
 {
-	if (templs.find(OPTION) != templs.end())
-		return;
-
-	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->SetInternalFieldCount(1);
-	AddSkinOptionAcessors(templ);
+	HandleScope scope;
+	
 	templ->SetAccessor(String::New("value"), Get_SkinOption_value, Set_SkinOption_value);
-	templs[OPTION] = templ;
-}
-
-Handle<Object> V8Wrappers::createOptionWrapper()
-{
-	createOptionTemplate();
-
-	return newInstance(OPTION);
-}
-
-Handle<Object> V8Wrappers::fillWrapper(Handle<Object> obj, SkinOptions *opts, bool configure)
-{
-	if (obj.IsEmpty())
-		throw "Empty object";
-
-	obj->SetInternalField(0, External::New(opts));
-	obj->SetInternalField(1, Boolean::New(configure));
-
-	return obj;
-}
-
-Handle<Object> V8Wrappers::fillWrapper(Handle<Object> obj, SkinOption *opt)
-{
-	if (obj.IsEmpty())
-		throw "Empty object";
-
-	obj->SetInternalField(0, External::New(opt));
-
-	return obj;
 }

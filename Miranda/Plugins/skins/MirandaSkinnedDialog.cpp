@@ -29,9 +29,9 @@ void MirandaSkinnedDialog::setSkinName(const TCHAR *name)
 	if (skinName == name)
 		return;
 
-	skinName = name;
+// TODO	skinName = name;
 	setSettting("Skin", skinName.c_str());
-	updateFilename();
+// TODO	updateFilename();
 }
 
 bool MirandaSkinnedDialog::finishedConfiguring()

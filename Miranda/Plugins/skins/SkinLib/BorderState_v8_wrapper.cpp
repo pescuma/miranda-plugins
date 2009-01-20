@@ -15,20 +15,24 @@ using namespace v8;
 
 static Handle<Value> Get_BorderState_left(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	BorderState *tmp = (BorderState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getLeft());
+	return scope.Close( Int32::New(tmp->getLeft()) );
 }
 
 static void Set_BorderState_left(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -45,20 +49,24 @@ static void Set_BorderState_left(Local<String> property, Local<Value> value, con
 
 static Handle<Value> Get_BorderState_right(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	BorderState *tmp = (BorderState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getRight());
+	return scope.Close( Int32::New(tmp->getRight()) );
 }
 
 static void Set_BorderState_right(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -75,20 +83,24 @@ static void Set_BorderState_right(Local<String> property, Local<Value> value, co
 
 static Handle<Value> Get_BorderState_top(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	BorderState *tmp = (BorderState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getTop());
+	return scope.Close( Int32::New(tmp->getTop()) );
 }
 
 static void Set_BorderState_top(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -105,20 +117,24 @@ static void Set_BorderState_top(Local<String> property, Local<Value> value, cons
 
 static Handle<Value> Get_BorderState_bottom(Local<String> property, const AccessorInfo &info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
-		return Undefined();
+		return scope.Close( Undefined() );
 
 	BorderState *tmp = (BorderState *) wrap->Value();
 	if (tmp == NULL)
-		return Undefined();
+		return scope.Close( Undefined() );
 
-	return Int32::New(tmp->getBottom());
+	return scope.Close( Int32::New(tmp->getBottom()) );
 }
 
 static void Set_BorderState_bottom(Local<String> property, Local<Value> value, const AccessorInfo& info) 
 {
+	HandleScope scope;
+	
 	Local<Object> self = info.Holder();
 	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
 	if (wrap.IsEmpty())
@@ -135,6 +151,8 @@ static void Set_BorderState_bottom(Local<String> property, Local<Value> value, c
 
 void AddBorderStateAcessors(Handle<ObjectTemplate> &templ)
 {
+	HandleScope scope;
+	
 	templ->SetAccessor(String::New("left"), Get_BorderState_left, Set_BorderState_left);
 	templ->SetAccessor(String::New("right"), Get_BorderState_right, Set_BorderState_right);
 	templ->SetAccessor(String::New("top"), Get_BorderState_top, Set_BorderState_top);

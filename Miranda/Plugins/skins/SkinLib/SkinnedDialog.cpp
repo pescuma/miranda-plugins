@@ -13,6 +13,7 @@ SkinnedDialog::SkinnedDialog(const char *name)
 		  errorCallback(NULL), errorCallbackParam(NULL),
 		  traceCallback(NULL), traceCallbackParam(NULL)
 {
+	V8Script::initializeEngine();
 }
 
 SkinnedDialog::~SkinnedDialog()

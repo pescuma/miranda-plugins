@@ -560,6 +560,10 @@
 						>
 					</File>
 					<File
+						RelativePath=".\SkinLib\V8Templates.h"
+						>
+					</File>
+					<File
 						RelativePath=".\SkinLib\V8Wrappers.h"
 						>
 					</File>
@@ -939,6 +943,10 @@
 					</File>
 					<File
 						RelativePath=".\SkinLib\V8Script.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\SkinLib\V8Templates.cpp"
 						>
 					</File>
 					<File
