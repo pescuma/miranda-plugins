@@ -55,6 +55,9 @@ public:
 
 	virtual bool isEnabled() const;
 
+	virtual const TCHAR * getToolTip() const;
+	virtual void setToolTip(const TCHAR *tooltip);
+
 	virtual BorderState * getBorders();
 	virtual const BorderState * getBorders() const;
 
@@ -77,6 +80,8 @@ protected:
 	int usingY;
 	bool visible;
 	BorderState borders;
+	bool tooltipSet;
+	std::tstring tooltip;
 
 	int getHorizontalBorders() const;
 	int getVerticalBorders() const;

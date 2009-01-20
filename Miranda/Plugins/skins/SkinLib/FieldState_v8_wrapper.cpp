@@ -2,6 +2,7 @@
 #include "FieldState_v8_wrapper.h"
 #include <v8.h>
 #include "FieldState.h"
+#include <utf8_helpers.h>
 
 using namespace v8;
 
@@ -298,6 +299,39 @@ static Handle<Value> Get_FieldState_enabled(Local<String> property, const Access
 }
 
 
+static Handle<Value> Get_FieldState_toolTip(Local<String> property, const AccessorInfo &info) 
+{
+	Local<Object> self = info.Holder();
+	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return Undefined();
+
+	FieldState *tmp = (FieldState *) wrap->Value();
+	if (tmp == NULL)
+		return Undefined();
+
+	return String::New((const V8_TCHAR *) tmp->getToolTip());
+}
+
+static void Set_FieldState_toolTip(Local<String> property, Local<Value> value, const AccessorInfo& info) 
+{
+	Local<Object> self = info.Holder();
+	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return;
+
+	FieldState *tmp = (FieldState *) wrap->Value();
+	if (tmp == NULL)
+		return;
+
+	if (!value.IsEmpty() && value->IsString())
+	{
+		String::Utf8Value utf8_value(value);
+		tmp->setToolTip(Utf8ToTchar(*utf8_value));
+	}
+}
+
+
 void AddFieldStateAcessors(Handle<ObjectTemplate> &templ)
 {
 	templ->SetAccessor(String::New("x"), Get_FieldState_x, Set_FieldState_x);
@@ -310,4 +344,5 @@ void AddFieldStateAcessors(Handle<ObjectTemplate> &templ)
 	templ->SetAccessor(String::New("bottom"), Get_FieldState_bottom, Set_FieldState_bottom);
 	templ->SetAccessor(String::New("visible"), Get_FieldState_visible, Set_FieldState_visible);
 	templ->SetAccessor(String::New("enabled"), Get_FieldState_enabled, NULL, Handle<Value>(), DEFAULT, ReadOnly);
+	templ->SetAccessor(String::New("toolTip"), Get_FieldState_toolTip, Set_FieldState_toolTip);
 }
