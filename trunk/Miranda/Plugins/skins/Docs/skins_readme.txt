@@ -15,6 +15,8 @@ Many thanks to the v8 team for the javascript engine implementation.
 
 This needs Miranda 0.8 to work.
 
+To report bugs/make suggestions, go to the forum thread: http://forums.miranda-im.org/showthread.php?p=172392
+
 
 TODO:
  - Allow changing skin without restart
