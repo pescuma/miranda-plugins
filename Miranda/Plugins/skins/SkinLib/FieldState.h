@@ -9,8 +9,8 @@ class DialogState;
 enum HORIZONTAL_ALIGN
 {
 	LEFT = 1,
-	RIGHT,
-	CENTER
+	CENTER,
+	RIGHT
 };
 
 
