@@ -103,9 +103,16 @@ bool V8Script::isValid()
 	return !context.IsEmpty() && !drawFunction.IsEmpty();
 }
 
-static Handle<Object> get(Local<Object> obj, const char *field)
+static Handle<Object> get(Handle<Object> obj, const char *field)
 {
-	return Handle<Object>::Cast(obj->Get(String::New(field)));
+	HandleScope scope;
+	
+	Local<Value> v = obj->Get(String::New(field));
+	_ASSERT(!v.IsEmpty());
+	_ASSERT(!v->IsUndefined());
+	_ASSERT(v->IsObject());
+
+	return scope.Close( Handle<Object>::Cast(v) );
 }
 
 void V8Script::fillWrappers(DialogState *state, SkinOptions *opts, bool configure)
