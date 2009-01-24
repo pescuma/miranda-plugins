@@ -80,7 +80,7 @@ static void Set_FontState_size(Local<String> property, Local<Value> value, const
 	if (tmp == NULL)
 		return;
 
-	if (!value.IsEmpty() && value->IsInt32())
+	if (!value.IsEmpty() && value->IsNumber())
 		tmp->setSize(value->Int32Value());
 }
 
@@ -250,7 +250,7 @@ static void Set_FontState_color(Local<String> property, Local<Value> value, cons
 	if (tmp == NULL)
 		return;
 
-	if (!value.IsEmpty() && value->IsInt32())
+	if (!value.IsEmpty() && value->IsNumber())
 		tmp->setColor(value->Int32Value());
 }
 

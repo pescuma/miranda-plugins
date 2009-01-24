@@ -3,7 +3,7 @@
 
 
 TextFieldState::TextFieldState(DialogState *dialog, TextField *field) 
-		: FieldState(dialog, field), font(field->getFont(), field->getFontColor()), textSet(false), halign(LEFT)
+		: FieldState(dialog, field), font(field->getFont(), field->getFontColor()), textSet(false)
 {
 }
 
@@ -57,16 +57,6 @@ FontState * TextFieldState::getFont()
 const FontState * TextFieldState::getFont() const
 {
 	return &font;
-}
-
-HORIZONTAL_ALIGN TextFieldState::getHAlign() const
-{
-	return halign;
-}
-
-void TextFieldState::setHAlign(HORIZONTAL_ALIGN halign)
-{
-	this->halign = halign;
 }
 
 bool TextFieldState::isEmpty() const

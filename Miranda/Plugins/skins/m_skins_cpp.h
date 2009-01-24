@@ -38,6 +38,8 @@ public:
 	RECT getInsideRect() { return mski.GetInsideRect(field); }
 	RECT getBorders() { return mski.GetBorders(field); }
 	BOOL isVisible() { return mski.IsVisible(field); }
+	int getHorizontalAlign() { return mski.GetHorizontalAlign(field); } // one of SKN_HALIGN_*
+	int getVerticalAlign() { return mski.GetVerticalAlign(field); } // one of SKN_VALIGN_*
 
 	const TCHAR * getToolTip() { 
 		if (tooltip != NULL) 
@@ -76,7 +78,6 @@ public:
 
 	HFONT getFont() { return mski.GetFont(field); }
 	COLORREF getFontColor() { return mski.GetFontColor(field); }
-	int getHorizontalAlign() { return mski.GetHorizontalAlign(field); } // one of SKN_HALIGN_*
 
 private:
 	TCHAR *text;

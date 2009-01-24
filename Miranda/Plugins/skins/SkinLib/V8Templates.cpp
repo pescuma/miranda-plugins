@@ -36,9 +36,18 @@ Handle<ObjectTemplate> V8Templates::getGlobalTemplate()
 		return globalTemplate; 
 	
 	Handle<ObjectTemplate> templ = ObjectTemplate::New();
-	templ->Set(String::New("LEFT"), String::New("LEFT"));
-	templ->Set(String::New("CENTER"), String::New("CENTER"));
-	templ->Set(String::New("RIGHT"), String::New("RIGHT"));
+	templ->Set(String::New("HORIZONTAL_ALIGN_LEFT"), String::New("HORIZONTAL_ALIGN_LEFT"));
+	templ->Set(String::New("LEFT"), String::New("HORIZONTAL_ALIGN_LEFT"));
+	templ->Set(String::New("HORIZONTAL_ALIGN_CENTER"), String::New("HORIZONTAL_ALIGN_CENTER"));
+	templ->Set(String::New("CENTER"), String::New("HORIZONTAL_ALIGN_CENTER"));
+	templ->Set(String::New("HORIZONTAL_ALIGN_RIGHT"), String::New("HORIZONTAL_ALIGN_RIGHT"));
+	templ->Set(String::New("RIGHT"), String::New("HORIZONTAL_ALIGN_RIGHT"));
+	templ->Set(String::New("VERTICAL_ALIGN_TOP"), String::New("VERTICAL_ALIGN_TOP"));
+	templ->Set(String::New("TOP"), String::New("VERTICAL_ALIGN_TOP"));
+	templ->Set(String::New("VERTICAL_ALIGN_CENTER"), String::New("VERTICAL_ALIGN_CENTER"));
+	templ->Set(String::New("CENTER"), String::New("VERTICAL_ALIGN_CENTER"));
+	templ->Set(String::New("VERTICAL_ALIGN_BOTTOM"), String::New("VERTICAL_ALIGN_BOTTOM"));
+	templ->Set(String::New("BOTTOM"), String::New("VERTICAL_ALIGN_BOTTOM"));
 	templ->Set(String::New("CHECKBOX"), String::New("CHECKBOX"));
 	templ->Set(String::New("NUMBER"), String::New("NUMBER"));
 	templ->Set(String::New("TEXT"), String::New("TEXT"));

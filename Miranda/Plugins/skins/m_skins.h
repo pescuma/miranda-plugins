@@ -38,6 +38,10 @@ typedef void (*SkinOptionsChangedCallback)(void *param, SKINNED_DIALOG dlg);
 #define SKN_HALIGN_CENTER 2
 #define SKN_HALIGN_RIGHT 3
 
+#define SKN_VALIGN_TOP 1
+#define SKN_VALIGN_CENTER 2
+#define SKN_VALIGN_BOTTOM 3
+
 
 /// Some common parameters:
 ///  - name : internal name and name used inside skin file
@@ -90,13 +94,14 @@ struct SKIN_INTERFACE
 	BOOL (*IsVisible)(SKINNED_FIELD_STATE field);
 	char * (*GetToolTipA)(SKINNED_FIELD field); // You have to free the result
 	WCHAR * (*GetToolTipW)(SKINNED_FIELD field); // You have to free the result
+	int (*GetHorizontalAlign)(SKINNED_FIELD_STATE field); // one of SKN_HALIGN_*
+	int (*GetVerticalAlign)(SKINNED_FIELD_STATE field); // one of SKN_VALIGN_*
 
 	// TextField State methods
 	char * (*GetTextA)(SKINNED_FIELD_STATE field); // You have to free the result
 	WCHAR * (*GetTextW)(SKINNED_FIELD_STATE field); // You have to free the result
 	HFONT (*GetFont)(SKINNED_FIELD_STATE field);
 	COLORREF (*GetFontColor)(SKINNED_FIELD_STATE field);
-	int (*GetHorizontalAlign)(SKINNED_FIELD_STATE field); // one of SKN_HALIGN_*
 
 	// IconField State methods
 	HICON (*GetIcon)(SKINNED_FIELD_STATE field);

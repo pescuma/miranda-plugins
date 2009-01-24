@@ -80,7 +80,7 @@ static void Set_SkinOption_min(Local<String> property, Local<Value> value, const
 	if (tmp == NULL)
 		return;
 
-	if (!value.IsEmpty() && value->IsInt32())
+	if (!value.IsEmpty() && value->IsNumber())
 		tmp->setMin(value->Int32Value());
 }
 
@@ -114,7 +114,7 @@ static void Set_SkinOption_max(Local<String> property, Local<Value> value, const
 	if (tmp == NULL)
 		return;
 
-	if (!value.IsEmpty() && value->IsInt32())
+	if (!value.IsEmpty() && value->IsNumber())
 		tmp->setMax(value->Int32Value());
 }
 
@@ -158,11 +158,11 @@ static void Set_SkinOption_type(Local<String> property, Local<Value> value, cons
 	{
 		String::Utf8Value utf8_value(value);
 		Utf8ToTchar tval(*utf8_value);
-		if ( lstrcmpi(_T("CHECKBOX"), tval) == 0)
+		if ( lstrcmpi(_T("CHECKBOX"), tval) == 0 )
 			tmp->setType(CHECKBOX);
-		else if ( lstrcmpi(_T("NUMBER"), tval) == 0)
+		else if ( lstrcmpi(_T("NUMBER"), tval) == 0 )
 			tmp->setType(NUMBER);
-		else if ( lstrcmpi(_T("TEXT"), tval) == 0)
+		else if ( lstrcmpi(_T("TEXT"), tval) == 0 )
 			tmp->setType(TEXT);
 	}
 }

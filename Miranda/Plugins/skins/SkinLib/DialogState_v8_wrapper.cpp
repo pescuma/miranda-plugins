@@ -42,7 +42,7 @@ static void Set_DialogState_width(Local<String> property, Local<Value> value, co
 	if (tmp == NULL)
 		return;
 
-	if (!value.IsEmpty() && value->IsInt32())
+	if (!value.IsEmpty() && value->IsNumber())
 		tmp->setWidth(value->Int32Value());
 }
 
@@ -76,7 +76,7 @@ static void Set_DialogState_height(Local<String> property, Local<Value> value, c
 	if (tmp == NULL)
 		return;
 
-	if (!value.IsEmpty() && value->IsInt32())
+	if (!value.IsEmpty() && value->IsNumber())
 		tmp->setHeight(value->Int32Value());
 }
 
