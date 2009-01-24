@@ -75,7 +75,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/ALIGN:4096 /filealign:0x200 /ignore:4108 "
-				AdditionalDependencies="msimg32.lib comctl32.lib $(ProjectDir)libs\v8_g.lib"
+				AdditionalDependencies="$(ProjectDir)libs\v8_g.lib"
 				OutputFile="..\..\bin\debug\Plugins\skins.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -176,7 +176,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/ALIGN:4096 /filealign:0x200 /ignore:4108 "
-				AdditionalDependencies="msimg32.lib comctl32.lib $(ProjectDir)libs\v8.lib"
+				AdditionalDependencies="$(ProjectDir)libs\v8.lib"
 				OutputFile="..\..\bin\release\Plugins\skins.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -370,7 +370,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/ALIGN:4096 /filealign:0x200 /ignore:4108 "
-				AdditionalDependencies="msimg32.lib comctl32.lib $(ProjectDir)libs\v8.lib"
+				AdditionalDependencies="$(ProjectDir)libs\v8.lib"
 				OutputFile="..\..\bin\release unicode\Plugins\skinsW.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"

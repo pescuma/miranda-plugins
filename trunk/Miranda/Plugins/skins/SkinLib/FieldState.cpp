@@ -15,7 +15,7 @@
 FieldState::FieldState(DialogState *aDialog, Field *aField) 
 		: field(aField), dialog(aDialog), size(-1, -1), pos(0, 0), 
 		  usingX(0), usingY(0), visible(aField->isEnabled()), borders(0,0,0,0),
-		  tooltipSet(false)
+		  tooltipSet(false), halign(HORIZONTAL_ALIGN_LEFT), valign(VERTICAL_ALIGN_TOP)
 {
 }
 
@@ -249,6 +249,26 @@ RECT FieldState::getRect() const
 	ret.bottom = beetween(getBottom() + inside.top, inside.top, inside.bottom);
 
 	return ret;
+}
+
+HORIZONTAL_ALIGN FieldState::getHAlign() const
+{
+	return halign;
+}
+
+void FieldState::setHAlign(HORIZONTAL_ALIGN halign)
+{
+	this->halign = halign;
+}
+
+VERTICAL_ALIGN FieldState::getVAlign() const
+{
+	return valign;
+}
+
+void FieldState::setVAlign(VERTICAL_ALIGN valign)
+{
+	this->valign = valign;
 }
 
 RECT FieldState::getInsideRect() const

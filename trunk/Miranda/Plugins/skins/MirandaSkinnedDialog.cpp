@@ -4,14 +4,20 @@
 #define SETTING_NAME_SIZE 256
 
 
-MirandaSkinnedDialog::MirandaSkinnedDialog(const char *name, const char *aModule) 
-		: SkinnedDialog(name), module(aModule), skinChangedCallback(NULL), skinChangedCallbackParam(NULL)
+MirandaSkinnedDialog::MirandaSkinnedDialog(const char *name, const char *aDescription, const char *aModule) 
+		: SkinnedDialog(name), description(aDescription), module(aModule), 
+		skinChangedCallback(NULL), skinChangedCallbackParam(NULL)
 {
 	getSettting("Skin", _T(DEFAULT_SKIN_NAME), skinName);
 }
 
 MirandaSkinnedDialog::~MirandaSkinnedDialog()
 {
+}
+
+const char * MirandaSkinnedDialog::getDescription() const
+{
+	return description.c_str();
 }
 
 const char * MirandaSkinnedDialog::getModule() const
