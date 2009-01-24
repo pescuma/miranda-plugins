@@ -3,17 +3,17 @@
 
 
 template<class T> 
-class mir_scope 
+class scope 
 {
 public:
-	mir_scope() : p(NULL) {}
-	mir_scope(T t) : p(t) {}
-	~mir_scope() { release(); }
+	scope() : p(NULL) {}
+	scope(T t) : p(t) {}
+	~scope() { release(); }
 
 	void release()
 	{
 		if (p != NULL)
-			mir_free(p);
+			delete p;
 		p = NULL;
 	}
 
