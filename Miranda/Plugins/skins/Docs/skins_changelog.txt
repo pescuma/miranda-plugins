@@ -5,6 +5,8 @@ Changelog:
 . 0.0.0.2
   * Fix for float numbers
   + Added valign (not used yet)
+  + Added dialog info (allow clients to set script variables starting with info)
+  + The zip will contain also the pdbs (at least until it is more stable)
 
 . 0.0.0.1
   + Initial version

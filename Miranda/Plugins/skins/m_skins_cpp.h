@@ -194,6 +194,12 @@ public:
 	SkinIconField getIconField(const char *name) { return SkinIconField( mski.GetField(dlg, name) ); }
 	SkinImageField getImageField(const char *name) { return SkinImageField( mski.GetField(dlg, name) ); }
 
+	void setInfoInt(const char *name, int value) { mski.SetInfoInt(dlg, name, value); }
+	void setInfoDouble(const char *name, double value) { mski.SetInfoDouble(dlg, name, value); }
+	void setInfoBool(const char *name, bool value) { mski.SetInfoBool(dlg, name, value); }
+	void setInfoString(const char *name, const TCHAR *value) { mski.SetInfoString(dlg, name, value); }
+	void removeInfo(const char *name) { mski.RemoveInfo(dlg, name); }
+
 	SkinDialogState run() { return SkinDialogState( mski.Run(dlg) ); }
 
 private:

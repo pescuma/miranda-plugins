@@ -112,7 +112,7 @@ DialogState * SkinnedDialog::getState()
 		return NULL;
 
 	state = Dialog::createState();
-	if (!script->run(state, opts))
+	if (!script->run(state, opts, getInfo()))
 	{
 		releaseState();
 		return NULL;
@@ -138,25 +138,6 @@ void SkinnedDialog::releaseState()
 	delete state;
 	state = NULL;
 }
-
-DialogState * SkinnedDialog::createState(const TCHAR *text, MessageCallback errorCallback, void *errorCallbackParam)
-{
-	V8Script script;
-	script.setExceptionCallback(errorCallback, errorCallbackParam);
-
-	if (!script.compile(text, this))
-		return NULL;
-
-	DialogState *state = Dialog::createState();
-	if (!script.run(state, opts))
-	{
-		delete state;
-		return NULL;
-	}
-
-	return state;
-}
-
 
 bool SkinnedDialog::fileChanged()
 {

@@ -25,7 +25,7 @@ public:
 
 	std::pair<SkinOptions *,DialogState *> configure(Dialog *dlg);
 
-	bool run(DialogState * state, SkinOptions *opts);
+	bool run(DialogState * state, SkinOptions *opts, DialogInfo *info);
 
 	void setExceptionCallback(ExceptionCallback cb, void *param = NULL);
 
@@ -38,7 +38,7 @@ private:
 	void *exceptionCallbackParam;
 
 	void reportException(v8::TryCatch *try_catch);
-	void fillWrappers(DialogState *state, SkinOptions *opts, bool configure);
+	void fillWrappers(DialogState *state, SkinOptions *opts, DialogInfo *info, bool configure);
 };
 
 

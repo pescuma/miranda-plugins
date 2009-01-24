@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Skins",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,0,1),
+	PLUGIN_MAKE_VERSION(0,0,0,2),
 	"Skins",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -495,6 +495,52 @@ void Interface_SetDialogSize(SKINNED_DIALOG aDlg, int width, int height)
 	dlg->setSize(Size(width, height));
 }
 
+void Interface_SetInfoInt(SKINNED_DIALOG aDlg, const char *name, int value)
+{
+	if (aDlg == NULL || name == NULL)
+		return;
+
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
+	dlg->getInfo()->set(name, value);
+}
+
+void Interface_SetInfoDouble(SKINNED_DIALOG aDlg, const char *name, double value)
+{
+	if (aDlg == NULL || name == NULL)
+		return;
+
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
+	dlg->getInfo()->set(name, value);
+}
+
+void Interface_SetInfoBool(SKINNED_DIALOG aDlg, const char *name, BOOL value)
+{
+	if (aDlg == NULL || name == NULL)
+		return;
+
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
+	dlg->getInfo()->set(name, value);
+}
+
+void Interface_SetInfoString(SKINNED_DIALOG aDlg, const char *name, const TCHAR *value)
+{
+	if (aDlg == NULL || name == NULL)
+		return;
+
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
+	dlg->getInfo()->set(name, value);
+}
+
+void Interface_RemoveInfo(SKINNED_DIALOG aDlg, const char *name)
+{
+	if (aDlg == NULL || name == NULL)
+		return;
+
+	MirandaSkinnedDialog *dlg = (MirandaSkinnedDialog *) aDlg;
+	dlg->getInfo()->remove(name);
+}
+
+
 void Interface_SetEnabled(SKINNED_FIELD aField, BOOL enabled)
 {
 	if (aField == NULL)
@@ -857,6 +903,12 @@ static int Service_GetInterface(WPARAM wParam, LPARAM lParam)
 	mski->AddImageField = &Interface_AddImageField;
 	mski->GetField = &Interface_GetField;
 	mski->SetDialogSize = &Interface_SetDialogSize;
+
+	mski->SetInfoInt = &Interface_SetInfoInt;
+	mski->SetInfoDouble = &Interface_SetInfoDouble;
+	mski->SetInfoBool = &Interface_SetInfoBool;
+	mski->SetInfoString = &Interface_SetInfoString;
+	mski->RemoveInfo = &Interface_RemoveInfo;
 
 	mski->SetEnabled = &Interface_SetEnabled;
 	mski->SetToolTipA = &Interface_SetToolTipA;
