@@ -53,7 +53,7 @@ int InitOptionsCallback(WPARAM wParam,LPARAM lParam)
 	for(unsigned int i = 0; i < dlgs.size(); i++)
 	{
 		MirandaSkinnedDialog * dlg = dlgs[i];
-		odp.pszTitle = (char *) dlg->getName(); // Yeah, yeah, I know...
+		odp.pszTitle = (char *) dlg->getDescription(); // Yeah, yeah, I know...
 		odp.dwInitParam = (LPARAM) dlg;
 		CallService(MS_OPT_ADDPAGE, wParam, (LPARAM)&odp);
 	}

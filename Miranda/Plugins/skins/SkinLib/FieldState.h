@@ -8,9 +8,16 @@ class DialogState;
 
 enum HORIZONTAL_ALIGN
 {
-	LEFT = 1,
-	CENTER,
-	RIGHT
+	HORIZONTAL_ALIGN_LEFT = 1,
+	HORIZONTAL_ALIGN_CENTER,
+	HORIZONTAL_ALIGN_RIGHT
+};
+
+enum VERTICAL_ALIGN
+{
+	VERTICAL_ALIGN_TOP = 1,
+	VERTICAL_ALIGN_CENTER,
+	VERTICAL_ALIGN_BOTTOM
 };
 
 
@@ -61,6 +68,12 @@ public:
 	virtual BorderState * getBorders();
 	virtual const BorderState * getBorders() const;
 
+	virtual HORIZONTAL_ALIGN getHAlign() const;
+	virtual void setHAlign(HORIZONTAL_ALIGN halign);
+
+	virtual VERTICAL_ALIGN getVAlign() const;
+	virtual void setVAlign(VERTICAL_ALIGN valign);
+
 	virtual bool isEmpty() const = 0;
 
 	// Results
@@ -82,6 +95,8 @@ protected:
 	BorderState borders;
 	bool tooltipSet;
 	std::tstring tooltip;
+	HORIZONTAL_ALIGN halign;
+	VERTICAL_ALIGN valign;
 
 	int getHorizontalBorders() const;
 	int getVerticalBorders() const;

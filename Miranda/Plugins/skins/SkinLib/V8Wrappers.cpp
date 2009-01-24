@@ -70,21 +70,14 @@ static Handle<Value> AlertCallback(const Arguments& args)
 {
 	HandleScope scope;
 
-	Local<External> wrap = Local<External>::Cast(args.Data());
-	if (wrap.IsEmpty())
-		return scope.Close( Boolean::New(false) );
-
 	if (args.Length() < 1) 
 		return scope.Close( Boolean::New(false) );
 
 	Local<Value> arg = args[0];
-	if (!arg->IsString())
-		return scope.Close( Boolean::New(false) );
+	String::Utf8Value utf8_value(arg->ToDetailString());
 
-	Local<String> str = Local<String>::Cast(arg);
-	String::Utf8Value utf8_value(str);
-
-	MessageBox(NULL, Utf8ToTchar(*utf8_value), _T("Skin alert"), MB_OK);
+	char *tmp = *utf8_value;
+// TODO 	MessageBox(NULL, Utf8ToTchar(*utf8_value), _T("Skin alert"), MB_OK);
 
 	return scope.Close( Boolean::New(true) );
 }
@@ -277,7 +270,7 @@ static void Set_SkinOption_value(Local<String> property, Local<Value> value, con
 				opt->setValueCheckbox(value->BooleanValue());
 			break;
 		case NUMBER:
-			if (!value.IsEmpty() && value->IsInt32())
+			if (!value.IsEmpty() && value->IsNumber())
 				opt->setValueNumber(value->Int32Value());
 			break;
 		case TEXT:		

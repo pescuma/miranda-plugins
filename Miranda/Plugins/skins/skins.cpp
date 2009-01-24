@@ -383,7 +383,7 @@ SKINNED_DIALOG Interface_RegisterDialog(const char *name, const char *descriptio
 	if (!FileExists(filename.c_str()))
 		return NULL;
 
-	MirandaSkinnedDialog *dlg = new MirandaSkinnedDialog(name, module);
+	MirandaSkinnedDialog *dlg = new MirandaSkinnedDialog(name, description, module);
 	dlg->setErrorCallback(OnError, dlg);
 	dlgs.push_back(dlg);
 	return (SKINNED_DIALOG) dlg;
@@ -795,14 +795,16 @@ int Interface_GetHorizontalAlign(SKINNED_FIELD_STATE field)
 		return SKN_HALIGN_LEFT;
 
 	FieldState *fieldState = (FieldState *) field;
+	return fieldState->getHAlign();
+}
 
-	switch(fieldState->getField()->getType())
-	{
-		case SIMPLE_TEXT:
-			return ((TextFieldState *) fieldState)->getHAlign();
-	}
+int Interface_GetVerticalAlign(SKINNED_FIELD_STATE field) 
+{
+	if (field == NULL)
+		return SKN_VALIGN_TOP;
 
-	return SKN_HALIGN_LEFT;
+	FieldState *fieldState = (FieldState *) field;
+	return fieldState->getVAlign();
 }
 
 HICON Interface_GetIcon(SKINNED_FIELD_STATE field)
@@ -878,12 +880,13 @@ static int Service_GetInterface(WPARAM wParam, LPARAM lParam)
 	mski->IsVisible = &Interface_IsVisible;
 	mski->GetToolTipA = &Interface_GetToolTipA;
 	mski->GetToolTipW = &Interface_GetToolTipW;
+	mski->GetHorizontalAlign = &Interface_GetHorizontalAlign;
+	mski->GetVerticalAlign = &Interface_GetVerticalAlign;
 
 	mski->GetTextA = &Interface_GetTextA;
 	mski->GetTextW = &Interface_GetTextW;
 	mski->GetFont = &Interface_GetFont;
 	mski->GetFontColor = &Interface_GetFontColor;
-	mski->GetHorizontalAlign = &Interface_GetHorizontalAlign;
 
 	mski->GetIcon = &Interface_GetIcon;
 

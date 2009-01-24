@@ -12,9 +12,10 @@ typedef void (*MirandaSkinnedCallback)(void *param, const MirandaSkinnedDialog *
 class MirandaSkinnedDialog : public SkinnedDialog
 {
 public:
-	MirandaSkinnedDialog(const char *name, const char *module);
+	MirandaSkinnedDialog(const char *name, const char *description, const char *module);
 	virtual ~MirandaSkinnedDialog();
 
+	virtual const char * getDescription() const;
 	virtual const char * getModule() const;
 
 	virtual const TCHAR * getSkinName() const;
@@ -30,6 +31,7 @@ protected:
 	virtual int compile();
 
 private:
+	std::string description;
 	std::string module;
 	std::tstring skinName;
 	MirandaSkinnedCallback skinChangedCallback;

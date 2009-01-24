@@ -42,7 +42,7 @@ static void Set_BorderState_left(Local<String> property, Local<Value> value, con
 	if (tmp == NULL)
 		return;
 
-	if (!value.IsEmpty() && value->IsInt32())
+	if (!value.IsEmpty() && value->IsNumber())
 		tmp->setLeft(value->Int32Value());
 }
 
@@ -76,7 +76,7 @@ static void Set_BorderState_right(Local<String> property, Local<Value> value, co
 	if (tmp == NULL)
 		return;
 
-	if (!value.IsEmpty() && value->IsInt32())
+	if (!value.IsEmpty() && value->IsNumber())
 		tmp->setRight(value->Int32Value());
 }
 
@@ -110,7 +110,7 @@ static void Set_BorderState_top(Local<String> property, Local<Value> value, cons
 	if (tmp == NULL)
 		return;
 
-	if (!value.IsEmpty() && value->IsInt32())
+	if (!value.IsEmpty() && value->IsNumber())
 		tmp->setTop(value->Int32Value());
 }
 
@@ -144,7 +144,7 @@ static void Set_BorderState_bottom(Local<String> property, Local<Value> value, c
 	if (tmp == NULL)
 		return;
 
-	if (!value.IsEmpty() && value->IsInt32())
+	if (!value.IsEmpty() && value->IsNumber())
 		tmp->setBottom(value->Int32Value());
 }
 
