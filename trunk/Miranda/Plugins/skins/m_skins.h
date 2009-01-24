@@ -64,6 +64,11 @@ struct SKIN_INTERFACE
 	SKINNED_FIELD (*AddImageField)(SKINNED_DIALOG dlg, const char *name, const char *description);
 	SKINNED_FIELD (*GetField)(SKINNED_DIALOG dlg, const char *name);
 	void (*SetDialogSize)(SKINNED_DIALOG dlg, int width, int height);
+	void (*SetInfoInt)(SKINNED_DIALOG dlg, const char *name, int value);
+	void (*SetInfoDouble)(SKINNED_DIALOG dlg, const char *name, double value);
+	void (*SetInfoBool)(SKINNED_DIALOG dlg, const char *name, BOOL value);
+	void (*SetInfoString)(SKINNED_DIALOG dlg, const char *name, const TCHAR *value);
+	void (*RemoveInfo)(SKINNED_DIALOG dlg, const char *name);
 
 	// Field methods
 	void (*SetEnabled)(SKINNED_FIELD field, BOOL enabled);

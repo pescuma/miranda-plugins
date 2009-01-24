@@ -72,6 +72,11 @@ unsigned int Dialog::getFieldCount() const
 	return fields.size();
 }
 
+DialogInfo * Dialog::getInfo()
+{
+	return &info;
+}
+
 const Size & Dialog::getSize() const
 {
 	return size;

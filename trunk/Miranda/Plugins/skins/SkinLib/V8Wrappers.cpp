@@ -238,6 +238,7 @@ void V8Wrappers::fillOptions(Handle<Object> v8Obj, SkinOptions *obj, bool config
 	v8Obj->SetInternalField(1, Boolean::New(configure));
 }
 
+
 static Handle<Value> Get_SkinOption_value(Local<String> property, const AccessorInfo &info) 
 {
 	HandleScope scope;
@@ -285,4 +286,100 @@ void V8Wrappers::addSkinOptionTemplateFields(Handle<ObjectTemplate> &templ)
 	HandleScope scope;
 	
 	templ->SetAccessor(String::New("value"), Get_SkinOption_value, Set_SkinOption_value);
+}
+
+
+static Handle<Value> Get_DialogInfo_Fields(Local<String> aName, const AccessorInfo &info)
+{
+	HandleScope scope;
+
+	Local<Object> self = info.Holder();
+	Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
+	if (wrap.IsEmpty())
+		return scope.Close( Undefined() );
+
+	DialogInfo *dialogInfo = (DialogInfo *) wrap->Value();
+	if (dialogInfo == NULL)
+		return scope.Close( Undefined() );
+
+	String::AsciiValue name(aName);
+	if (name.length() <= 0)
+		return scope.Close( Undefined() );
+
+	wrap = Local<External>::Cast(info.Data());
+	if (wrap.IsEmpty())
+		return scope.Close( Undefined() );
+
+	V8Wrappers *wrappers = (V8Wrappers *) wrap->Value();
+	if (wrappers == NULL)
+		return scope.Close( Undefined() );
+
+	Local<String> aPrefix = Local<String>::Cast(self->GetInternalField(1));
+	if (aPrefix.IsEmpty())
+		return scope.Close( Undefined() );
+
+	String::AsciiValue prefix(aPrefix);
+	
+	std::string var;
+	var += *prefix;
+	var += *name;
+
+	switch(dialogInfo->getType(var.c_str()))
+	{
+		case TYPE_VARIABLE:
+		{
+			var += '.';
+
+			Handle<Object> ret = wrappers->newDialogInfo();
+			wrappers->fillDialogInfo(ret, dialogInfo, var.c_str());
+			return scope.Close( ret );
+		}
+		case TYPE_INT:
+			return scope.Close( Int32::New(dialogInfo->getAsInt(var.c_str())) );
+		case TYPE_DOUBLE:
+			return scope.Close( Number::New(dialogInfo->getAsDouble(var.c_str())) );
+		case TYPE_BOOL:
+			return scope.Close( Boolean::New(dialogInfo->getAsBool(var.c_str())) );
+		case TYPE_STRING:
+			return scope.Close( String::New((const V8_TCHAR *) dialogInfo->getAsString(var.c_str())) );
+		case UNKNOWN:
+		default:
+			return scope.Close( Undefined() );
+	}
+}
+
+Handle<ObjectTemplate> V8Wrappers::getDialogInfoTemplate()
+{
+	HandleScope scope;
+	
+	if (!dialogInfoTemplate.IsEmpty())
+		return dialogInfoTemplate; 
+	
+	Handle<ObjectTemplate> templ = ObjectTemplate::New();
+	templ->SetInternalFieldCount(2);
+	templ->SetNamedPropertyHandler(&Get_DialogInfo_Fields, 0, 0, 0, 0, External::New(this));
+	
+	dialogInfoTemplate = Persistent<ObjectTemplate>::New(templ);
+	
+	return dialogInfoTemplate;
+}
+
+Handle<Object> V8Wrappers::newDialogInfo()
+{
+	HandleScope scope;
+	
+	Handle<Object> obj = getDialogInfoTemplate()->NewInstance();
+	
+	return scope.Close(obj);
+}
+
+void V8Wrappers::fillDialogInfo(Handle<Object> v8Obj, DialogInfo *obj, const char *prefix)
+{
+	HandleScope scope;
+	
+	_ASSERT(!v8Obj.IsEmpty());
+
+	v8Obj->SetInternalField(0, External::New(obj));
+
+	v8Obj->SetInternalField(1, String::New(prefix != NULL ? prefix : ""));
 }
