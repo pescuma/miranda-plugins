@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "Field.h"
+#include "DialogInfo.h"
 
 class DialogState;
 
@@ -22,6 +23,8 @@ public:
 	virtual int getIndexOf(Field *field) const;
 	virtual unsigned int getFieldCount() const;
 
+	virtual DialogInfo * getInfo();
+
 	virtual const Size & getSize() const;
 	virtual void setSize(const Size &size);
 
@@ -30,6 +33,7 @@ public:
 private:
 	const std::string name;
 	std::vector<Field *> fields;
+	DialogInfo info;
 	Size size;
 };
 

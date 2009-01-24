@@ -46,6 +46,7 @@ bool V8Script::compile(const TCHAR *source, Dialog *dlg)
 
 	context->Global()->Set(String::New("window"), wrappers->newDialogState(), ReadOnly);
 	context->Global()->Set(String::New("opts"), wrappers->newOptions(), ReadOnly);
+	context->Global()->Set(String::New("info"), wrappers->newDialogInfo(), ReadOnly);
 	for(unsigned int i = 0; i < dlg->getFieldCount(); i++)
 	{
 		Field *field = dlg->getField(i);
@@ -115,11 +116,12 @@ static Handle<Object> get(Handle<Object> obj, const char *field)
 	return scope.Close( Handle<Object>::Cast(v) );
 }
 
-void V8Script::fillWrappers(DialogState *state, SkinOptions *opts, bool configure)
+void V8Script::fillWrappers(DialogState *state, SkinOptions *opts, DialogInfo *info, bool configure)
 {
 	Local<Object> global = context->Global();
 	wrappers->fillOptions(get(global, "opts"), opts, configure);
 	wrappers->fillDialogState(get(global, "window"), state);
+	wrappers->fillDialogInfo(get(global, "info"), info);
 	for(unsigned int i = 0; i < state->fields.size(); i++)
 	{
 		FieldState *field = state->fields[i];
@@ -141,7 +143,7 @@ std::pair<SkinOptions *,DialogState *> V8Script::configure(Dialog *dlg)
 
 		Context::Scope context_scope(context);
 
-		fillWrappers(state, opts, true);
+		fillWrappers(state, opts, dlg->getInfo(), true);
 
 		TryCatch try_catch;
 		Handle<Value> result = configureFunction->Call(context->Global(), 0, NULL);
@@ -157,7 +159,7 @@ std::pair<SkinOptions *,DialogState *> V8Script::configure(Dialog *dlg)
 	return std::pair<SkinOptions *,DialogState *>(opts, state);
 }
 
-bool V8Script::run(DialogState * state, SkinOptions *opts)
+bool V8Script::run(DialogState * state, SkinOptions *opts, DialogInfo *info)
 {
 	if (!isValid())
 		return false;
@@ -166,7 +168,7 @@ bool V8Script::run(DialogState * state, SkinOptions *opts)
 
 	Context::Scope context_scope(context);
 
-	fillWrappers(state, opts, false);
+	fillWrappers(state, opts, info, false);
 
 	TryCatch try_catch;
 	Handle<Value> result = drawFunction->Call(context->Global(), 0, NULL);

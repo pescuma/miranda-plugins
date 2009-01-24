@@ -49,9 +49,6 @@ public:
 	/// Each call to this method can potentially create the state, so don't cache it.
 	virtual DialogState * getState();
 
-	/// Create a state based on the script passed in text. the caller have to free the DialogState *
-	virtual DialogState * createState(const TCHAR *text, MessageCallback errorCallback = NULL, void *errorCallbackParam = NULL);
-
 	virtual void setErrorCallback(MessageCallback cb, void *param = NULL);
 	virtual void setTraceCallback(MessageCallback cb, void *param = NULL);
 
