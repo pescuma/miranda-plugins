@@ -234,7 +234,15 @@ static inline int beetween(int val, int minVal, int maxVal)
 	return max(minVal, min(maxVal, val));
 }
 
-RECT FieldState::getRect() const
+static inline void intersection(RECT &main, const RECT &other)
+{
+	main.left = beetween(main.left, other.left, other.right);
+	main.right = beetween(main.right, other.left, other.right);
+	main.top = beetween(main.top, other.top, other.bottom);
+	main.bottom = beetween(main.bottom, other.top, other.bottom);
+}
+
+RECT FieldState::getRect(bool raw) const
 {
 	RECT ret = {0};
 
@@ -243,10 +251,33 @@ RECT FieldState::getRect() const
 
 	RECT inside = dialog->getInsideRect();
 
-	ret.left = beetween(getLeft() + inside.left, inside.left, inside.right);
-	ret.right = beetween(getRight() + inside.left, inside.left, inside.right);
-	ret.top = beetween(getTop() + inside.top, inside.top, inside.bottom);
-	ret.bottom = beetween(getBottom() + inside.top, inside.top, inside.bottom);
+	ret.left = getLeft() + inside.left;
+	ret.right = getRight() + inside.left;
+	ret.top = getTop() + inside.top;
+	ret.bottom = getBottom() + inside.top;
+
+	if (!raw)
+		intersection(ret, inside);
+
+	return ret;
+}
+
+RECT FieldState::getInsideRect(bool raw) const
+{
+	RECT ret = {0};
+
+	if (!visible)
+		return ret;
+
+	RECT inside = dialog->getInsideRect();
+
+	ret.left = getLeft() + borders.getLeft() + inside.left;
+	ret.right = getRight() - borders.getRight() + inside.left;
+	ret.top = getTop() + borders.getTop() + inside.top;
+	ret.bottom = getBottom() - borders.getBottom() + inside.top;
+
+	if (!raw)
+		intersection(ret, inside);
 
 	return ret;
 }
@@ -269,21 +300,4 @@ VERTICAL_ALIGN FieldState::getVAlign() const
 void FieldState::setVAlign(VERTICAL_ALIGN valign)
 {
 	this->valign = valign;
-}
-
-RECT FieldState::getInsideRect() const
-{
-	RECT ret = {0};
-
-	if (!visible)
-		return ret;
-
-	RECT inside = dialog->getInsideRect();
-
-	ret.left = beetween(getLeft() + borders.getLeft() + inside.left, inside.left, inside.right);
-	ret.right = beetween(getRight() - borders.getRight() + inside.left, inside.left, inside.right);
-	ret.top = beetween(getTop() + borders.getTop() + inside.top, inside.top, inside.bottom);
-	ret.bottom = beetween(getBottom() - borders.getBottom() + inside.top, inside.top, inside.bottom);
-
-	return ret;
 }

@@ -32,12 +32,12 @@ public:
 	SkinFieldState(SKINNED_FIELD_STATE field) : tooltip(NULL) { this->field = field; }
 	virtual ~SkinFieldState() { if (tooltip != NULL) mir_free(tooltip); }
 
-	BOOL isValid() { return field != NULL; }
+	bool isValid() { return field != NULL; }
 
-	RECT getRect() { return mski.GetRect(field); }
-	RECT getInsideRect() { return mski.GetInsideRect(field); }
+	RECT getRect(bool raw = false) { return raw ? mski.GetRawRect(field) : mski.GetRect(field); }
+	RECT getInsideRect(bool raw = false) { return raw ? mski.GetRawInsideRect(field) : mski.GetInsideRect(field); }
 	RECT getBorders() { return mski.GetBorders(field); }
-	BOOL isVisible() { return mski.IsVisible(field); }
+	bool isVisible() { return mski.IsVisible(field) != FALSE; }
 	int getHorizontalAlign() { return mski.GetHorizontalAlign(field); } // one of SKN_HALIGN_*
 	int getVerticalAlign() { return mski.GetVerticalAlign(field); } // one of SKN_VALIGN_*
 
@@ -105,7 +105,7 @@ class SkinDialogState
 public:
 	SkinDialogState(SKINNED_DIALOG_STATE dlg) { this->dlg = dlg; }
 
-	BOOL isValid() { return dlg != NULL; }
+	bool isValid() { return dlg != NULL; }
 
 	RECT getBorders() { return mski.GetDialogBorders(dlg); }
 
@@ -124,9 +124,9 @@ class SkinField
 public:
 	SkinField(SKINNED_FIELD field) { this->field = field; }
 	
-	BOOL isValid() { return field != NULL; }
+	bool isValid() { return field != NULL; }
 	
-	void setEnabled(BOOL enabled) { mski.SetEnabled(field, enabled); }
+	void setEnabled(bool enabled) { mski.SetEnabled(field, enabled); }
 
 	void setToolTip(const TCHAR *tooltip) { 
 #ifdef UNICODE 
@@ -177,7 +177,7 @@ public:
 	SkinDialog(const char *name, const char *description, const char *module) { dlg = mski.RegisterDialog(name, description, module); }
 	~SkinDialog() { mski.DeleteDialog(dlg); dlg = NULL; }
 
-	BOOL isValid() { return dlg != NULL; }
+	bool isValid() { return dlg != NULL; }
 
 	void setSkinChangedCallback(SkinOptionsChangedCallback cb, void *param) { mski.SetSkinChangedCallback(dlg, cb, param); }
 

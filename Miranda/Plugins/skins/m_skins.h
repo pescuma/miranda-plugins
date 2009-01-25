@@ -95,6 +95,8 @@ struct SKIN_INTERFACE
 	// Field State methods
 	RECT (*GetRect)(SKINNED_FIELD_STATE field);  // With borders
 	RECT (*GetInsideRect)(SKINNED_FIELD_STATE field); // Without borders
+	RECT (*GetRawRect)(SKINNED_FIELD_STATE field);  // With borders, without processing to assert inside window
+	RECT (*GetRawInsideRect)(SKINNED_FIELD_STATE field); // Without borders, without processing to assert inside window
 	RECT (*GetBorders)(SKINNED_FIELD_STATE field);
 	BOOL (*IsVisible)(SKINNED_FIELD_STATE field);
 	char * (*GetToolTipA)(SKINNED_FIELD field); // You have to free the result
