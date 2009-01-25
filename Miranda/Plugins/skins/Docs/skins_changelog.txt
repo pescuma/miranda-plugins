@@ -7,6 +7,7 @@ Changelog:
   + Added valign (not used yet)
   + Added dialog info (allow clients to set script variables starting with info)
   + The zip will contain also the pdbs (at least until it is more stable)
+  * Fix for ASCII strings
 
 . 0.0.0.1
   + Initial version
