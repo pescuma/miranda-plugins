@@ -48,7 +48,9 @@ copy "..\Unicode_Release\%name%W.pdb"
 mkdir Plugins
 cd Plugins
 copy "..\..\..\..\bin\release unicode\Plugins\%name%W.dll"
+copy "..\..\Unicode_Release\%name%W.pdb"
 copy "..\..\..\..\bin\release\Plugins\mydetails.dll"
+copy "..\..\..\mydetails\Release\mydetails.pdb"
 cd ..
 
 "C:\Program Files\Filzip\Filzip.exe" -a -rp %name%W.zip Plugins Docs Skins
@@ -56,7 +58,9 @@ cd ..
 
 cd Plugins
 del /Q %name%W.dll
+del /Q %name%W.pdb
 copy "..\..\..\..\bin\release\Plugins\%name%.dll"
+copy ..\..\Release\%name%.pdb
 cd ..
 
 "C:\Program Files\Filzip\Filzip.exe" -a -rp %name%.zip Plugins Docs Skins
