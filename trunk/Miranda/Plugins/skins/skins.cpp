@@ -709,6 +709,32 @@ RECT Interface_GetInsideRect(SKINNED_FIELD_STATE field)
 	return fieldState->getInsideRect();
 }
 
+RECT Interface_GetRawRect(SKINNED_FIELD_STATE field)
+{
+	if (field == NULL)
+	{
+		RECT ret = {0};
+		return ret;
+	}
+
+	FieldState *fieldState = (FieldState *) field;
+
+	return fieldState->getRect(true);
+}
+
+RECT Interface_GetRawInsideRect(SKINNED_FIELD_STATE field)
+{
+	if (field == NULL)
+	{
+		RECT ret = {0};
+		return ret;
+	}
+
+	FieldState *fieldState = (FieldState *) field;
+
+	return fieldState->getInsideRect(true);
+}
+
 RECT Interface_GetBorders(SKINNED_FIELD_STATE field)
 {
 	RECT ret = {0};
@@ -928,6 +954,9 @@ static int Service_GetInterface(WPARAM wParam, LPARAM lParam)
 
 	mski->GetRect = &Interface_GetRect;
 	mski->GetInsideRect = &Interface_GetInsideRect;
+	mski->GetRawRect = &Interface_GetRawRect;
+	mski->GetRawInsideRect = &Interface_GetRawInsideRect;
+
 	mski->GetBorders = &Interface_GetBorders;
 	mski->IsVisible = &Interface_IsVisible;
 	mski->GetToolTipA = &Interface_GetToolTipA;

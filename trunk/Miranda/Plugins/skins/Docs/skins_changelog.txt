@@ -2,6 +2,9 @@ Skins
 
 Changelog:
 
+. 0.0.0.3
+  * Better handling of small sizes
+
 . 0.0.0.2
   * Fix for float numbers
   + Added valign (not used yet)

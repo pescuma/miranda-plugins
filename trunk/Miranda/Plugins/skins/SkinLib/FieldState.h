@@ -78,8 +78,8 @@ public:
 
 	// Results
 
-	virtual RECT getInsideRect() const;
-	virtual RECT getRect() const;
+	virtual RECT getInsideRect(bool raw = false) const;
+	virtual RECT getRect(bool raw = false) const;
 
 protected:
 	FieldState(DialogState *dialog, Field *field);
