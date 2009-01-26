@@ -1,7 +1,8 @@
-Skins plugin
-----------------
+#summary Skins plugin description
 
-CAUTION: THIS IS AN ALPHA STAGE PLUGIN. IT CAN DO VERY BAD THINGS. USE AT YOUR OWN RISK.
+= Skins plugin =
+
+*CAUTION: THIS IS AN ALPHA STAGE PLUGIN. IT CAN DO VERY BAD THINGS. USE AT YOUR OWN RISK.*
 
 This is a service plugin to allow using different skins. It uses javascript as the language the skins are written, thus allowing a lot of flexibility. 
 
@@ -18,7 +19,7 @@ This needs Miranda 0.8 to work.
 To report bugs/make suggestions, go to the forum thread: http://forums.miranda-im.org/showthread.php?p=172392
 
 
-TODO:
+===  TODO  ===
   * Allow changing skin without restart
   * Add support for handling skin packs
   * Add support for emoticons in text fields
@@ -27,5 +28,11 @@ TODO:
   * Allow setting variables by the users of the plugin
 
 
-KNOWN PROBLEMS:
+===  KNOWN PROBLEMS ===
   * It seems to have a memory leak (last time I debugged it, it was inside v8 - maybe I just don't understant its garbage collector?)
+
+
+=== Download ===
+
+ * [http://code.google.com/p/pescuma/downloads/list?can=3&q=plugin:Skins Latest version]
+ * [http://code.google.com/p/pescuma/downloads/list?can=1&q=plugin:Skins All versions]
