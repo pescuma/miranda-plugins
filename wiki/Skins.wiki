@@ -8,7 +8,7 @@ This is a service plugin to allow using different skins. It uses javascript as t
 
 Keep in mind that this is an initial version of the plugin. It is intended to grow a loot (its to do list is bigger than its features list :P ). Currently it allows only calculating the position of elements.
 
-It works based in the consept of a skin beeing a group of small skins (one for each client). The skins are inside the dir <Miranda>\Skins\<Skin name> , and inside that folder, each client skin has the name <Client>.msk
+It works based in the consept of a skin beeing a group of small skins (one for each client). The skins are inside the dir {{{<Miranda>\Skins\<Skin name>}}} , and inside that folder, each client skin has the name {{{<Client>.msk}}}
 
 Inside the zip there is also a version of MyDetails using this plugin.
 
