@@ -4,7 +4,7 @@ MirandaFont::MirandaFont(Field *aField, const char *description)
 		: field(aField), hFont(NULL)
 {
 	ZeroMemory(&fid, sizeof(fid));
-	strncpy(fid.name, description, sizeof(fid.name));
+	lstrcpyn(fid.name, CharToTchar(description), sizeof(fid.name));
 }
 
 MirandaFont::~MirandaFont()
@@ -21,13 +21,12 @@ void MirandaFont::registerFont(FontState *font)
 
 	HDC hdc = GetDC(NULL);
 
-	//	ZeroMemory(&fid, sizeof(fid));
 	fid.cbSize = sizeof(fid);
-	strncpy(fid.group, field->getDialog()->getName(), sizeof(fid.group));
+	lstrcpyn(fid.group, CharToTchar(dlg->getDescription()), sizeof(fid.group));
 	strncpy(fid.dbSettingsGroup, dlg->getModule(), sizeof(fid.dbSettingsGroup));
 
 	char tmp[sizeof(fid.prefix)];
-	mir_snprintf(tmp, sizeof(tmp), "%s_%s_%s_Font_", TcharToChar(dlg->getSkinName()), field->getDialog()->getName(), field->getName());
+	mir_snprintf(tmp, sizeof(tmp), "%s%s%sFont", TcharToChar(dlg->getSkinName()), dlg->getName(), field->getName());
 	strncpy(fid.prefix, tmp, sizeof(fid.prefix));
 
 	fid.deffontsettings.colour = font->getColor();
@@ -37,11 +36,11 @@ void MirandaFont::registerFont(FontState *font)
 		| (font->isUnderline() ? DBFONTF_UNDERLINE : 0)
 		| (font->isStrikeOut() ? DBFONTF_STRIKEOUT : 0);
 	fid.deffontsettings.charset = DEFAULT_CHARSET;
-	strncpy(fid.deffontsettings.szFace, TcharToUtf8(font->getFace()), sizeof(fid.deffontsettings.szFace));
+	lstrcpyn(fid.deffontsettings.szFace, font->getFace(), sizeof(fid.deffontsettings.szFace));
 	fid.order = dlg->getIndexOf(field);
 	fid.flags = FIDF_DEFAULTVALID | FIDF_ALLOWEFFECTS;
 
-	CallService(MS_FONT_REGISTER, (WPARAM)&fid, 0);
+	CallService(MS_FONT_REGISTERT, (WPARAM)&fid, 0);
 
 	ReleaseDC(NULL, hdc);
 
@@ -55,7 +54,7 @@ void MirandaFont::reloadFont()
 	releaseFont();
 
 	LOGFONT log_font;
-	COLORREF color = (COLORREF) CallService(MS_FONT_GET, (WPARAM) &fid, (LPARAM) &log_font);
+	COLORREF color = (COLORREF) CallService(MS_FONT_GETT, (WPARAM) &fid, (LPARAM) &log_font);
 	hFont = CreateFontIndirect(&log_font);
 
 	switch(field->getType())

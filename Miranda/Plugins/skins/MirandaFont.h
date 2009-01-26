@@ -14,7 +14,7 @@ public:
 	void reloadFont();
 
 private:
-	FontID fid;
+	FontIDT fid;
 	HFONT hFont;
 	Field *field;
 

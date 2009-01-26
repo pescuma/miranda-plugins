@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Skins",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,0,2),
+	PLUGIN_MAKE_VERSION(0,0,0,4),
 	"Skins",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -55,9 +55,6 @@ HANDLE hNetlibUser = 0;
 
 HANDLE hSkinsFolder = NULL;
 TCHAR skinsFolder[1024];
-
-char *metacontacts_proto = NULL;
-BOOL loaded = FALSE;
 
 std::vector<MirandaSkinnedDialog *> dlgs;
 
@@ -161,9 +158,6 @@ extern "C" int __declspec(dllexport) Unload(void)
 // Called when all the modules are loaded
 int ModulesLoaded(WPARAM wParam, LPARAM lParam) 
 {
-	if (ServiceExists(MS_MC_GETPROTOCOLNAME))
-		metacontacts_proto = (char *) CallService(MS_MC_GETPROTOCOLNAME, 0, 0);
-
 	// add our modules to the KnownModules list
 	CallService("DBEditorpp/RegisterSingleModule", (WPARAM) MODULE_NAME, 0);
 
@@ -193,8 +187,6 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 		CallService(MS_UPDATE_REGISTER, 0, (LPARAM)&upd);
 	}
-
-	loaded = TRUE;
 
 	return 0;
 }
