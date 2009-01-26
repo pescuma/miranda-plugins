@@ -193,7 +193,7 @@ void MirandaSkinnedDialog::setSettting(const char *name, const char *val)
 
 void MirandaSkinnedDialog::getSettingName(char *setting, const char * name)
 {
-	_snprintf(setting, SETTING_NAME_SIZE, "%s_%s", getName(), name);
+	mir_snprintf(setting, SETTING_NAME_SIZE, "%s%s%s", TcharToChar(getSkinName()), getName(), name);
 }
 
 void MirandaSkinnedDialog::setOnSkinChangedCallback(MirandaSkinnedCallback cb, void *param)

@@ -1,6 +1,7 @@
 #include "globals.h"
 #include "FontState.h"
 
+
 FontState::FontState(HFONT hFont, COLORREF aColor) : hFont(NULL), externalFont(false), color(aColor)
 {
 	setHFONT(hFont);
@@ -19,7 +20,7 @@ void FontState::rebuildHFONT()
 
 void FontState::buildAttribs()
 {
-	LOGFONT lf;
+	LOGFONT lf = {0};
 	if (hFont == NULL || GetObject(hFont, sizeof(lf), &lf) == 0)
 	{
 		face = _T("Tahoma");
