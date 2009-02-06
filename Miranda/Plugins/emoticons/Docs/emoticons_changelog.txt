@@ -2,6 +2,10 @@ Emoticons
 
 Changelog:
 
+. 0.0.2.11
+  * Fix for custom smileys
+  + Don't show custom smileys on outgoing messages
+
 . 0.0.2.10
   * Better handling of text in input area
   * Fixed handling of URLs
