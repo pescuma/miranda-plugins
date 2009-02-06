@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define SAFLRE_INSERTEMF  2     // insert smiley as EMF into RichEdit, otherwise bitmap inserted
                                 // this flag allows "true" transparency
+#define SAFLRE_OUTGOING  4      // Parsing outgoing message
+#define SAFLRE_NOCUSTOM  8      // Do not use custom smileys
 
 typedef struct 
 {
@@ -97,8 +99,10 @@ typedef struct
 //lParam = (LPARAM) 0; not used
 #define ME_SMILEYADD_OPTIONSCHANGED  "SmileyAdd/OptionsChanged"
 
-#define SAFL_PATH   1           // provide smiley file path, icon otherwise 
-#define SAFL_UNICODE  2         // string fields in OPTIONSDIALOGPAGE are WCHAR*
+#define SAFL_PATH      1        // provide smiley file path, icon otherwise 
+#define SAFL_UNICODE   2        // string fields in OPTIONSDIALOGPAGE are WCHAR*
+#define SAFL_OUTGOING  4        // Parsing outgoing message
+#define SAFL_NOCUSTOM  8        // Do not use custom smileys
 
 #if defined _UNICODE || defined UNICODE
   #define SAFL_TCHAR     SAFL_UNICODE
@@ -279,7 +283,7 @@ typedef struct
     HDC         hDC;            // Canvas to draw on
     RECT        rcRect;         // Valid/should be in case of FVCA_DRAW
     COLORREF    clrBackground;  // color to fill background if fTransparent is not set
-    BOOL        fTransparent;   // if need to fill back color
+    BOOL        fTransparent;   // if need to fill back color (not supported)
     LPARAM      lParam;         // used by host window PreFire and PostFire event
 } FVCNDATA_NMHDR;
 

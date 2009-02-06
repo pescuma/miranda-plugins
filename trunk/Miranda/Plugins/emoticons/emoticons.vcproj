@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="9,00"
 	Name="emoticons"
 	ProjectGUID="{8A52EF1C-B62C-421F-BA6D-C0B3EA7B89F8}"
 	RootNamespace="emoticons"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -86,6 +87,8 @@
 				GenerateMapFile="true"
 				MapFileName=".\Unicode_Release/emoticonsW.map"
 				BaseAddress="0x3EC20000"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary=".\Unicode_Release/emoticonsW.lib"
 				TargetMachine="1"
 			/>
@@ -108,9 +111,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -185,6 +185,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Unicode_Debug/emoticonsW.pdb"
 				BaseAddress="0x3EC20000"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary=".\Unicode_Debug/emoticonsW.lib"
 				TargetMachine="1"
 			/>
@@ -207,9 +209,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -287,6 +286,8 @@
 				GenerateMapFile="true"
 				MapFileName=".\Release/emoticons.map"
 				BaseAddress="0x3EC20000"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary=".\Release/emoticons.lib"
 				TargetMachine="1"
 			/>
@@ -309,9 +310,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -384,6 +382,8 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/emoticons.pdb"
 				BaseAddress="0x3EC20000"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary=".\Debug/emoticons.lib"
 				TargetMachine="1"
 			/>
@@ -406,9 +406,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -574,46 +571,6 @@
 			</File>
 			<File
 				RelativePath="..\utils\mir_icons.cpp"
-				>
-				<FileConfiguration
-					Name="Unicode Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Unicode Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\utils\mir_memory.cpp"
 				>
 				<FileConfiguration
 					Name="Unicode Release|Win32"

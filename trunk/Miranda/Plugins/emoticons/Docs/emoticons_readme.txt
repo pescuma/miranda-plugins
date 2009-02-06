@@ -49,5 +49,4 @@ To report bugs/make suggestions, go to the forum thread: http://forums.miranda-i
 TODO:
 - Per protocol pack
 - Updater support for Emoticon Packs
-- Support h++ (works using AniSmiley)
 

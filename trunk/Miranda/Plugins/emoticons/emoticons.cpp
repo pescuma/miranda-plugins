@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,2,10),
+	PLUGIN_MAKE_VERSION(0,0,2,11),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -48,6 +48,8 @@ PLUGININFOEX pluginInfo={
 
 HINSTANCE hInst;
 PLUGINLINK *pluginLink;
+struct MM_INTERFACE mmi;
+struct UTF8_INTERFACE utfi;
 
 HANDLE hHooks[4] = {0};
 HANDLE hServices[8] = {0};
@@ -181,6 +183,11 @@ static TCHAR *webs[] = {
 };
 
 
+static TCHAR *video[] = { 
+	_T("http://www.youtube.com/v/")
+};
+
+
 static TCHAR *urlChars = _T("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789:/?&=%._-");
 
 
@@ -221,7 +228,8 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	pluginLink = link;
 
 	// TODO Assert results here
-	init_mir_malloc();
+	mir_getMMI(&mmi);
+	mir_getUTFI(&utfi);
 	mir_getLI(&li);
 	CallService(MS_IMG_GETINTERFACE, FI_IF_VERSION, (LPARAM) &fei);
 
@@ -271,6 +279,29 @@ int findURLEnd(TCHAR *text, int text_len)
 		if (_tcschr(urlChars, text[i]) == NULL)
 			break;
 	return i;
+}
+
+
+BOOL isVideo(TCHAR *text, int text_len)
+{
+	return FALSE;
+
+	// TODO
+	for (int j = 0; j < MAX_REGS(video); j++)
+	{
+		TCHAR *txt = video[j];
+		int len = lstrlen(txt);
+		
+		if (text_len < len)
+			continue;
+		
+		if (_tcsncmp(text, txt, len) != 0)
+			continue;
+		
+		return TRUE;
+	}
+	
+	return FALSE;
 }
 
 
@@ -537,97 +568,8 @@ struct EmoticonFound
 	int len;
 	TCHAR *text;
 	HBITMAP img;
+	BOOL custom;
 };
-
-
-BOOL FindEmoticonBackwards(EmoticonFound &found, Contact *contact, Module *module, TCHAR *text, int text_len, int last_pos, TCHAR next_char)
-{
-	found.path[0] = 0;
-	found.len = -1;
-	found.text = NULL;
-	found.img = NULL;
-
-	// Check if it is an URL
-	for (int j = 0; j < MAX_REGS(webs); j++)
-	{
-		TCHAR *txt = webs[j];
-		int len = lstrlen(txt);
-		if (last_pos < len || text_len < len)
-			continue;
-
-		if (_tcsncmp(&text[text_len - len], txt, len) == 0) 
-			return FALSE;
-	}
-
-	// This are needed to allow 2 different emoticons that end the same way
-
-	// Replace normal emoticons
-	if (!opts.only_replace_isolated || next_char == _T('\0') || _istspace(next_char))
-	{	
-		for(int i = 0; i < module->emoticons.getCount(); i++)
-		{
-			Emoticon *e = module->emoticons[i];
-
-			for(int j = 0; j < e->texts.getCount(); j++)
-			{
-				TCHAR *txt = e->texts[j];
-				int len = lstrlen(txt);
-				if (last_pos < len || text_len < len)
-					continue;
-
-				if (len <= found.len)
-					continue;
-
-				if (_tcsncmp(&text[text_len - len], txt, len) != 0)
-					continue;
-
-				if (opts.only_replace_isolated && text_len > len 
-						&& !_istspace(text[text_len - len - 1]))
-					continue;
-
-				if (e->img == NULL)
-					found.path[0] = '\0';
-				else
-					mir_snprintf(found.path, MAX_REGS(found.path), "%s\\%s", e->img->pack->path, e->img->relPath);
-
-				found.len = len;
-				found.text = txt;
-
-				if (e->img != NULL)
-				{
-					e->img->Load();
-					found.img = e->img->img;
-				}
-			}
-		}
-	}
-
-	// Replace custom smileys
-	if (contact != NULL && opts.enable_custom_smileys)
-	{
-		for(int i = 0; i < contact->emoticons.getCount(); i++)
-		{
-			CustomEmoticon *e = contact->emoticons[i];
-
-			TCHAR *txt = e->text;
-			int len = lstrlen(txt);
-			if (last_pos < len || text_len < len)
-				continue;
-
-			if (len <= found.len)
-				continue;
-
-			if (_tcsncmp(&text[text_len - len], txt, len) != 0)
-				continue;
-
-			mir_snprintf(found.path, MAX_REGS(found.path), "%s", e->path);
-			found.len = len;
-			found.text = txt;
-		}
-	}
-
-	return (found.len > 0 && found.path[0] != '\0');
-}
 
 
 BOOL FindEmoticonForwards(EmoticonFound &found, Contact *contact, Module *module, TCHAR *text, int text_len, int pos)
@@ -639,6 +581,7 @@ BOOL FindEmoticonForwards(EmoticonFound &found, Contact *contact, Module *module
 	found.len = -1;
 	found.text = NULL;
 	found.img = NULL;
+	found.custom = FALSE;
 
 	// Lets shit text to current pos
 	TCHAR prev_char = (pos == 0 ? _T('\0') : text[pos - 1]);
@@ -708,6 +651,7 @@ BOOL FindEmoticonForwards(EmoticonFound &found, Contact *contact, Module *module
 			mir_snprintf(found.path, MAX_REGS(found.path), "%s", e->path);
 			found.len = len;
 			found.text = txt;
+			found.custom = TRUE;
 		}
 	}
 
@@ -776,6 +720,39 @@ int ReplaceEmoticon(RichEditCtrl &rec, int pos, EmoticonFound &found)
 
 	return ret;
 }
+
+
+int AddVideo(RichEditCtrl &rec, int pos, TCHAR *url)
+{
+	int ret = 0;
+	
+	// Found ya
+	CHARRANGE sel = { pos, pos };
+	SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
+	
+	if (has_anismiley)
+	{
+		CHARFORMAT2 cf;
+		memset(&cf, 0, sizeof(CHARFORMAT2));
+		cf.cbSize = sizeof(CHARFORMAT2);
+		cf.dwMask = CFM_BACKCOLOR;
+		SendMessage(rec.hwnd, EM_GETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf);
+		
+		if (cf.dwEffects & CFE_AUTOBACKCOLOR)
+		{
+			cf.crBackColor = SendMessage(rec.hwnd, EM_SETBKGNDCOLOR, 0, GetSysColor(COLOR_WINDOW));
+			SendMessage(rec.hwnd, EM_SETBKGNDCOLOR, 0, cf.crBackColor);
+		}
+		
+		if (InsertAnimatedSmiley(rec.hwnd, url, cf.crBackColor, 0 , url))
+		{
+			ret = 1;
+		}
+	}
+	
+	return ret;
+}
+
 
 void FixSelection(LONG &sel, LONG end, int dif)
 {
@@ -871,11 +848,29 @@ BOOL IsHidden(RichEditCtrl &rec, int start, int end)
 }
 
 
-void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, TCHAR *text, int len, int start, CHARRANGE &__old_sel)
+void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, TCHAR *text, int len, int start, CHARRANGE &__old_sel, BOOL inInputArea)
 {
 	int diff = 0;
 	for(int i = 0; i < len; i++)
 	{
+		if (!inInputArea && isVideo(&text[i], len - i))
+		{
+			int len = findURLEnd(&text[i], len - i);
+
+			TCHAR *tmp = new TCHAR[len+1];
+			lstrcpyn(tmp, &text[i], len);
+			tmp[len] = 0;
+
+			i += len;
+
+			int pos = start + i + diff;
+			int this_dif = AddVideo(rec, pos, tmp);
+
+			delete[] tmp;
+
+			i += this_dif - 1;
+			continue;
+		}
 		if (isURL(&text[i], len - i))
 		{
 			i += findURLEnd(&text[i], len - i) - 1;
@@ -886,7 +881,7 @@ void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, TC
 		if (!FindEmoticonForwards(found, contact, module, text, len, i))
 			continue;
 
-		if (found.img == NULL)
+		if (found.img == NULL && !found.custom)
 			continue;
 
 		int pos = start + i + diff;
@@ -905,14 +900,14 @@ void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, TC
 }
 
 
-void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, int start = 0, int end = -1)
+void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, int start, int end, BOOL inInputArea)
 {
 	STOP_RICHEDIT(rec);
 
 	TCHAR *text = GetText(rec, start, end);
 	int len = lstrlen(text);
 
-	ReplaceAllEmoticons(rec, contact, module, text, len, start, __old_sel);
+	ReplaceAllEmoticons(rec, contact, module, text, len, start, __old_sel, inInputArea);
 
 	MIR_FREE(text);
 
@@ -1069,7 +1064,7 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			TCHAR *text = GetText(dlg->input, start, end);
 			int len = lstrlen(text);
 
-			ReplaceAllEmoticons(dlg->input, NULL, dlg->module, text, len, start, __old_sel);
+			ReplaceAllEmoticons(dlg->input, NULL, dlg->module, text, len, start, __old_sel, TRUE);
 
 			MIR_FREE(text);
 
@@ -1089,7 +1084,7 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 
 	if (rebuild)
-		ReplaceAllEmoticons(dlg->input, NULL, dlg->module);
+		ReplaceAllEmoticons(dlg->input, NULL, dlg->module, 0, -1, TRUE);
 
 	return ret;
 }
@@ -1146,7 +1141,7 @@ LRESULT CALLBACK LogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	LRESULT ret = CallWindowProc(dlg->log.old_edit_proc, hwnd, msg, wParam, lParam);
 
 	if (rebuild)
-		ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, sel.cpMin, sel.cpMax);
+		ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, sel.cpMin, sel.cpMax, FALSE);
 
 	return ret;
 }
@@ -1167,7 +1162,7 @@ LRESULT CALLBACK SRMMLogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	LRESULT ret = LogProc(hwnd, msg, wParam, lParam);
 
 	if (msg == EM_STREAMIN)
-		ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, stream_in_pos, -1);
+		ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, stream_in_pos, -1, FALSE);
 
 	return ret;
 }
@@ -1202,7 +1197,7 @@ LRESULT CALLBACK OwnerProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				if (!ret)
 					// Add emoticons again
-					ReplaceAllEmoticons(dlg->input, NULL, dlg->module);
+					ReplaceAllEmoticons(dlg->input, NULL, dlg->module, 0, -1, TRUE);
 
 				dlg->log.sending = FALSE;
 			}
@@ -1321,7 +1316,7 @@ int MsgWindowEvent(WPARAM wParam, LPARAM lParam)
 
 		if (isSRMM())
 		{
-			ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module);
+			ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, 0, -1, FALSE);
 
 			dlg->log.old_edit_proc = (WNDPROC) SetWindowLong(dlg->log.hwnd, GWL_WNDPROC, (LONG) SRMMLogProc);
 		}
@@ -2348,7 +2343,7 @@ int ReplaceEmoticonsService(WPARAM wParam, LPARAM lParam)
 	{
 		Dialog *dlg = dlgit->second;
 		ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, sre->rangeToReplace == NULL ? 0 : sre->rangeToReplace->cpMin, 
-			sre->rangeToReplace == NULL ? -1 : sre->rangeToReplace->cpMax);
+			sre->rangeToReplace == NULL ? -1 : sre->rangeToReplace->cpMax, FALSE);
 	}
 	else
 	{
@@ -2359,7 +2354,7 @@ int ReplaceEmoticonsService(WPARAM wParam, LPARAM lParam)
 		RichEditCtrl rec = {0};
 		LoadRichEdit(&rec, sre->hwndRichEditControl);
 		ReplaceAllEmoticons(rec, GetContact(sre->hContact), m, sre->rangeToReplace == NULL ? 0 : sre->rangeToReplace->cpMin, 
-			sre->rangeToReplace == NULL ? -1 : sre->rangeToReplace->cpMax);
+			sre->rangeToReplace == NULL ? -1 : sre->rangeToReplace->cpMax, FALSE);
 	}
 
 	return TRUE;
@@ -3059,6 +3054,7 @@ void CreateCustomSmiley(Contact *contact, TCHAR *fullpath)
 		ce = new CustomEmoticon();
 		ce->text = text;
 		ce->path = path;
+		ce->firstReceived = (DWORD) time(NULL);
 
 		contact->emoticons.insert(ce);
 		contact->lastId++;
@@ -3073,7 +3069,7 @@ void CreateCustomSmiley(Contact *contact, TCHAR *fullpath)
 	DBWriteContactSettingString(contact->hContact, "CustomSmileys", setting, ce->path);
 
 	mir_snprintf(setting, MAX_REGS(setting), "%d_FirstReceived", contact->lastId);
-	DBWriteContactSettingDword(contact->hContact, "CustomSmileys", setting, (DWORD) time(NULL));
+	DBWriteContactSettingDword(contact->hContact, "CustomSmileys", setting, ce->firstReceived);
 
 	NotifyEventHooks(hChangedEvent, (WPARAM) contact->hContact, 0);
 }
@@ -3528,8 +3524,8 @@ int ParseService(SMADD_PARSE *sp, BOOL unicode)
 		if (!FindEmoticonForwards(found, NULL, module, text, len, i))
 			continue;
 
-		if (found.img == NULL)
-			continue; // TODO
+		if (found.custom || found.img == NULL)
+			continue;
 
 		sp->SmileyIcon = CopyToIcon(found.img);
 		if (sp->SmileyIcon == NULL)
@@ -3584,6 +3580,8 @@ int BatchParseService(WPARAM wParam, LPARAM lParam)
 
 	BOOL path = (bp->flag & SAFL_PATH);
 	BOOL unicode = (bp->flag & SAFL_UNICODE);
+	BOOL outgoing = (bp->flag & SAFL_OUTGOING);
+	BOOL custom = !(bp->flag & SAFL_NOCUSTOM) && !outgoing;
 
 	TCHAR *text;
 	if (unicode)
@@ -3609,6 +3607,11 @@ int BatchParseService(WPARAM wParam, LPARAM lParam)
 		res.startChar = i;
 		res.size = found.len;
 
+		if (found.custom && !custom)
+			continue;
+		if (found.img == NULL && !found.custom)
+			continue;
+
 		if (path)
 		{
 			if (unicode)
@@ -3618,9 +3621,6 @@ int BatchParseService(WPARAM wParam, LPARAM lParam)
 		}
 		else
 		{
-			if (found.img == NULL)
-				continue; // TODO
-
 			res.hIcon = CopyToIcon(found.img);
 
 			if (res.hIcon == NULL)
