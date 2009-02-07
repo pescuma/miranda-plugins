@@ -1,4 +1,4 @@
-# Skipe protocol
+# Skype protocol
 
 [Skype]
 
@@ -12,7 +12,7 @@
 "neutral" = "Speechless", ":|" ":=|" ":-|" 
 "kiss" = "Kiss", ":*" ":=*" ":-*" 
 "tongue" = "Tongue Out", ":P" ":=P" ":-P" ":p" ":=p" ":-p" 
-"embarrassed" = "Blush", "(blush)" ":$" ":-$" ":=$" ":">" 
+"embarrassed" = "Blush", "(blush)" ":$" ":-$" ":=$" ":\">" 
 "sarcastic" = "Wondering", ":^)" 
 "sleepy" = "Sleepy", "|-)" "I-)" "I=)" "(snooze)" 
 "boring" = "Dull", "|(" "|-(" "|=(" 
