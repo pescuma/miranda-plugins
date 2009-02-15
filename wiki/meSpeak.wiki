@@ -5,7 +5,7 @@
 *CAUTION: THIS IS A BETA STAGE PLUGIN. IT CAN DO VERY BAD THINGS. USE AT YOUR OWN RISK.*
 
 
-This is a service plugin that read text aloud. It is based on [http://espeak.sourceforge.net/ eSpeak engine].
+This is a service plugin that read text aloud. It is based on [http://espeak.sourceforge.net/ eSpeak engine] and SAPI voices (5.1).
 
 It provides the following functionality:
  * System voice
