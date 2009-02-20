@@ -1,6 +1,5 @@
 package org.pescuma.velocity;
 
-
 import org.apache.velocity.runtime.RuntimeServices;
 import org.apache.velocity.runtime.log.LogChute;
 
