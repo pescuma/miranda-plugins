@@ -1,5 +1,8 @@
 package org.pescuma.miricogen;
 
+import static org.pescuma.miricogen.FileUtils.*;
+
+import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
@@ -12,16 +15,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
+import net.sf.image4j.codec.ico.ICODecoder;
+import net.sf.image4j.codec.ico.ICOEncoder;
+
 import org.apache.tools.ant.taskdefs.Copy;
 import org.apache.tools.ant.taskdefs.ExecTask;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.graphics.GC;
-import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
-import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -121,20 +123,19 @@ public class Main
 		out.append("Starting process...\n\n");
 		
 		List<String> protos = readProtos();
-		List<String> overlays = readOverlays();
+		List<Overlay> overlays = readOverlays();
 		
 		for (String proto : protos)
 		{
 			out.append(proto + "\n");
 			
-			for (String overlay : overlays)
+			for (Overlay overlay : overlays)
 			{
-				out.append("   - " + overlay + " : ");
+				out.append("   - " + overlay.getName() + " : ");
 				
-				String name = proto + "-" + overlay;
 				File outIco = getOutIco(proto, overlay);
 				
-				File orig = getProtoIco(name);
+				File orig = getProtoIco(proto + "-" + overlay.getName());
 				if (orig.exists())
 				{
 					out.append("found in prots folder\n");
@@ -149,8 +150,7 @@ public class Main
 					continue;
 				}
 				
-				File overlayIco = getOverlayIco(overlay);
-				if (!overlayIco.exists())
+				if (overlay.isEmpty())
 				{
 					out.append("could not find overlay, using original icon\n");
 					copy(outIco, protoIco);
@@ -158,11 +158,11 @@ public class Main
 				}
 				
 				out.append("merging icons\n");
-				createIco(outIco, protoIco, overlayIco);
+				createIco(outIco, protoIco, overlay);
 			}
 			
 			out.append("   - Building dll\n");
-			buildDll(proto);
+			buildDll(proto, overlays);
 			
 			out.append("\n");
 		}
@@ -170,42 +170,24 @@ public class Main
 		out.append("Done");
 	}
 	
-	private static File getOutIco(String proto, String overlay)
+	private static File getOutIco(String proto, Overlay overlay)
 	{
-		return new File(cfg.paths.outPath, proto + "-" + overlay + ".ico");
+		return new File(cfg.paths.outPath, proto + "-" + overlay.getName() + ".ico");
 	}
 	
-	private static String getFullPath(File overlayIco)
+	private static void createIco(File outIco, File protoIco, Overlay overlay) throws IOException
 	{
-		try
+		List<BufferedImage> protoImgs = ICODecoder.read(protoIco);
+		
+		for (BufferedImage proto : protoImgs)
 		{
-			return overlayIco.getCanonicalPath();
+			if (proto.getWidth() == 16 && proto.getHeight() == 16)
+				overlay.blend(proto);
 		}
-		catch (IOException e)
-		{
-			return overlayIco.getAbsolutePath();
-		}
-	}
-	
-	private static void createIco(File outIco, File protoIco, File overlayIco)
-	{
-		Image proto = new Image(Display.getCurrent(), getFullPath(protoIco));
-		Image overlay = new Image(Display.getCurrent(), getFullPath(overlayIco));
 		
-		Image image = new Image(Display.getCurrent(), 16, 16);
-		
-		GC gc = new GC(image);
-		gc.drawImage(proto, 0, 0);
-		gc.drawImage(overlay, 0, 0);
-		gc.dispose();
-		
-		ImageLoader loader = new ImageLoader();
-		loader.data = new ImageData[] { image.getImageData() };
-		loader.save(getFullPath(outIco), SWT.IMAGE_ICO);
-		
-		image.dispose();
-		overlay.dispose();
-		proto.dispose();
+		if (outIco.exists())
+			outIco.delete();
+		ICOEncoder.write(protoImgs, outIco);
 	}
 	
 	private static void copy(File dest, File orig) throws IOException
@@ -214,23 +196,11 @@ public class Main
 			throw new FileNotFoundException(getFullPath(orig));
 		if (dest.exists())
 			dest.delete();
+		
 		Copy copy = new Copy();
 		copy.setFile(orig);
 		copy.setTofile(dest);
 		copy.execute();
-		
-//		InputStream inStr = new FileInputStream(orig);
-//		OutputStream outStr = new FileOutputStream(dest);
-//		
-//		// Transfer bytes from in to out
-//		byte[] buf = new byte[1024];
-//		int len;
-//		while ((len = inStr.read(buf)) > 0)
-//		{
-//			outStr.write(buf, 0, len);
-//		}
-//		inStr.close();
-//		outStr.close();
 	}
 	
 	private static File getProtoIco(String name)
@@ -238,24 +208,19 @@ public class Main
 		return new File(cfg.paths.protosPath, name + ".ico");
 	}
 	
-	private static File getOverlayIco(String name)
+	private static List<Overlay> readOverlays()
 	{
-		return new File(cfg.paths.overlaysPath, name + ".ico");
-	}
-	
-	private static List<String> readOverlays()
-	{
-		List<String> ret = new ArrayList<String>();
-		ret.add("offline");
-		ret.add("online");
-		ret.add("away");
-		ret.add("dnd");
-		ret.add("na");
-		ret.add("occupied");
-		ret.add("freechat");
-		ret.add("invisible");
-		ret.add("onthephone");
-		ret.add("outtolunch");
+		List<Overlay> ret = new ArrayList<Overlay>();
+		ret.add(new Overlay(cfg, "offline"));
+		ret.add(new Overlay(cfg, "online"));
+		ret.add(new Overlay(cfg, "away"));
+		ret.add(new Overlay(cfg, "dnd"));
+		ret.add(new Overlay(cfg, "na"));
+		ret.add(new Overlay(cfg, "occupied"));
+		ret.add(new Overlay(cfg, "freechat"));
+		ret.add(new Overlay(cfg, "invisible"));
+		ret.add(new Overlay(cfg, "onthephone"));
+		ret.add(new Overlay(cfg, "outtolunch"));
 		return ret;
 	}
 	
@@ -296,7 +261,7 @@ public class Main
 		}
 	}
 	
-	private static void buildDll(String proto) throws IOException, InterruptedException
+	private static void buildDll(String proto, List<Overlay> overlays) throws IOException, InterruptedException
 	{
 		File dllFile = new File(cfg.paths.outPath, proto + ".dll");
 		if (dllFile.exists())
@@ -304,7 +269,7 @@ public class Main
 		
 		File rcFile = new File(cfg.paths.outPath, proto + ".rc");
 		
-		mergeTemplate(proto, rcFile);
+		mergeTemplate(proto, overlays, rcFile);
 		
 		String rc = getFullPath(rcFile);
 		rc = rc.substring(0, rc.length() - 3);
@@ -321,13 +286,9 @@ public class Main
 		exec.setFailonerror(true);
 		exec.setLogError(true);
 		exec.execute();
-		
-//		Process process = Runtime.getRuntime().exec(new String[] { getFullPath(buildme), rc }, null, utils);
-//		if (process.waitFor() != 0)
-//			out.append("     Error creating dll");
 	}
 	
-	private static void mergeTemplate(String proto, File file)
+	private static void mergeTemplate(String proto, List<Overlay> overlays, File file)
 	{
 		File templateName = new File("utils/autobuild.rc.vm");
 		try
@@ -342,8 +303,8 @@ public class Main
 			for (int j = 0; j < 4; j++)
 				context.put("v" + (j + 1), encode(Integer.toString(version.length >= j ? toInt(version[j]) : 0)));
 			
-			for (String overlay : readOverlays())
-				context.put(overlay, encode(getFullPath(getOutIco(proto, overlay))));
+			for (Overlay overlay : overlays)
+				context.put(overlay.getName(), encode(getFullPath(getOutIco(proto, overlay))));
 			
 			Template template = Velocity.getTemplate(getFullPath(templateName));
 			

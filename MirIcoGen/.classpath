@@ -8,5 +8,6 @@
 	<classpathentry kind="lib" path="lib/commons-lang-2.1.jar"/>
 	<classpathentry kind="lib" path="lib/velocity-1.5.jar"/>
 	<classpathentry kind="lib" path="lib/ant.jar"/>
+	<classpathentry kind="lib" path="lib/image4j.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
