@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="lib/image4j-core-0.7/src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/jfg.jar"/>
 	<classpathentry kind="lib" path="lib/swt-debug.jar" sourcepath="lib/swt-src.zip"/>
@@ -8,6 +9,5 @@
 	<classpathentry kind="lib" path="lib/commons-lang-2.1.jar"/>
 	<classpathentry kind="lib" path="lib/velocity-1.5.jar"/>
 	<classpathentry kind="lib" path="lib/ant.jar"/>
-	<classpathentry kind="lib" path="lib/image4j.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
