@@ -144,6 +144,10 @@ int EmoticonsSelectionLayout::GetNumOfCols(int num_emotes)
 			}
 		}
 	}
+
+	if (num_emotes % cols <= max(2, cols /3))
+		cols++;
+
 	return min(max(MIN_COLS, min(cols, MAX_COLS)), num_emotes);
 }
 
