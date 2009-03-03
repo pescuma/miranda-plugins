@@ -30,11 +30,11 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,2,11),
+	PLUGIN_MAKE_VERSION(0,0,3,0),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
-	"© 2008 Ricardo Pescuma Domenecci",
+	"© 2008-2009 Ricardo Pescuma Domenecci",
 	"http://pescuma.org/miranda/emoticons",
 	UNICODE_AWARE,
 	0,		//doesn't replace anything built-in
@@ -183,14 +183,285 @@ static TCHAR *webs[] = {
 };
 
 
-static TCHAR *video[] = { 
-	_T("http://www.youtube.com/v/")
+static TCHAR *urlChars = _T("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789:/?&=%._-#");
+
+struct FlashData
+{
+	TCHAR url[1024];
+	TCHAR flashVars[1024];
+	int width;
+	int height;
+
+	FlashData() : width(0), height(0)
+	{
+		url[0] = 0;
+		flashVars[0] = 0;
+	}
 };
 
 
-static TCHAR *urlChars = _T("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789:/?&=%._-");
+class VideoInfo
+{
+public:
+	virtual bool convertToFlash(const TCHAR *url, FlashData *flash) =0;
+
+protected:
+	virtual ~VideoInfo()
+	{
+	}
 
 
+	bool startsWith(const TCHAR *url, const TCHAR *start, size_t startLen = 0)
+	{
+		if (startLen <= 0)
+			startLen = lstrlen(start);
+
+		return _tcsnicmp(url, start, startLen) == 0;
+	}
+
+	int urlStartsWith(const TCHAR *url, const TCHAR **start, size_t len)
+	{
+		for(size_t i = 0; i < len; i++)
+		{
+			int ret = urlStartsWith(url, start[i]);
+			if (ret >= 0)
+				return ret;
+		}
+		return -1;
+	}
+
+	/// @return the first pos in the text after the start, or -1 if not found
+	int urlStartsWith(const TCHAR *url, const TCHAR *start)
+	{
+		static TCHAR *possibleStarts[] = { _T("http://www."), _T("http://"), _T("https://www."), _T("https://") };
+
+		size_t startLen = lstrlen(start);
+
+		for(int i = 0; i < MAX_REGS(possibleStarts); i++)
+		{
+			size_t plen = lstrlen(possibleStarts[i]);
+
+			if (!startsWith(url, possibleStarts[i], plen))
+				continue;
+
+			if (startsWith(&url[plen], start, startLen))
+				return plen + startLen;
+		}
+
+		if (startsWith(url, start, startLen))
+			return startLen;
+
+		return -1;
+	}
+
+	int findArgument(const TCHAR *url, const TCHAR *argument)
+	{
+		size_t len = lstrlen(argument);
+		int startPos = max(0, _tcschr(url, _T('?')) - url);
+		while(true)
+		{
+			int pos = _tcsstr(&url[startPos], argument) - url;
+			if (pos < 0)
+				return -1;
+
+			if (url[pos + len] != _T('='))
+			{
+				startPos += pos + len;
+				continue;
+			}
+
+			if (pos > 0 && url[pos - 1] != _T('?') && url[pos - 1] != _T('&'))
+			{
+				startPos += pos + len;
+				continue;
+			}
+
+			return pos + len + 1;
+		}
+	}
+
+	bool getArgument(const TCHAR *url, const TCHAR *argument, TCHAR *out, size_t outLen)
+	{
+		int pos = findArgument(url, argument);
+		if (pos < 0)
+			return false;
+
+		url = &url[pos];
+
+		removeOtherArguments(url, out, outLen);
+		return true;
+	}
+
+	void removeOtherArguments(const TCHAR *url, TCHAR *out, size_t outLen)
+	{
+		int pos = _tcschr(url, _T('&')) - url;
+		if (pos < 0)
+			pos = outLen;
+
+		lstrcpyn(out, url, min(pos+1, outLen));
+	}
+};
+
+class YoutubeVideo : public VideoInfo
+{
+public:
+	virtual bool convertToFlash(const TCHAR *url, FlashData *flash)
+	{
+		const static TCHAR *base[] = { _T("youtube.com/watch?") };
+
+		int pos = urlStartsWith(url, base, MAX_REGS(base));
+		if (pos < 0)
+			return false;
+
+		TCHAR id[128];
+		if (!getArgument(&url[pos], _T("v"), id, MAX_REGS(id)))
+			return false;
+
+		mir_sntprintf(flash->url, MAX_REGS(flash->url), _T("http://youtube.com/v/%s"), id);
+		flash->width = 425;
+		flash->height = 355;
+		return true;
+	}
+};
+
+class AnimotoVideo : public VideoInfo
+{
+public:
+	virtual bool convertToFlash(const TCHAR *url, FlashData *flash)
+	{
+		const static TCHAR *base[] = { _T("animoto.com/play/") };
+
+		int pos = urlStartsWith(url, base, MAX_REGS(base));
+		if (pos < 0)
+			return false;
+
+		TCHAR id[128];
+		removeOtherArguments(&url[pos], id, MAX_REGS(id));
+
+		mir_sntprintf(flash->url, MAX_REGS(flash->url), _T("http://animoto.com/swf/animotoplayer-3.15.swf"));
+		mir_sntprintf(flash->flashVars, MAX_REGS(flash->flashVars), _T("autostart=false&file=http://s3-p.animoto.com/Video/%s.flv&menu=true&volume=100&quality=high&repeat=false&usekeys=false&showicons=true&showstop=false&showdigits=false&usecaptions=false&bufferlength=12&overstretch=false&remainonlastframe=true&backcolor=0x000000&frontcolor=0xBBBBBB&lightcolor=0xFFFFFF&screencolor=0x000000"), id);
+		flash->width = 432;
+		flash->height = 263;
+		return true;
+	}
+};
+
+class CleVRVideo : public VideoInfo
+{
+public:
+	virtual bool convertToFlash(const TCHAR *url, FlashData *flash)
+	{
+		const static TCHAR *base[] = { _T("clevr.com/pano/") };
+
+		int pos = urlStartsWith(url, base, MAX_REGS(base));
+		if (pos < 0)
+			return false;
+
+		TCHAR id[128];
+		removeOtherArguments(&url[pos], id, MAX_REGS(id));
+
+		mir_sntprintf(flash->url, MAX_REGS(flash->url), _T("http://s3.clevr.com/CleVR"));
+		mir_sntprintf(flash->flashVars, MAX_REGS(flash->flashVars), _T("xmldomain=http://www.clevr.com/&mov=%s"), id);
+		flash->width = 450;
+		flash->height = 350;
+		return true;
+	}
+};
+
+class MagTooVideo : public VideoInfo
+{
+public:
+	virtual bool convertToFlash(const TCHAR *url, FlashData *flash)
+	{
+		const static TCHAR *base[] = { _T("magtoo.com/tour.do?method=viewMagShow&") };
+
+		int pos = urlStartsWith(url, base, MAX_REGS(base));
+		if (pos < 0)
+			return false;
+
+		TCHAR id[128];
+		if (!getArgument(&url[pos], _T("id"), id, MAX_REGS(id)))
+			return false;
+
+		mir_sntprintf(flash->url, MAX_REGS(flash->url), _T("http://www.magtoo.com/tour.do?method=FlashVarsSender&fl_type=magtooPanorama.swf"));
+		mir_sntprintf(flash->flashVars, MAX_REGS(flash->flashVars), _T("tempID=%s&serverURL=http://www.magtoo.com"), id);
+		flash->width = 600;
+		flash->height = 360;
+		return true;
+	}
+};
+
+class VimeoVideo : public VideoInfo
+{
+public:
+	virtual bool convertToFlash(const TCHAR *url, FlashData *flash)
+	{
+		const static TCHAR *base[] = { _T("vimeo.com/") };
+
+		int pos = urlStartsWith(url, base, MAX_REGS(base));
+		if (pos < 0)
+			return false;
+
+		TCHAR id[128];
+		removeOtherArguments(&url[pos], id, MAX_REGS(id));
+
+		mir_sntprintf(flash->url, MAX_REGS(flash->url), _T("http://www.vimeo.com/moogaloop.swf?clip_id=%s&amp;server=www.vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;color=&amp;fullscreen=0"), id);
+		flash->width = 400;
+		flash->height = 300;
+		return true;
+	}
+};
+
+class PicasaVideo : public VideoInfo
+{
+public:
+	virtual bool convertToFlash(const TCHAR *url, FlashData *flash)
+	{
+		const static TCHAR *base[] = { _T("picasaweb.google.com/") };
+
+		int pos = urlStartsWith(url, base, MAX_REGS(base));
+		if (pos < 0)
+			return false;
+
+		int tmp = _tcschr(&url[pos], _T('/')) - url;
+		if (tmp < 0)
+			return false;
+
+		TCHAR user[256];
+		lstrcpyn(user, &url[pos], min(tmp-pos+1, MAX_REGS(user)));
+
+		pos = tmp+1;
+
+		tmp = _tcschr(&url[pos], _T('?')) - url;
+		if (tmp < 0)
+			return false;
+
+		TCHAR album[256];
+		lstrcpyn(album, &url[pos], min(tmp-pos+1, MAX_REGS(album)));
+
+		pos = tmp+1;
+
+		TCHAR authkey[256];
+		if (!getArgument(&url[pos], _T("authkey"), authkey, MAX_REGS(authkey)))
+			return false;
+
+		mir_sntprintf(flash->url, MAX_REGS(flash->url), _T("http://picasaweb.google.com/s/c/bin/slideshow.swf"));
+		mir_sntprintf(flash->flashVars, MAX_REGS(flash->flashVars), _T("host=picasaweb.google.com&RGB=0x000000&feed=http%%3A%%2F%%2Fpicasaweb.google.com%%2Fdata%%2Ffeed%%2Fapi%%2Fuser%%2F%s%%2Falbum%%2F%s%%3Fkind%%3Dphoto%%26alt%%3Drss%%26authkey%%3D%s"), user, album, authkey);
+		flash->width = 400;
+		flash->height = 267;
+		return true;
+	}
+};
+
+static VideoInfo *videos[] = { 
+	new YoutubeVideo(),
+	new AnimotoVideo(),
+	new CleVRVideo(),
+	new MagTooVideo(),
+	new VimeoVideo(),
+	new PicasaVideo()
+
+};
 
 
 // Functions ////////////////////////////////////////////////////////////////////////////
@@ -227,12 +498,14 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 {
 	pluginLink = link;
 
+	CHECK_VERSION("Emoticons")
+
 	// TODO Assert results here
 	mir_getMMI(&mmi);
 	mir_getUTFI(&utfi);
 	mir_getLI(&li);
 	CallService(MS_IMG_GETINTERFACE, FI_IF_VERSION, (LPARAM) &fei);
-
+	
 	hHooks[0] = HookEvent(ME_SYSTEM_MODULESLOADED, ModulesLoaded);
 	hHooks[1] = HookEvent(ME_SYSTEM_PRESHUTDOWN, PreShutdown);
 
@@ -282,23 +555,15 @@ int findURLEnd(TCHAR *text, int text_len)
 }
 
 
-BOOL isVideo(TCHAR *text, int text_len)
+BOOL isVideo(const TCHAR *url, size_t urlLen, FlashData *flash)
 {
-	return FALSE;
+	TCHAR tmp[1024];
+	lstrcpyn(tmp, url, min(MAX_REGS(tmp), urlLen+1));
 
-	// TODO
-	for (int j = 0; j < MAX_REGS(video); j++)
+	for (int j = 0; j < MAX_REGS(videos); j++)
 	{
-		TCHAR *txt = video[j];
-		int len = lstrlen(txt);
-		
-		if (text_len < len)
-			continue;
-		
-		if (_tcsncmp(text, txt, len) != 0)
-			continue;
-		
-		return TRUE;
+		if (videos[j]->convertToFlash(tmp, flash))
+			return TRUE;
 	}
 	
 	return FALSE;
@@ -682,7 +947,7 @@ int ReplaceEmoticon(RichEditCtrl &rec, int pos, EmoticonFound &found)
 		}
 
 		TCHAR *path = mir_a2t(found.path);
-		if (InsertAnimatedSmiley(rec.hwnd, path, cf.crBackColor, 0 , found.text))
+		if (InsertAnimatedSmiley(rec.hwnd, path, cf.crBackColor, 0, 0, found.text, NULL))
 		{
 			ret = - found.len + 1;
 		}
@@ -722,7 +987,7 @@ int ReplaceEmoticon(RichEditCtrl &rec, int pos, EmoticonFound &found)
 }
 
 
-int AddVideo(RichEditCtrl &rec, int pos, TCHAR *url)
+int AddVideo(RichEditCtrl &rec, int pos, const FlashData *flash)
 {
 	int ret = 0;
 	
@@ -732,6 +997,111 @@ int AddVideo(RichEditCtrl &rec, int pos, TCHAR *url)
 	
 	if (has_anismiley)
 	{
+/*		IOleClientSite *clientSite = NULL; 
+		IShockwaveFlash *flash = NULL;
+		IOleObject *flashOleObject = NULL;
+		IViewObjectEx *flashViewObject = NULL;
+		IOleInPlaceObjectWindowless *flashInPlaceObjWindowless = NULL;
+		LPLOCKBYTES lpLockBytes = NULL;
+		LPSTORAGE lpStorage = NULL;
+
+		HRESULT hr;
+		long readyState;
+//		double val;
+
+		CLSID clsid = {0};
+		REOBJECT reobject = {0};
+
+		
+		hr = rec.ole->GetClientSite(&clientSite);
+		if (FAILED(hr)) goto err;
+
+
+		hr = CreateILockBytesOnHGlobal(NULL, TRUE, &lpLockBytes);
+		if (FAILED(hr)) goto err;
+
+		hr = StgCreateDocfileOnILockBytes(lpLockBytes, STGM_SHARE_EXCLUSIVE|STGM_CREATE|STGM_READWRITE, 0, &lpStorage);
+		if (FAILED(hr)) goto err;
+		
+		hr = OleCreate(__uuidof(ShockwaveFlash), IID_IOleObject, OLERENDER_DRAW, 0, 
+						clientSite, lpStorage, (void **) &flashOleObject);
+		if (FAILED(hr)) goto err;
+
+		hr = OleSetContainedObject(flashOleObject, TRUE);
+		if (FAILED(hr)) goto err;
+
+		hr = flashOleObject->QueryInterface(__uuidof(IShockwaveFlash), (void **) &flash);
+		if (FAILED(hr)) goto err;
+
+		hr = flashOleObject->QueryInterface(__uuidof(IViewObjectEx), (void **) &flashViewObject);
+		if (FAILED(hr)) goto err;
+
+		hr = flashOleObject->QueryInterface(__uuidof(IOleInPlaceObjectWindowless), (void **) &flashInPlaceObjWindowless);
+		if (FAILED(hr)) goto err;
+
+		
+		flash->put_WMode(L"transparent");
+		//flash->put_Scale(L"showAll");
+		flash->put_ScaleMode(0);
+		flash->put_BackgroundColor(0x00000000);
+		flash->put_EmbedMovie(TRUE);
+		flash->put_Loop(FALSE);
+
+		{
+			WCHAR *tmp = mir_t2u(url);
+			BSTR url = SysAllocString(tmp);
+
+			hr = flash->LoadMovie(0, url);
+
+			SysFreeString(url);
+			mir_free(tmp);
+		}
+		if (FAILED(hr)) goto err;
+
+		hr = flash->get_ReadyState(&readyState);
+		if (FAILED(hr)) goto err;
+		if (readyState != 3 && readyState != 4) goto err;
+
+
+		flashOleObject->SetClientSite(clientSite);
+
+		flashOleObject->GetUserClassID(&clsid);
+
+		reobject.cbStruct = sizeof(reobject);
+		reobject.clsid = clsid;
+		reobject.cp = REO_CP_SELECTION;
+		reobject.dvaspect = DVASPECT_CONTENT;
+		reobject.poleobj = flashOleObject;
+		reobject.polesite = clientSite;
+		reobject.dwFlags = REO_BELOWBASELINE | REO_RESIZABLE ; // | REO_DYNAMICSIZE;
+
+		hr = rec.ole->InsertObject(&reobject);
+		if (FAILED(hr)) goto err;
+
+//		{
+//			RECT p = { 0, 0, 200, 150 };
+//			flashInPlaceObjWindowless->SetObjectRects(&p, &p);
+//		}
+
+		hr = flash->Play();
+		if (FAILED(hr)) goto err;
+
+//		hr = flashOleObject->DoVerb(OLEIVERB_SHOW, NULL, clientSite, 0, NULL, NULL);
+//		if (FAILED(hr)) goto err;
+
+		InvalidateRect(rec.hwnd, NULL, FALSE);
+
+		ret = 1;
+
+err:
+		RELEASE(flash);
+		RELEASE(flashOleObject);
+		RELEASE(flashViewObject);
+		RELEASE(flashInPlaceObjWindowless);
+		RELEASE(lpLockBytes);
+		RELEASE(lpStorage);
+		RELEASE(clientSite);
+*/
 		CHARFORMAT2 cf;
 		memset(&cf, 0, sizeof(CHARFORMAT2));
 		cf.cbSize = sizeof(CHARFORMAT2);
@@ -744,7 +1114,7 @@ int AddVideo(RichEditCtrl &rec, int pos, TCHAR *url)
 			SendMessage(rec.hwnd, EM_SETBKGNDCOLOR, 0, cf.crBackColor);
 		}
 		
-		if (InsertAnimatedSmiley(rec.hwnd, url, cf.crBackColor, 0 , url))
+		if (InsertAnimatedSmiley(rec.hwnd, flash->url, cf.crBackColor, flash->width, flash->height, _T(""), flash->flashVars))
 		{
 			ret = 1;
 		}
@@ -853,27 +1223,37 @@ void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, TC
 	int diff = 0;
 	for(int i = 0; i < len; i++)
 	{
-		if (!inInputArea && isVideo(&text[i], len - i))
-		{
-			int len = findURLEnd(&text[i], len - i);
-
-			TCHAR *tmp = new TCHAR[len+1];
-			lstrcpyn(tmp, &text[i], len);
-			tmp[len] = 0;
-
-			i += len;
-
-			int pos = start + i + diff;
-			int this_dif = AddVideo(rec, pos, tmp);
-
-			delete[] tmp;
-
-			i += this_dif - 1;
-			continue;
-		}
 		if (isURL(&text[i], len - i))
 		{
-			i += findURLEnd(&text[i], len - i) - 1;
+			int urlLen = findURLEnd(&text[i], len - i);
+
+			if (!inInputArea)
+			{
+				FlashData flash;
+				if (isVideo(&text[i], urlLen, &flash))
+				{
+					i += urlLen;
+
+					int pos = start + i + diff;
+
+					int width = 250;
+					int height = 180;
+
+					if (flash.width > width || flash.height > height)
+					{
+						float f = min(width / (float) flash.width, height / (float) flash.height);
+						flash.width = (int) (flash.width * f + 0.5f);
+						flash.height = (int) (flash.height * f + 0.5f);
+					}
+
+					int this_dif = AddVideo(rec, pos, &flash);
+
+					i += this_dif - 1;
+					continue;
+				}
+			}
+
+			i += urlLen - 1;
 			continue;
 		}
 
@@ -937,9 +1317,11 @@ int RestoreRichEdit(RichEditCtrl &rec, CHARRANGE &old_sel, int start = 0, int en
 
 		ITooltipData *ttd = NULL;
 		hr = reObj.poleobj->QueryInterface(__uuidof(ITooltipData), (void**) &ttd);
-		reObj.poleobj->Release();
+		int refCount1 = reObj.poleobj->Release();
 		if (FAILED(hr) || ttd == NULL)
 			continue;
+
+		BOOL replaced = FALSE;
 
 		BSTR hint = NULL;
 		hr = ttd->GetTooltip(&hint);
@@ -948,22 +1330,43 @@ int RestoreRichEdit(RichEditCtrl &rec, CHARRANGE &old_sel, int start = 0, int en
 			ITextRange *range;
 			if (rec.textDocument->Range(reObj.cp, reObj.cp + 1, &range) == S_OK) 
 			{
-				if (range->SetText(hint) == S_OK)
-				{
-					int dif = wcslen(hint) - 1;
-					ret += dif;
-
-					FixSelection(old_sel.cpMax, reObj.cp + 1, dif);
-					FixSelection(old_sel.cpMin, reObj.cp + 1, dif);
-				}
+				HRESULT hr = range->SetText(hint);
+				if (hr == S_OK)
+					replaced = TRUE;
 
 				range->Release();
+			}
+
+			if (!replaced)
+			{
+				int oldCount = rec.ole->GetObjectCount();
+
+				// Try by EM_REPLACESEL
+				CHARRANGE sel = { reObj.cp, reObj.cp + 1 };
+				SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
+				SendMessageW(rec.hwnd, EM_REPLACESEL, FALSE, (LPARAM) hint);
+
+				replaced = (oldCount != rec.ole->GetObjectCount());
+			}
+
+			if (replaced)
+			{
+				int dif = wcslen(hint) - 1;
+				ret += dif;
+
+				FixSelection(old_sel.cpMax, reObj.cp + 1, dif);
+				FixSelection(old_sel.cpMin, reObj.cp + 1, dif);
 			}
 
 			SysFreeString(hint);
 		}
 
-		ttd->Release();
+		int refCount2 = ttd->Release();
+
+		// This is a bug (I don't know where) that makes the OLE control not receive 
+		// the Release call in the SetText above
+		if (replaced && refCount1 == refCount2 + 1)
+			reObj.poleobj->Release();
 	}
 
 	return ret;
@@ -1331,6 +1734,10 @@ int MsgWindowEvent(WPARAM wParam, LPARAM lParam)
 		if (dlgit != dialogData.end())
 		{
 			Dialog *dlg = dlgit->second;
+
+			CHARRANGE sel = {0, 0};
+			RestoreRichEdit(dlg->input, sel);
+			RestoreRichEdit(dlg->log, sel);
 
 			UnloadRichEdit(&dlg->input);
 			UnloadRichEdit(&dlg->log);
