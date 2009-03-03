@@ -15,18 +15,25 @@ typedef struct _tagINSERTANISMILEY
     HWND    hWnd;
     union
     {
-        char *    szFilename;
-        wchar_t * wcFilename;
-        TCHAR *   tcsFilename;
+        const char *    szFilename;
+        const wchar_t * wcFilename;
+        const TCHAR *   tcsFilename;
     };
     COLORREF    dwBackColor;
-    int         nHeight;
+    int         nHeight; // 0 to use default
     DWORD       dwFlags;
     union
     {
-        char *    szText;
-        wchar_t * wcText;
-        TCHAR *   tcsText;
+        const char *    szText;
+        const wchar_t * wcText;
+        const TCHAR *   tcsText;
+    };
+	int         nWidth; // 0 to use default
+    union
+    {
+        const char *    szFlashVars;
+        const wchar_t * wcFlashVars;
+        const TCHAR *   tcsFlashVars;
     };
 }INSERTANISMILEY;
 #define MS_INSERTANISMILEY "mAnimator/InsertSmiley"
@@ -36,7 +43,7 @@ typedef struct _tagINSERTANISMILEY
 #ifdef _cplusplus
 extern "C" {
 #endif
-static BOOL InsertAnimatedSmiley(HWND _hwnd, TCHAR * _szFilename, COLORREF _dwBack, int _nHeight, TCHAR * _szText)
+static BOOL InsertAnimatedSmiley(HWND _hwnd, const TCHAR * _szFilename, COLORREF _dwBack, int _nWidth, int _nHeight, const TCHAR * _szText, const TCHAR * _szFlashVars)
     {
         static int bServiceExists=-1;        
         INSERTANISMILEY ias={0};
@@ -47,9 +54,11 @@ static BOOL InsertAnimatedSmiley(HWND _hwnd, TCHAR * _szFilename, COLORREF _dwBa
         ias.hWnd=_hwnd;
         ias.tcsFilename=_szFilename;
         ias.dwFlags=IASF_TCHAR;
+        ias.nWidth=_nWidth;
         ias.nHeight=_nHeight;
         ias.dwBackColor=_dwBack;
         ias.tcsText=_szText;
+		ias.tcsFlashVars=_szFlashVars;
         return (BOOL) CallService(MS_INSERTANISMILEY,(WPARAM)&ias, 0);
     };
 #ifdef _cplusplus
