@@ -987,126 +987,52 @@ int ReplaceEmoticon(RichEditCtrl &rec, int pos, EmoticonFound &found)
 }
 
 
+struct StreamData
+{
+	const char *text;
+	size_t pos;
+	size_t len;
+
+	StreamData(const char *aText)
+	{
+		text = aText;
+		len = strlen(aText);
+		pos = 0;
+	}
+};
+
+static DWORD CALLBACK StreamInEvents(DWORD_PTR dwCookie, LPBYTE pbBuff, LONG cb, LONG * pcb)
+{
+	StreamData *data = (StreamData *) dwCookie;
+
+	*pcb = min(cb, data->len - data->pos);
+	if (*pcb > 0)
+	{
+		CopyMemory(pbBuff, &data->text[data->pos], *pcb);
+		data->pos += *pcb;
+	}
+
+	return 0;
+}
+
+
 int AddVideo(RichEditCtrl &rec, int pos, const FlashData *flash)
 {
 	int ret = 0;
 	
-	// Found ya
-	CHARRANGE sel = { pos, pos };
-	SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
-	
 	if (has_anismiley)
 	{
-/*		IOleClientSite *clientSite = NULL; 
-		IShockwaveFlash *flash = NULL;
-		IOleObject *flashOleObject = NULL;
-		IViewObjectEx *flashViewObject = NULL;
-		IOleInPlaceObjectWindowless *flashInPlaceObjWindowless = NULL;
-		LPLOCKBYTES lpLockBytes = NULL;
-		LPSTORAGE lpStorage = NULL;
+		CHARRANGE sel = { pos-1, pos };
+		SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
 
-		HRESULT hr;
-		long readyState;
-//		double val;
-
-		CLSID clsid = {0};
-		REOBJECT reobject = {0};
-
-		
-		hr = rec.ole->GetClientSite(&clientSite);
-		if (FAILED(hr)) goto err;
-
-
-		hr = CreateILockBytesOnHGlobal(NULL, TRUE, &lpLockBytes);
-		if (FAILED(hr)) goto err;
-
-		hr = StgCreateDocfileOnILockBytes(lpLockBytes, STGM_SHARE_EXCLUSIVE|STGM_CREATE|STGM_READWRITE, 0, &lpStorage);
-		if (FAILED(hr)) goto err;
-		
-		hr = OleCreate(__uuidof(ShockwaveFlash), IID_IOleObject, OLERENDER_DRAW, 0, 
-						clientSite, lpStorage, (void **) &flashOleObject);
-		if (FAILED(hr)) goto err;
-
-		hr = OleSetContainedObject(flashOleObject, TRUE);
-		if (FAILED(hr)) goto err;
-
-		hr = flashOleObject->QueryInterface(__uuidof(IShockwaveFlash), (void **) &flash);
-		if (FAILED(hr)) goto err;
-
-		hr = flashOleObject->QueryInterface(__uuidof(IViewObjectEx), (void **) &flashViewObject);
-		if (FAILED(hr)) goto err;
-
-		hr = flashOleObject->QueryInterface(__uuidof(IOleInPlaceObjectWindowless), (void **) &flashInPlaceObjWindowless);
-		if (FAILED(hr)) goto err;
-
-		
-		flash->put_WMode(L"transparent");
-		//flash->put_Scale(L"showAll");
-		flash->put_ScaleMode(0);
-		flash->put_BackgroundColor(0x00000000);
-		flash->put_EmbedMovie(TRUE);
-		flash->put_Loop(FALSE);
-
-		{
-			WCHAR *tmp = mir_t2u(url);
-			BSTR url = SysAllocString(tmp);
-
-			hr = flash->LoadMovie(0, url);
-
-			SysFreeString(url);
-			mir_free(tmp);
-		}
-		if (FAILED(hr)) goto err;
-
-		hr = flash->get_ReadyState(&readyState);
-		if (FAILED(hr)) goto err;
-		if (readyState != 3 && readyState != 4) goto err;
-
-
-		flashOleObject->SetClientSite(clientSite);
-
-		flashOleObject->GetUserClassID(&clsid);
-
-		reobject.cbStruct = sizeof(reobject);
-		reobject.clsid = clsid;
-		reobject.cp = REO_CP_SELECTION;
-		reobject.dvaspect = DVASPECT_CONTENT;
-		reobject.poleobj = flashOleObject;
-		reobject.polesite = clientSite;
-		reobject.dwFlags = REO_BELOWBASELINE | REO_RESIZABLE ; // | REO_DYNAMICSIZE;
-
-		hr = rec.ole->InsertObject(&reobject);
-		if (FAILED(hr)) goto err;
-
-//		{
-//			RECT p = { 0, 0, 200, 150 };
-//			flashInPlaceObjWindowless->SetObjectRects(&p, &p);
-//		}
-
-		hr = flash->Play();
-		if (FAILED(hr)) goto err;
-
-//		hr = flashOleObject->DoVerb(OLEIVERB_SHOW, NULL, clientSite, 0, NULL, NULL);
-//		if (FAILED(hr)) goto err;
-
-		InvalidateRect(rec.hwnd, NULL, FALSE);
-
-		ret = 1;
-
-err:
-		RELEASE(flash);
-		RELEASE(flashOleObject);
-		RELEASE(flashViewObject);
-		RELEASE(flashInPlaceObjWindowless);
-		RELEASE(lpLockBytes);
-		RELEASE(lpStorage);
-		RELEASE(clientSite);
-*/
 		CHARFORMAT2 cf;
 		memset(&cf, 0, sizeof(CHARFORMAT2));
 		cf.cbSize = sizeof(CHARFORMAT2);
-		cf.dwMask = CFM_BACKCOLOR;
+		cf.dwMask = CFM_ALL2;
 		SendMessage(rec.hwnd, EM_GETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf);
+
+		sel.cpMin = sel.cpMax = pos + 1;
+		SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
 		
 		if (cf.dwEffects & CFE_AUTOBACKCOLOR)
 		{
@@ -1116,7 +1042,42 @@ err:
 		
 		if (InsertAnimatedSmiley(rec.hwnd, flash->url, cf.crBackColor, flash->width, flash->height, _T(""), flash->flashVars))
 		{
-			ret = 1;
+			ret++;
+		
+			sel.cpMin = sel.cpMax = pos;
+			SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
+			SendMessage(rec.hwnd, EM_REPLACESEL, FALSE, (LPARAM) _T("\n"));
+			ret++;
+
+			sel.cpMin = sel.cpMax = pos + 2;
+			SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
+			SendMessage(rec.hwnd, EM_REPLACESEL, FALSE, (LPARAM) _T("\n"));
+			ret++;
+
+	/*		StreamData data("aaaa");
+			EDITSTREAM stream = {0};
+			stream.pfnCallback = StreamInEvents;
+			stream.dwCookie = (DWORD_PTR) &data;
+			SendMessage(rec.hwnd, EM_STREAMIN, SFF_SELECTION | SF_RTF, (LPARAM) &stream);
+	*/
+
+			sel.cpMin = pos;
+			sel.cpMax = pos + 3;
+			SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
+			cf.dwMask = CFM_ALL2 & ~CFM_LINK;
+			SendMessage(rec.hwnd, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf);
+
+			ITextRange *range = NULL;
+			if (rec.textDocument->Range(pos+1, pos+2, &range) == S_OK) 
+			{
+				ITextPara *para = NULL;
+				if (range->GetPara(&para) == S_OK)
+				{
+					para->SetAlignment(tomAlignCenter);
+					para->Release();
+				}
+				range->Release();
+			}
 		}
 	}
 	
@@ -1327,8 +1288,15 @@ int RestoreRichEdit(RichEditCtrl &rec, CHARRANGE &old_sel, int start = 0, int en
 		hr = ttd->GetTooltip(&hint);
 		if (SUCCEEDED(hr) && hint != NULL)
 		{
+			CHARRANGE sel = { reObj.cp, reObj.cp + 1 };
+			if (hint[0] == 0)
+			{
+				sel.cpMin--;
+				sel.cpMax++;
+			}
+
 			ITextRange *range;
-			if (rec.textDocument->Range(reObj.cp, reObj.cp + 1, &range) == S_OK) 
+			if (rec.textDocument->Range(sel.cpMin, sel.cpMax, &range) == S_OK) 
 			{
 				HRESULT hr = range->SetText(hint);
 				if (hr == S_OK)
@@ -1342,7 +1310,6 @@ int RestoreRichEdit(RichEditCtrl &rec, CHARRANGE &old_sel, int start = 0, int en
 				int oldCount = rec.ole->GetObjectCount();
 
 				// Try by EM_REPLACESEL
-				CHARRANGE sel = { reObj.cp, reObj.cp + 1 };
 				SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
 				SendMessageW(rec.hwnd, EM_REPLACESEL, FALSE, (LPARAM) hint);
 
@@ -1351,11 +1318,11 @@ int RestoreRichEdit(RichEditCtrl &rec, CHARRANGE &old_sel, int start = 0, int en
 
 			if (replaced)
 			{
-				int dif = wcslen(hint) - 1;
+				int dif = wcslen(hint) - (sel.cpMax - sel.cpMin);
 				ret += dif;
 
-				FixSelection(old_sel.cpMax, reObj.cp + 1, dif);
-				FixSelection(old_sel.cpMin, reObj.cp + 1, dif);
+				FixSelection(old_sel.cpMax, sel.cpMax, dif);
+				FixSelection(old_sel.cpMin, sel.cpMax, dif);
 			}
 
 			SysFreeString(hint);
