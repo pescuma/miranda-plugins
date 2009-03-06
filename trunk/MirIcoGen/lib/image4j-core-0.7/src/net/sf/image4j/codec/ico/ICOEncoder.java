@@ -93,7 +93,17 @@ public class ICOEncoder
 	 */
 	public static void write(List<BufferedImage> images, int[] bpp, java.io.File file) throws IOException
 	{
-		write(images, bpp, new java.io.FileOutputStream(file));
+		java.io.FileOutputStream out = null;
+		try
+		{
+			out = new java.io.FileOutputStream(file);
+			write(images, bpp, out);
+		}
+		finally
+		{
+			if (out != null)
+				out.close();
+		}
 	}
 	
 	/**

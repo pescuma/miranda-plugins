@@ -1,0 +1,31 @@
+/*
+*  This resource file if generated automatically by Miranda Ico Generator
+*  Do not try to edit this file, it will be overwritten on next build
+*/
+
+#foreach( $icon in $icons )
+$icon.id ICON DISCARDABLE "$icon.file"
+#end
+
+// Version Info goes here
+1 VERSIONINFO
+FILEVERSION $v1, $v2, $v3, $v4
+PRODUCTVERSION $v1, $v2, $v3, $v4
+FILEFLAGSMASK 0
+FILEOS 0x40000
+{
+  BLOCK "StringFileInfo"
+  {
+    BLOCK "040904b0"
+    {
+      VALUE "FileDescription", "$description\0"
+      VALUE "ProductName", "$name\0"
+      VALUE "ProductVersion", "${v1}.${v2}.${v3}.${v4}\0"
+      VALUE "FileVersion", "${v1}.${v2}.${v3}.${v4}\0"
+      VALUE "LegalCopyright", "$copyright\0"
+      VALUE "OriginalFilename", "${plugin}.dll\0"
+      VALUE "About Miranda", "Miranda IM is a new generation IM client, extensible with numerous plugins. Get Miranda IM at http://www.miranda-im.org\0"
+    }
+  }
+}
+
