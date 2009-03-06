@@ -1,7 +1,4 @@
-To run, click twive over MirIcoGen.jar (you need Java 6)
-
-
-Based on Miranda Icon Builder by Art Fedorov
+To run, click twice over MirIcoGen.jar (you need Java 6)
 
 
 The overlay names have to be:
@@ -40,8 +37,28 @@ and make the out icon darker for the invisible icon, you can create an invisible
 	proto set_avg_lumi 200
 	overlay transp +100
 	out bright -100
+	
 
+To create packs for plugins, create for each plugin a folder and inside that folder adds all icons and a file named <plugin>.icons 
+This file has lines in the format
+	<ico name>=<id>
+For example:
+	url=138
+To obtain the correct ids, you have to get the plugin source files and read the .rc file. 
+If you create a .icons file for a plugin, please send it to me so I can add to the zip and other people can use it. 
 
 
 
 Case matters!
+
+
+
+Based on 
+ - Miranda Icon Builder by Art Fedorov
+ - ant
+ - image4j
+ - swt
+ - velocity
+ - jfg
+ - commons-collections
+ - commons-lang

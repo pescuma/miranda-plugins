@@ -82,7 +82,7 @@ public class ImageUtils
 	
 	public static BufferedImage findBestImage(List<BufferedImage> images, int width, int height)
 	{
-		if (images.size() < 0)
+		if (images == null || images.size() < 0)
 			throw new IllegalStateException("Could not read protocol icon");
 		
 		int max = 0;
