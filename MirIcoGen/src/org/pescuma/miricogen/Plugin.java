@@ -12,13 +12,14 @@ public class Plugin
 	private final String name;
 	private final File path;
 	private final List<PluginIcon> icons = new ArrayList<PluginIcon>();
+	private final int existingIcons;
 	
 	public Plugin(String name, File path)
 	{
 		this.name = name;
 		this.path = path;
 		
-		loadIcons();
+		existingIcons = loadIcons();
 	}
 	
 	public String getName()
@@ -36,14 +37,21 @@ public class Plugin
 		return icons;
 	}
 	
-	private void loadIcons()
+	public int getExistingIcons()
+	{
+		return existingIcons;
+	}
+	
+	private int loadIcons()
 	{
 		File iconsFile = new File(path, name + ".icons");
 		if (!iconsFile.exists() || !iconsFile.isFile())
-			return;
+			return 0;
 		
 		try
 		{
+			int ret = 0;
+			
 			BufferedReader in = new BufferedReader(new FileReader(iconsFile));
 			String line;
 			while ((line = in.readLine()) != null)
@@ -69,15 +77,19 @@ public class Plugin
 					continue;
 				
 				PluginIcon icon = new PluginIcon(path, iconName, Integer.parseInt(iconID));
-				if (!icon.exists())
-					continue;
+				if (icon.exists())
+					ret++;
 				
 				icons.add(icon);
 			}
+			
+			return ret;
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
+			
+			return 0;
 		}
 	}
 	
@@ -92,6 +104,17 @@ public class Plugin
 		{
 			return false;
 		}
+	}
+	
+	public int countExistingIcons()
+	{
+		int ret = 0;
+		for (PluginIcon ico : icons)
+		{
+			if (ico.exists())
+				ret++;
+		}
+		return ret;
 	}
 	
 }

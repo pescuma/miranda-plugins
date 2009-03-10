@@ -5,22 +5,21 @@ import static org.pescuma.miricogen.FileUtils.*;
 import static org.pescuma.miricogen.ImageUtils.*;
 
 import java.awt.image.BufferedImage;
-import java.awt.image.DirectColorModel;
-import java.awt.image.IndexColorModel;
-import java.awt.image.WritableRaster;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
+import java.util.TreeSet;
 
-import net.sf.image4j.codec.ico.ICODecoder;
 import net.sf.image4j.codec.ico.ICOEncoder;
 
 import org.apache.tools.ant.taskdefs.Copy;
@@ -35,15 +34,15 @@ import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
-import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
@@ -94,6 +93,8 @@ public class Main
 		form.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		form.addContentsFrom(new ReflectionGroup(cfg));
 		
+		createMenu(shell, form);
+		
 		Button ok = new Button(shell, SWT.PUSH);
 		ok.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_CENTER));
 		ok.addListener(SWT.Selection, new Listener() {
@@ -133,16 +134,68 @@ public class Main
 		display.dispose();
 	}
 	
+	private static void createMenu(final Shell shell, final JfgFormComposite form)
+	{
+		Menu bar = new Menu(shell, SWT.BAR);
+		shell.setMenuBar(bar);
+		{
+			MenuItem toolsItem = new MenuItem(bar, SWT.CASCADE);
+			toolsItem.setText("&Tools");
+			Menu submenu = new Menu(shell, SWT.DROP_DOWN);
+			toolsItem.setMenu(submenu);
+			
+			MenuItem item = new MenuItem(submenu, SWT.PUSH);
+			item.addListener(SWT.Selection, new Listener() {
+				public void handleEvent(Event e)
+				{
+					form.copyToModel();
+					
+					new RcToIcons().show(shell, cfg.paths.pluginsPath);
+				}
+			});
+			item.setText("Convert .rc to .icons ...");
+			
+			item = new MenuItem(submenu, SWT.PUSH);
+			item.addListener(SWT.Selection, new Listener() {
+				public void handleEvent(Event e)
+				{
+					form.copyToModel();
+					
+					new ImportSkinIcons().show(shell, cfg.paths.pluginsPath);
+				}
+			});
+			item.setText("Import SkinIcons (exported from DBEditor) ...");
+		}
+		
+		{
+			MenuItem helpItem = new MenuItem(bar, SWT.CASCADE);
+			helpItem.setText("&Help");
+			Menu submenu = new Menu(shell, SWT.DROP_DOWN);
+			helpItem.setMenu(submenu);
+			
+			MenuItem item = new MenuItem(submenu, SWT.PUSH);
+			item.addListener(SWT.Selection, new Listener() {
+				public void handleEvent(Event e)
+				{
+					
+				}
+			});
+			item.setText("&About...");
+		}
+	}
+	
 	protected static void process() throws IOException, InterruptedException
 	{
 		out.append("Starting process...\n\n");
 		
 		List<String> protos = readProtos();
 		List<Overlay> overlays = readOverlays();
-		List<Plugin> plugins = readPlugins();
+		List<Plugin> plugins = readPlugins(true);
 		
 		for (String proto : protos)
 		{
+			createStatusDir();
+			
 			out.append(proto + "\n");
 			
 			for (Overlay overlay : overlays)
@@ -187,6 +240,8 @@ public class Main
 		
 		for (Plugin plugin : plugins)
 		{
+			createPluginsDir();
+			
 			out.append(plugin.getName() + "\n");
 			out.append("   - Building dll\n");
 			buildDll(plugin);
@@ -200,6 +255,20 @@ public class Main
 		
 		out.append("\n");
 		out.append("Done");
+	}
+	
+	private static void createStatusDir()
+	{
+		File dir = new File(cfg.paths.outPath, "status");
+		if (!dir.exists() && !dir.mkdirs())
+			throw new IllegalStateException("Could not create the output path");
+	}
+	
+	private static void createPluginsDir()
+	{
+		File dir = getPluginsDir();
+		if (!dir.exists() && !dir.mkdirs())
+			throw new IllegalStateException("Could not create the output path");
 	}
 	
 	private static File getPreviewFile()
@@ -222,12 +291,12 @@ public class Main
 		int TITLE_FONT_SIZE = 10;
 		boolean TITLE_FONT_BOLD = true;
 		
-		Point maxTextSize = getMaxTextSize(protos, FONT_SIZE, FONT_BOLD);
+		Point maxTextSize = getMaxTextSize(protos, plugins, FONT_SIZE, FONT_BOLD);
 		int TEXT_MAX_WIDTH = maxTextSize.x + BORDER;
 		int TEXT_HEIGHT = maxTextSize.y;
 		int LINE_HEIGHT = max(TEXT_HEIGHT, ICO_SIZE);
 		
-		maxTextSize = getMaxTextSize(titles, TITLE_FONT_SIZE, TITLE_FONT_BOLD);
+		maxTextSize = getMaxTextSize(titles, null, TITLE_FONT_SIZE, TITLE_FONT_BOLD);
 		int TITLE_HEIGHT = maxTextSize.y;
 		
 		Display display = Display.getCurrent();
@@ -235,7 +304,9 @@ public class Main
 		int pluginsSpace = 0;
 		for (Plugin plugin : plugins)
 		{
-			int rows = (int) ceil(plugin.getIcons().size() / (double) overlays.size());
+			int rows = plugin.getExistingIcons() / overlays.size();
+			if (plugin.getExistingIcons() % overlays.size() != 0)
+				rows++;
 			pluginsSpace += rows * (LINE_HEIGHT + SPACE);
 		}
 		
@@ -271,17 +342,19 @@ public class Main
 			
 			for (Overlay overlay : overlays)
 			{
-				List<BufferedImage> protoImgs = ICODecoder.read(getOutIco(proto, overlay));
-				BufferedImage icoImg = findBestImage(protoImgs, ICO_SIZE, ICO_SIZE);
-				
-				if (icoImg != null)
+				Image ico = ImageUtils.loadImage(getOutIco(proto, overlay), ICO_SIZE, ICO_SIZE, false);
+				if (ico != null)
 				{
-					Image ico = new Image(display, convertToSWT(icoImg));
 					ImageData data = ico.getImageData();
 					
-					gc.drawImage(ico, 0, 0, data.width, data.height, left, top + (LINE_HEIGHT - ICO_SIZE) / 2, ICO_SIZE, ICO_SIZE);
+					gc.drawImage(ico, 0, 0, data.width, data.height, left, top + (LINE_HEIGHT - min(ICO_SIZE, data.height)) / 2, min(
+							ICO_SIZE, data.width), min(ICO_SIZE, data.height));
 					
 					ico.dispose();
+				}
+				else
+				{
+					out.append("[ERROR] Error loading ico " + getFullPath(getOutIco(proto, overlay)) + "\n");
 				}
 				
 				left += ICO_SIZE + SPACE;
@@ -293,7 +366,9 @@ public class Main
 		for (Plugin plugin : plugins)
 		{
 			List<PluginIcon> icons = plugin.getIcons();
-			int rows = (int) ceil(icons.size() / (double) overlays.size());
+			int rows = plugin.getExistingIcons() / overlays.size();
+			if (plugin.getExistingIcons() % overlays.size() != 0)
+				rows++;
 			
 			int left = BORDER;
 			
@@ -304,21 +379,27 @@ public class Main
 			{
 				left = BORDER + TEXT_MAX_WIDTH + SPACE;
 				
-				for (int j = 0; j < overlays.size() && icoNum < icons.size(); j++)
+				for (int j = 0; j < overlays.size() && icoNum < icons.size();)
 				{
-					List<BufferedImage> imgs = ICODecoder.read(icons.get(icoNum++).getFile());
-					BufferedImage icoImg = findBestImage(imgs, ICO_SIZE, ICO_SIZE);
+					PluginIcon icon = icons.get(icoNum++);
+					if (!icon.exists())
+						continue;
 					
-					if (icoImg != null)
+					Image ico = ImageUtils.loadImage(icon.getFile(), false);
+					if (ico != null)
 					{
-						Image ico = new Image(display, convertToSWT(icoImg));
 						ImageData data = ico.getImageData();
 						
-						gc.drawImage(ico, 0, 0, data.width, data.height, left, top + (LINE_HEIGHT - ICO_SIZE) / 2, ICO_SIZE, ICO_SIZE);
+						gc.drawImage(ico, 0, 0, data.width, data.height, left, top + (LINE_HEIGHT - min(ICO_SIZE, data.height)) / 2, min(
+								ICO_SIZE, data.width), min(ICO_SIZE, data.height));
 						
 						ico.dispose();
 					}
-					
+					else
+					{
+						out.append("[ERROR] Error loading ico " + getFullPath(icon.getFile()) + "\n");
+					}
+					j++;
 					left += ICO_SIZE + SPACE;
 				}
 				
@@ -336,61 +417,7 @@ public class Main
 		img.dispose();
 	}
 	
-	static ImageData convertToSWT(BufferedImage bufferedImage)
-	{
-		if (bufferedImage.getColorModel() instanceof DirectColorModel)
-		{
-			DirectColorModel colorModel = (DirectColorModel) bufferedImage.getColorModel();
-			PaletteData palette = new PaletteData(colorModel.getRedMask(), colorModel.getGreenMask(), colorModel.getBlueMask());
-			ImageData data = new ImageData(bufferedImage.getWidth(), bufferedImage.getHeight(), colorModel.getPixelSize(), palette);
-			WritableRaster raster = bufferedImage.getRaster();
-			int[] pixelArray = new int[4];
-			for (int y = 0; y < data.height; y++)
-			{
-				for (int x = 0; x < data.width; x++)
-				{
-					raster.getPixel(x, y, pixelArray);
-					int pixel = palette.getPixel(new RGB(pixelArray[0], pixelArray[1], pixelArray[2]));
-					data.setPixel(x, y, pixel);
-					data.setAlpha(x, y, pixelArray[3]);
-				}
-			}
-			return data;
-		}
-		else if (bufferedImage.getColorModel() instanceof IndexColorModel)
-		{
-			IndexColorModel colorModel = (IndexColorModel) bufferedImage.getColorModel();
-			int size = colorModel.getMapSize();
-			byte[] reds = new byte[size];
-			byte[] greens = new byte[size];
-			byte[] blues = new byte[size];
-			colorModel.getReds(reds);
-			colorModel.getGreens(greens);
-			colorModel.getBlues(blues);
-			RGB[] rgbs = new RGB[size];
-			for (int i = 0; i < rgbs.length; i++)
-			{
-				rgbs[i] = new RGB(reds[i] & 0xFF, greens[i] & 0xFF, blues[i] & 0xFF);
-			}
-			PaletteData palette = new PaletteData(rgbs);
-			ImageData data = new ImageData(bufferedImage.getWidth(), bufferedImage.getHeight(), colorModel.getPixelSize(), palette);
-			data.transparentPixel = colorModel.getTransparentPixel();
-			WritableRaster raster = bufferedImage.getRaster();
-			int[] pixelArray = new int[1];
-			for (int y = 0; y < data.height; y++)
-			{
-				for (int x = 0; x < data.width; x++)
-				{
-					raster.getPixel(x, y, pixelArray);
-					data.setPixel(x, y, pixelArray[0]);
-				}
-			}
-			return data;
-		}
-		return null;
-	}
-	
-	private static Point getMaxTextSize(List<String> protos, int fontHeight, boolean bold)
+	private static Point getMaxTextSize(List<String> protos, List<Plugin> plugins, int fontHeight, boolean bold)
 	{
 		Display display = Display.getCurrent();
 		Image img = new Image(display, 1, 1);
@@ -402,8 +429,18 @@ public class Main
 		Point ret = new Point(0, 0);
 		for (String proto : protos)
 		{
-			ret.x = max(ret.x, gc.stringExtent(proto).x);
-			ret.y = max(ret.y, gc.stringExtent(proto).y);
+			Point extent = gc.stringExtent(proto);
+			ret.x = max(ret.x, extent.x);
+			ret.y = max(ret.y, extent.y);
+		}
+		if (plugins != null)
+		{
+			for (Plugin plugin : plugins)
+			{
+				Point extent = gc.stringExtent(plugin.getName());
+				ret.x = max(ret.x, extent.x);
+				ret.y = max(ret.y, extent.y);
+			}
 		}
 		
 		font.dispose();
@@ -432,25 +469,24 @@ public class Main
 	
 	private static File getOutIco(String proto, Overlay overlay)
 	{
-		return new File(new File(cfg.paths.outPath, "status"), proto + "-" + overlay.getName() + ".ico");
+		return findIcon(new File(new File(cfg.paths.outPath, "status"), proto + "-" + overlay.getName()));
 	}
 	
 	private static void createIco(File outIco, File protoIco, Overlay overlay) throws IOException
 	{
-		List<BufferedImage> protoImgs = ICODecoder.read(protoIco);
+		Image img = loadImage(protoIco, 16, 16);
+		BufferedImage proto = convertToAWT(img.getImageData());
+		img.dispose();
 		
-		for (BufferedImage proto : protoImgs)
-		{
-			if (proto.getWidth() == 16 && proto.getHeight() == 16)
-				overlay.blend(proto);
-		}
+		overlay.blend(proto);
 		
+		outIco.getParentFile().mkdirs();
 		if (outIco.exists())
 			outIco.delete();
-		ICOEncoder.write(protoImgs, outIco);
+		ICOEncoder.write(proto, outIco);
 	}
 	
-	private static void copy(File dest, File orig) throws IOException
+	public static void copy(File dest, File orig) throws IOException
 	{
 		if (!orig.exists())
 			throw new FileNotFoundException(getFullPath(orig));
@@ -465,7 +501,7 @@ public class Main
 	
 	private static File getProtoIco(String name)
 	{
-		return new File(cfg.paths.protosPath, name + ".ico");
+		return findIcon(new File(cfg.paths.protosPath, name));
 	}
 	
 	private static List<Overlay> readOverlays()
@@ -486,30 +522,35 @@ public class Main
 	
 	private static List<String> readProtos()
 	{
-		File[] files = cfg.paths.protosPath.listFiles(new FileFilter() {
-			public boolean accept(File pathname)
+		File[] files = cfg.paths.protosPath.listFiles(new FilenameFilter() {
+			public boolean accept(File dir, String name)
 			{
-				return pathname.getName().endsWith(".ico");
+				int length = name.length();
+				if (length < 5)
+					return false;
+				if (name.indexOf('-') >= 0)
+					return false;
+				
+				String ext = name.substring(length - 4);
+				return indexOf(imageExts, ext) >= 0;
 			}
 		});
-		List<String> ret = new ArrayList<String>();
+		Set<String> ret = new TreeSet<String>();
 		for (int i = 0; i < files.length; i++)
 		{
 			File f = files[i];
 			String name = f.getName();
-			if (name.indexOf('-') >= 0)
-				continue;
 			ret.add(name.substring(0, name.length() - 4));
 		}
-		return ret;
+		return new ArrayList<String>(ret);
 	}
 	
-	private static List<Plugin> readPlugins()
+	public static List<Plugin> readPlugins(boolean onlyIfHasAnIcon)
 	{
 		File[] files = cfg.paths.pluginsPath.listFiles(new FileFilter() {
 			public boolean accept(File pathname)
 			{
-				return pathname.isDirectory() && !".".equals(pathname) && !"..".equals(pathname);
+				return pathname.getName().endsWith(".icons");
 			}
 		});
 		List<Plugin> ret = new ArrayList<Plugin>();
@@ -517,10 +558,10 @@ public class Main
 		{
 			File f = files[i];
 			
-			String name = f.getName();
+			String name = f.getName().substring(0, f.getName().length() - 6);
 			
-			Plugin p = new Plugin(name, f);
-			if (p.getIcons().size() <= 0)
+			Plugin p = new Plugin(name, f.getParentFile());
+			if (onlyIfHasAnIcon && p.getExistingIcons() < 1)
 				continue;
 			
 			ret.add(p);
@@ -548,8 +589,6 @@ public class Main
 	private static void buildDll(Plugin plugin)
 	{
 		File dir = getPluginsDir();
-		if (!dir.exists() && !dir.mkdirs())
-			throw new IllegalStateException("Could not create the output path");
 		
 		File dllFile = new File(dir, plugin.getName() + ".dll");
 		if (dllFile.exists())
@@ -600,7 +639,12 @@ public class Main
 			
 			List<VelocityIcon> icons = new ArrayList<VelocityIcon>();
 			for (PluginIcon icon : plugin.getIcons())
-				icons.add(new VelocityIcon(Integer.toString(icon.getId()), encode(getFullPath(icon.getFile()))));
+			{
+				if (!icon.exists())
+					out.append("[WARN] " + pluginName + ": Icon not found: " + icon.getName() + "\n");
+				else
+					icons.add(new VelocityIcon(Integer.toString(icon.getId()), encode(getFullPath(icon.getFile()))));
+			}
 			context.put("icons", icons);
 			
 			Template template = Velocity.getTemplate(getFullPath(templateName));
@@ -650,14 +694,12 @@ public class Main
 	private static void buildDll(String proto, List<Overlay> overlays) throws IOException, InterruptedException
 	{
 		File dir = new File(cfg.paths.outPath, "status");
-		if (!dir.exists() && !dir.mkdirs())
-			throw new IllegalStateException("Could not create the output path");
 		
-		File dllFile = new File(dir, proto + ".dll");
+		File dllFile = new File(dir, "proto_" + proto + ".dll");
 		if (dllFile.exists())
 			dllFile.delete();
 		
-		File rcFile = new File(dir, proto + ".rc");
+		File rcFile = new File(dir, "proto_" + proto + ".rc");
 		
 		mergeTemplate(proto, overlays, rcFile);
 		
