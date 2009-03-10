@@ -128,12 +128,11 @@ public class RcToIcons
 		try
 		{
 			writer = new FileWriter(icons, false);
-			int i = 0;
 			for (RCIcon icon : rc.icons)
 			{
 				writer.append(cfg.iconsPrefix);
 				if (cfg.useIdAsName)
-					writer.append(Integer.toString(i++));
+					writer.append(Integer.toString(icon.id));
 				else
 					writer.append(icon.name);
 				writer.append("=");
