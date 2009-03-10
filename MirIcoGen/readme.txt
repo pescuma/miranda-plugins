@@ -39,14 +39,17 @@ and make the out icon darker for the invisible icon, you can create an invisible
 	out bright -100
 	
 
-To create packs for plugins, create for each plugin a folder and inside that folder adds all icons and a file named <plugin>.icons 
+To create packs for plugins, create inside the plugins folder a file named <plugin>.icons with all icons and its ids.
 This file has lines in the format
 	<ico name>=<id>
 For example:
 	url=138
-To obtain the correct ids, you have to get the plugin source files and read the .rc file. 
+It is better if the <ico name> is the same name that appears in the .ini when the SkinIcons settings are exported with DBEditor++.
+To obtain the correct ids, you have to get the plugin source files and read the .rc file.
 If you create a .icons file for a plugin, please send it to me so I can add to the zip and other people can use it. 
 
+
+Also, now, all images can be .ico, .png, .jpg, .gif and .bmp
 
 
 Case matters!

@@ -10,8 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.sf.image4j.codec.ico.ICODecoder;
-
+import org.eclipse.swt.graphics.Image;
 import org.pescuma.miricogen.Main.Config;
 
 public class Overlay
@@ -137,21 +136,15 @@ public class Overlay
 		
 		loadTransforms();
 		
-		File file = new File(cfg.paths.overlaysPath, name + ".ico");
+		File file = findIcon(new File(cfg.paths.overlaysPath, name));
 		if (!file.exists())
 			return;
 		
-		try
-		{
-			overlay = findBestImage(ICODecoder.read(file), 16, 16);
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException(e);
-		}
+		Image img = loadImage(file, 16, 16);
+		overlay = convertToAWT(img.getImageData());
+		img.dispose();
 		
 		for (ImageTransform transf : overlayTransforms)
 			transf.transform(overlay);
 	}
-	
 }
