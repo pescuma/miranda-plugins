@@ -6,13 +6,13 @@ public class PluginIcon
 {
 	private final String name;
 	private final int id;
-	private final File file;
+	private final File path;
 	
 	public PluginIcon(File path, String name, int id)
 	{
+		this.path = path;
 		this.name = name;
 		this.id = id;
-		file = new File(path, name + ".ico");
 	}
 	
 	public String getName()
@@ -27,11 +27,12 @@ public class PluginIcon
 	
 	public File getFile()
 	{
-		return file;
+		return ImageUtils.findIcon(new File(path, name));
 	}
 	
 	public boolean exists()
 	{
+		File file = getFile();
 		return file.exists() && file.isFile();
 	}
 }
