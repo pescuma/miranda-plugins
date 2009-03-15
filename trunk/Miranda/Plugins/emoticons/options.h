@@ -31,6 +31,7 @@ struct Options {
 	BOOL use_default_pack;
 	BOOL only_replace_isolated;
 	BOOL enable_custom_smileys;
+	BOOL embed_videos;
 };
 
 extern Options opts;

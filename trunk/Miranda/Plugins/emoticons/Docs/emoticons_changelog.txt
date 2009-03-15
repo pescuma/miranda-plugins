@@ -2,6 +2,10 @@ Emoticons
 
 Changelog:
 
+. 0.3.0.0
+  + Allows to embed videos in history
+  * Some fixes for emoticons texts
+
 . 0.0.2.11
   * Fix for custom smileys
   + Don't show custom smileys on outgoing messages
