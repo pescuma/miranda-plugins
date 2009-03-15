@@ -1,1 +1,1 @@
-Emoticons 0.0.2.11
+Emoticons 0.3.0.0
