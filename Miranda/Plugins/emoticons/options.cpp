@@ -39,10 +39,11 @@ static OptPageControl optionsControls[] = {
 	{ &opts.use_default_pack,		CONTROL_CHECKBOX,	IDC_USE_DEFAULT_PACK,	"UseDefaultPack", TRUE },
 	{ &opts.only_replace_isolated,	CONTROL_CHECKBOX,	IDC_ONLY_ISOLATED,		"OnlyReplaceIsolatedEmoticons", FALSE },
 	{ &opts.enable_custom_smileys,	CONTROL_CHECKBOX,	IDC_CUSTOM_SMILEYS,		"EnableCustomSmileys", TRUE },
+	{ &opts.embed_videos,			CONTROL_CHECKBOX,	IDC_VIDEO,				"EmbedVideos", TRUE },
 };
 
 static UINT optionsExpertControls[] = { 
-	IDC_INPUT_TOO, IDC_USE_DEFAULT_PACK, IDC_ONLY_ISOLATED, IDC_CUSTOM_SMILEYS
+	IDC_INPUT_TOO, IDC_USE_DEFAULT_PACK, IDC_ONLY_ISOLATED
 };
 
 

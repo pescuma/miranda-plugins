@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,3,0),
+	PLUGIN_MAKE_VERSION(0,3,0,0),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -1179,7 +1179,7 @@ BOOL IsHidden(RichEditCtrl &rec, int start, int end)
 }
 
 
-void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, TCHAR *text, int len, int start, CHARRANGE &__old_sel, BOOL inInputArea)
+void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, TCHAR *text, int len, int start, CHARRANGE &__old_sel, BOOL inInputArea, BOOL allowVideo)
 {
 	int diff = 0;
 	for(int i = 0; i < len; i++)
@@ -1241,14 +1241,14 @@ void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, TC
 }
 
 
-void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, int start, int end, BOOL inInputArea)
+void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, int start, int end, BOOL inInputArea, BOOL allowVideo)
 {
 	STOP_RICHEDIT(rec);
 
 	TCHAR *text = GetText(rec, start, end);
 	int len = lstrlen(text);
 
-	ReplaceAllEmoticons(rec, contact, module, text, len, start, __old_sel, inInputArea);
+	ReplaceAllEmoticons(rec, contact, module, text, len, start, __old_sel, inInputArea, allowVideo);
 
 	MIR_FREE(text);
 
@@ -1434,7 +1434,7 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			TCHAR *text = GetText(dlg->input, start, end);
 			int len = lstrlen(text);
 
-			ReplaceAllEmoticons(dlg->input, NULL, dlg->module, text, len, start, __old_sel, TRUE);
+			ReplaceAllEmoticons(dlg->input, NULL, dlg->module, text, len, start, __old_sel, TRUE, FALSE);
 
 			MIR_FREE(text);
 
@@ -1454,7 +1454,7 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 
 	if (rebuild)
-		ReplaceAllEmoticons(dlg->input, NULL, dlg->module, 0, -1, TRUE);
+		ReplaceAllEmoticons(dlg->input, NULL, dlg->module, 0, -1, TRUE, FALSE);
 
 	return ret;
 }
@@ -1511,7 +1511,7 @@ LRESULT CALLBACK LogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	LRESULT ret = CallWindowProc(dlg->log.old_edit_proc, hwnd, msg, wParam, lParam);
 
 	if (rebuild)
-		ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, sel.cpMin, sel.cpMax, FALSE);
+		ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, sel.cpMin, sel.cpMax, FALSE, FALSE);
 
 	return ret;
 }
@@ -1532,7 +1532,7 @@ LRESULT CALLBACK SRMMLogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	LRESULT ret = LogProc(hwnd, msg, wParam, lParam);
 
 	if (msg == EM_STREAMIN)
-		ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, stream_in_pos, -1, FALSE);
+		ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, stream_in_pos, -1, FALSE, opts.embed_videos);
 
 	return ret;
 }
@@ -1567,7 +1567,7 @@ LRESULT CALLBACK OwnerProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				if (!ret)
 					// Add emoticons again
-					ReplaceAllEmoticons(dlg->input, NULL, dlg->module, 0, -1, TRUE);
+					ReplaceAllEmoticons(dlg->input, NULL, dlg->module, 0, -1, TRUE, FALSE);
 
 				dlg->log.sending = FALSE;
 			}
@@ -1686,7 +1686,7 @@ int MsgWindowEvent(WPARAM wParam, LPARAM lParam)
 
 		if (isSRMM())
 		{
-			ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, 0, -1, FALSE);
+			ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, 0, -1, FALSE, opts.embed_videos);
 
 			dlg->log.old_edit_proc = (WNDPROC) SetWindowLong(dlg->log.hwnd, GWL_WNDPROC, (LONG) SRMMLogProc);
 		}
@@ -2717,7 +2717,7 @@ int ReplaceEmoticonsService(WPARAM wParam, LPARAM lParam)
 	{
 		Dialog *dlg = dlgit->second;
 		ReplaceAllEmoticons(dlg->log, dlg->contact, dlg->module, sre->rangeToReplace == NULL ? 0 : sre->rangeToReplace->cpMin, 
-			sre->rangeToReplace == NULL ? -1 : sre->rangeToReplace->cpMax, FALSE);
+			sre->rangeToReplace == NULL ? -1 : sre->rangeToReplace->cpMax, FALSE, opts.embed_videos);
 	}
 	else
 	{
@@ -2728,7 +2728,7 @@ int ReplaceEmoticonsService(WPARAM wParam, LPARAM lParam)
 		RichEditCtrl rec = {0};
 		LoadRichEdit(&rec, sre->hwndRichEditControl);
 		ReplaceAllEmoticons(rec, GetContact(sre->hContact), m, sre->rangeToReplace == NULL ? 0 : sre->rangeToReplace->cpMin, 
-			sre->rangeToReplace == NULL ? -1 : sre->rangeToReplace->cpMax, FALSE);
+			sre->rangeToReplace == NULL ? -1 : sre->rangeToReplace->cpMax, FALSE, opts.embed_videos);
 	}
 
 	return TRUE;
