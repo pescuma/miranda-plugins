@@ -20,7 +20,7 @@
 #include "commons.h"
 
 ExtraIcon::ExtraIcon(const char *name, const char *description, const char *descIcon) :
-	name(name), description(description), descIcon(descIcon), slot(-1)
+	name(name), description(Translate(description)), descIcon(descIcon), slot(-1)
 {
 }
 

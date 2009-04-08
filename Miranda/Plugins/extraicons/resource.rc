@@ -35,7 +35,8 @@ BEGIN
     LTEXT           "Select the extra icons to be shown in the contact list:",
                     IDC_STATIC,1,9,274,13
     LTEXT           "Slot 1:",IDC_SLOT_L,1,31,21,8
-    COMBOBOX        IDC_SLOT,35,28,173,60,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_SLOT,35,28,173,60,CBS_DROPDOWNLIST | 
+                    CBS_OWNERDRAWFIXED | CBS_HASSTRINGS | WS_VSCROLL | 
                     WS_TABSTOP
 END
 
