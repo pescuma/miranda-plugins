@@ -34,11 +34,13 @@
 
 static void ProtocolInit();
 static void DBExtraIconsInit();
+static void VisibilityInit();
 
 void DefaultExtraIcons_Load()
 {
 	ProtocolInit();
 	DBExtraIconsInit();
+	VisibilityInit();
 }
 
 void DefaultExtraIcons_Unload()
@@ -47,6 +49,56 @@ void DefaultExtraIcons_Unload()
 
 // DB extra icons ///////////////////////////////////////////////////////////////////////
 
+HANDLE hExtraVisibility = NULL;
+
+static void SetVisibility(HANDLE hContact, int apparentMode, BOOL clear)
+{
+	if (hContact == NULL)
+		return;
+
+	char *proto = (char*) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
+	if (IsEmpty(proto))
+		return;
+
+	if (apparentMode < 0)
+		apparentMode = DBGetContactSettingWord(hContact, proto, "ApparentMode", 0);
+
+	const char *ico = NULL;
+
+	if (DBGetContactSettingByte(hContact, proto, "ChatRoom", 0))
+	{
+		// Is chat
+		if (apparentMode == ID_STATUS_OFFLINE)
+			ico = "ChatActivity";
+	}
+	else
+	{
+		// Not chat
+		if (apparentMode == ID_STATUS_OFFLINE)
+			ico = "NeverVis";
+
+		else if (apparentMode == ID_STATUS_ONLINE)
+			ico = "AlwaysVis";
+	}
+
+	if (ico == NULL && !clear)
+		return;
+
+	ExtraIcon_SetIcon(hExtraVisibility, hContact, ico);
+}
+
+static void VisibilityInit()
+{
+	hExtraVisibility = ExtraIcon_Register("visibility", "Visibility/Chat activity", "AlwaysVis");
+
+	HANDLE hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDFIRST, 0, 0);
+	while (hContact != NULL)
+	{
+		SetVisibility(hContact, -1, FALSE);
+
+		hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDNEXT, (WPARAM) hContact, 0);
+	}
+}
 
 struct Info
 {
@@ -111,6 +163,14 @@ static int SettingChanged(WPARAM wParam, LPARAM lParam)
 	if (IsEmpty(proto))
 		return 0;
 
+	bool isProto = (strcmp(cws->szModule, proto) == 0);
+
+	if (isProto && strcmp(cws->szSetting, "ApparentMode") == 0)
+	{
+		SetVisibility(hContact, cws->value.type == DBVT_DELETED ? 0 : cws->value.wVal, TRUE);
+		return 0;
+	}
+
 	for (unsigned int i = 0; i < MAX_REGS(infos); ++i)
 	{
 		Info &info = infos[i];
@@ -119,7 +179,9 @@ static int SettingChanged(WPARAM wParam, LPARAM lParam)
 		{
 			if (info.db[j + 1] == NULL)
 				break;
-			if (strcmp(cws->szModule, info.db[j] == NULL ? proto : info.db[j]))
+			if (info.db[j] == NULL && !isProto)
+				continue;
+			if (info.db[j] != NULL && strcmp(cws->szModule, info.db[j]))
 				continue;
 			if (strcmp(cws->szSetting, info.db[j + 1]))
 				continue;
@@ -216,5 +278,5 @@ static void ProtocolApplyIcon(HANDLE hContact, int slot)
 
 static void ProtocolInit()
 {
-	hExtraProto = ExtraIcon_Register("protocol", ProtocolRebuildIcons, ProtocolApplyIcon, "Protocol");
+	hExtraProto = ExtraIcon_Register("protocol", ProtocolRebuildIcons, ProtocolApplyIcon, "Account", "core_main_34");
 }

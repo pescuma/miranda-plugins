@@ -27,6 +27,8 @@
 #define PSN_APPLY               ((0U-200U)-2)
 #endif
 
+#define ICON_SIZE 				16
+
 // Prototypes /////////////////////////////////////////////////////////////////////////////////////
 
 HANDLE hOptHook = NULL;
@@ -145,7 +147,8 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 					SendMessage(tmp, WM_SETFONT, (WPARAM) hFont, FALSE);
 
 					HWND combo = CreateWindow("COMBOBOX", "",
-							WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL,
+							WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL
+							| CBS_OWNERDRAWFIXED | CBS_HASSTRINGS,
 							rcCombo.left, rcCombo.top + i * height,
 							rcCombo.right - rcCombo.left, rcCombo.bottom - rcCombo.top,
 							hwndDlg, (HMENU) id, hInst, NULL);
@@ -154,13 +157,13 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 
 				// Fill combo
 				int sel = 0;
-				SendDlgItemMessage(hwndDlg, id, CB_ADDSTRING, 0, (LPARAM) "<Empty>");
+				SendDlgItemMessage(hwndDlg, id, CB_ADDSTRING, 0, (LPARAM) Translate("<Empty>"));
 				for (int j = 0; j < (int) extraIcons.size(); ++j)
 				{
 					ExtraIcon *extra = extraIcons[j];
 
-					SendDlgItemMessage(hwndDlg, id, CB_ADDSTRING, 0, (LPARAM) Translate(extra->getDescription()));
-					SendDlgItemMessage(hwndDlg, id, CB_SETITEMDATA, j, (DWORD) extra);
+					int pos = SendDlgItemMessage(hwndDlg, id, CB_ADDSTRING, 0, (LPARAM) extra->getDescription());
+					SendDlgItemMessage(hwndDlg, id, CB_SETITEMDATA, pos, (DWORD) extra);
 
 					if (extra->getSlot() == i)
 						sel = j + 1;
@@ -212,6 +215,7 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 					if (GetExtraIconBySlot(j) == NULL)
 						continue;
 
+
 					// Had and icon and lost
 					RemoveExtraIcons(j);
 				}
@@ -239,6 +243,80 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 			}
 
 			break;
+		}
+		case WM_DRAWITEM:
+		{
+			LPDRAWITEMSTRUCT lpdis = (LPDRAWITEMSTRUCT) lParam;
+			if ((lpdis->CtlID % 2) != 0)
+				break;
+			int slot = (lpdis->CtlID - IDC_SLOT) / 2;
+			if (slot < 0 || slot > numSlots * 2)
+				break;
+			if (lpdis->itemID == -1)
+				break;
+
+			ExtraIcon *extra = (ExtraIcon *) lpdis->itemData;
+
+			TEXTMETRIC tm;
+			RECT rc;
+
+			GetTextMetrics(lpdis->hDC, &tm);
+
+			COLORREF clrfore = SetTextColor(lpdis->hDC, GetSysColor(lpdis->itemState & ODS_SELECTED
+					? COLOR_HIGHLIGHTTEXT : COLOR_WINDOWTEXT));
+			COLORREF clrback = SetBkColor(lpdis->hDC, GetSysColor(lpdis->itemState & ODS_SELECTED ? COLOR_HIGHLIGHT
+					: COLOR_WINDOW));
+
+			FillRect(lpdis->hDC, &lpdis->rcItem, GetSysColorBrush(lpdis->itemState & ODS_SELECTED ? COLOR_HIGHLIGHT
+					: COLOR_WINDOW));
+
+			rc.left = lpdis->rcItem.left + 2;
+
+
+			// Draw icon
+			HICON hIcon = NULL;
+			if (extra != NULL && !IsEmpty(extra->getDescIcon()))
+				hIcon = (HICON) CallService(MS_SKIN2_GETICON, 0, (LPARAM) extra->getDescIcon());
+			if (hIcon != NULL)
+			{
+				rc.top = (lpdis->rcItem.bottom + lpdis->rcItem.top - ICON_SIZE) / 2;
+				DrawIconEx(lpdis->hDC, rc.left, rc.top, hIcon, 16, 16, 0, NULL, DI_NORMAL);
+				CallService(MS_SKIN2_RELEASEICON, (WPARAM) hIcon, 0);
+			}
+
+			rc.left += ICON_SIZE + 4;
+
+
+			// Draw text
+			rc.right = lpdis->rcItem.right - 2;
+			rc.top = (lpdis->rcItem.bottom + lpdis->rcItem.top - tm.tmHeight) / 2;
+			rc.bottom = rc.top + tm.tmHeight;
+			DrawText(lpdis->hDC, extra == NULL ? Translate("<Empty>") : extra->getDescription(), -1, &rc,
+					DT_END_ELLIPSIS | DT_NOPREFIX | DT_SINGLELINE);
+
+
+			// Restore old colors
+			SetTextColor(lpdis->hDC, clrfore);
+			SetBkColor(lpdis->hDC, clrback);
+
+			return TRUE;
+		}
+
+		case WM_MEASUREITEM:
+		{
+			LPMEASUREITEMSTRUCT lpmis = (LPMEASUREITEMSTRUCT) lParam;
+			if ((lpmis->CtlID % 2) != 0)
+				break;
+			int slot = (lpmis->CtlID - IDC_SLOT) / 2;
+			if (slot < 0 || slot > numSlots * 2)
+				break;
+
+			TEXTMETRIC tm;
+			GetTextMetrics(GetDC(hwndDlg), &tm);
+
+			lpmis->itemHeight = MAX(ICON_SIZE, tm.tmHeight);
+
+			return TRUE;
 		}
 	}
 
