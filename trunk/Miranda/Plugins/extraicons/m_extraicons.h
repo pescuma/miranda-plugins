@@ -35,12 +35,26 @@ typedef struct {
 									// if both have the same type. In this case, both will be handled as one.
 									// This is usefull for ex for extra status, where icq and jabber can share the same slot.
 									// If the types are different the second one will be denied.
-	const char *description;		// Description to be used in GUI. Will be translated.
-	const char *descIcon;			// (Optional) Name of an icon registered with icolib to be used in GUI.
+	const char *description;		// [Translated by plugin] Description to be used in GUI
+	const char *descIcon;			// [Optional] Name of an icon registered with icolib to be used in GUI.
 
 	// If type == EXTRAICON_TYPE_CALLBACK this two must be set
-	void (*RebuildIcons)();							// Callback to add icons to clist, calling MS_CLIST_EXTRA_ADD_ICON
-	void (*ApplyIcon)(HANDLE hContact, int slot);	// Callback to set the icon to clist, calling MS_CLIST_EXTRA_SET_ICON or MS_EXTRAICON_SET_ICON
+
+	// Callback to add icons to clist, calling MS_CLIST_EXTRA_ADD_ICON
+	// wParam=lParam=0
+	int (*RebuildIcons)(WPARAM wParam, LPARAM lParam);
+
+	// Callback to set the icon to clist, calling MS_CLIST_EXTRA_SET_ICON or MS_EXTRAICON_SET_ICON
+	// wParam = HANDLE hContact
+	// lParam = int slot
+	int (*ApplyIcon)(WPARAM wParam, LPARAM lParam);
+
+	// Other optional callbacks
+
+	// [Optional] Callback called when extra icon was clicked
+	// wParam = HANDLE hContact
+	// lParam = 0
+	int (*OnClick)(WPARAM wParam, LPARAM lParam);
 
 } EXTRAICON_INFO;
 
@@ -72,8 +86,10 @@ typedef struct {
 #ifndef _NO_WRAPPERS
 #ifdef __cplusplus
 
-static HANDLE ExtraIcon_Register(const char *name, void (*RebuildIcons)(), void (*ApplyIcon)(HANDLE hContact, int slot),
-								 const char *description, const char *descIcon = NULL)
+static HANDLE ExtraIcon_Register(const char *name, const char *description, const char *descIcon,
+								 int (*RebuildIcons)(WPARAM wParam, LPARAM lParam),
+								 int (*ApplyIcon)(WPARAM wParam, LPARAM lParam),
+								 int (*OnClick)(WPARAM wParam, LPARAM lParam) = NULL)
 {
 	EXTRAICON_INFO ei = {0};
 	ei.cbSize = sizeof(ei);
@@ -83,6 +99,7 @@ static HANDLE ExtraIcon_Register(const char *name, void (*RebuildIcons)(), void 
 	ei.descIcon = descIcon;
 	ei.RebuildIcons = RebuildIcons;
 	ei.ApplyIcon = ApplyIcon;
+	ei.OnClick = OnClick;
 
 	return (HANDLE) CallService(MS_EXTRAICON_REGISTER, (WPARAM) &ei, 0);
 }

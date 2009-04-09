@@ -267,11 +267,12 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 	switch (ei->type)
 	{
 		case EXTRAICON_TYPE_CALLBACK:
-			extra = new CallbackExtraIcon(ei->name, ei->RebuildIcons, ei->ApplyIcon, ei->description, ei->descIcon
-					== NULL ? "" : ei->descIcon);
+			extra = new CallbackExtraIcon(ei->name, ei->description, ei->descIcon == NULL ? "" : ei->descIcon,
+					ei->RebuildIcons, ei->ApplyIcon, ei->OnClick);
 			break;
 		case EXTRAICON_TYPE_ICOLIB:
-			extra = new IcolibExtraIcon(ei->name, ei->description, ei->descIcon == NULL ? "" : ei->descIcon);
+			extra = new IcolibExtraIcon(ei->name, ei->description, ei->descIcon == NULL ? "" : ei->descIcon,
+					ei->OnClick);
 			break;
 		default:
 			return 0;

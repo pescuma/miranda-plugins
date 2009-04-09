@@ -227,9 +227,10 @@ vector<ProtoInfo> protos;
 
 HANDLE hExtraProto = NULL;
 
-static void ProtocolRebuildIcons()
+static int ProtocolRebuildIcons(WPARAM wParam, LPARAM lParam)
 {
 	protos.clear();
+	return 0;
 }
 
 static ProtoInfo *FindProto(const char * proto)
@@ -257,11 +258,14 @@ static ProtoInfo *FindProto(const char * proto)
 	return &protos[protos.size() - 1];
 }
 
-static void ProtocolApplyIcon(HANDLE hContact, int slot)
+static int ProtocolApplyIcon(WPARAM wParam, LPARAM lParam)
 {
+	HANDLE hContact = (HANDLE) wParam;
+	int slot = (int) lParam;
+
 	char *proto = (char*) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
 	if (IsEmpty(proto))
-		return;
+		return 0;
 
 	HANDLE hImage = NULL;
 
@@ -274,9 +278,11 @@ static void ProtocolApplyIcon(HANDLE hContact, int slot)
 	iec.ColumnType = slot;
 	iec.hImage = (hImage == NULL ? (HANDLE) -1 : hImage);
 	CallService(MS_CLIST_EXTRA_SET_ICON, (WPARAM) hContact, (LPARAM) &iec);
+
+	return 0;
 }
 
 static void ProtocolInit()
 {
-	hExtraProto = ExtraIcon_Register("protocol", ProtocolRebuildIcons, ProtocolApplyIcon, "Account", "core_main_34");
+	hExtraProto = ExtraIcon_Register("protocol", "Account", "core_main_34", ProtocolRebuildIcons, ProtocolApplyIcon);
 }
