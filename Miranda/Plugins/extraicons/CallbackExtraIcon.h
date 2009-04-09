@@ -25,8 +25,9 @@
 class CallbackExtraIcon : public ExtraIcon
 {
 public:
-	CallbackExtraIcon(const char *name, void(*RebuildIcons)(), void(*ApplyIcon)(HANDLE hContact, int slot),
-			const char *description, const char *descIcon);
+	CallbackExtraIcon(const char *name, const char *description, const char *descIcon, int(*RebuildIcons)(
+			WPARAM wParam, LPARAM lParam), int(*ApplyIcon)(WPARAM wParam, LPARAM lParam), int(*OnClick)(WPARAM wParam,
+			LPARAM lParam));
 	virtual ~CallbackExtraIcon();
 
 	virtual int getType() const;
@@ -38,8 +39,8 @@ public:
 	virtual int setIcon(HANDLE hContact, void *icon);
 
 private:
-	void(*RebuildIcons)();
-	void(*ApplyIcon)(HANDLE hContact, int slot);
+	int(*RebuildIcons)(WPARAM wParam, LPARAM lParam);
+	int(*ApplyIcon)(WPARAM wParam, LPARAM lParam);
 
 	bool needToRebuild;
 };

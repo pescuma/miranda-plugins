@@ -25,7 +25,8 @@
 class ExtraIcon
 {
 public:
-	ExtraIcon(const char *name, const char *description, const char *descIcon);
+	ExtraIcon(const char *name, const char *description, const char *descIcon, int(*OnClick)(WPARAM wParam,
+			LPARAM lParam));
 	virtual ~ExtraIcon();
 
 	virtual bool needToRebuildIcons() =0;
@@ -49,8 +50,9 @@ protected:
 	std::string name;
 	std::string description;
 	std::string descIcon;
-	int slot;
+	int(*OnClick)(WPARAM wParam, LPARAM lParam);
 
+	int slot;
 };
 
 #endif // __EXTRAICON_H__

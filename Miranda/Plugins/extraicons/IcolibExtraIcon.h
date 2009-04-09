@@ -25,7 +25,8 @@
 class IcolibExtraIcon : public ExtraIcon
 {
 public:
-	IcolibExtraIcon(const char *name, const char *description, const char *descIcon);
+	IcolibExtraIcon(const char *name, const char *description, const char *descIcon, int(*OnClick)(WPARAM wParam,
+			LPARAM lParam));
 	virtual ~IcolibExtraIcon();
 
 	virtual int getType() const;
