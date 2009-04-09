@@ -19,8 +19,9 @@
 
 #include "commons.h"
 
-ExtraIcon::ExtraIcon(const char *name, const char *description, const char *descIcon) :
-	name(name), description(Translate(description)), descIcon(descIcon), slot(-1)
+ExtraIcon::ExtraIcon(const char *name, const char *description, const char *descIcon, int(*OnClick)(WPARAM wParam,
+		LPARAM lParam)) :
+	name(name), description(Translate(description)), descIcon(descIcon), OnClick(OnClick), slot(-1)
 {
 }
 

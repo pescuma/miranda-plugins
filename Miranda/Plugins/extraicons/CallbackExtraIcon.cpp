@@ -19,9 +19,11 @@
 
 #include "commons.h"
 
-CallbackExtraIcon::CallbackExtraIcon(const char *name, void(*RebuildIcons)(), void(*ApplyIcon)(HANDLE hContact,
-		int slot), const char *description, const char *descIcon) :
-	ExtraIcon(name, description, descIcon), RebuildIcons(RebuildIcons), ApplyIcon(ApplyIcon), needToRebuild(true)
+CallbackExtraIcon::CallbackExtraIcon(const char *name, const char *description, const char *descIcon,
+		int(*RebuildIcons)(WPARAM wParam, LPARAM lParam), int(*ApplyIcon)(WPARAM wParam, LPARAM lParam), int(*OnClick)(
+				WPARAM wParam, LPARAM lParam)) :
+	ExtraIcon(name, description, descIcon, OnClick), RebuildIcons(RebuildIcons), ApplyIcon(ApplyIcon), needToRebuild(
+			true)
 {
 }
 
@@ -48,7 +50,7 @@ void CallbackExtraIcon::rebuildIcons()
 	}
 	needToRebuild = false;
 
-	RebuildIcons();
+	RebuildIcons(0, 0);
 }
 
 void CallbackExtraIcon::applyIcon(HANDLE hContact)
@@ -56,7 +58,7 @@ void CallbackExtraIcon::applyIcon(HANDLE hContact)
 	if (!isEnabled() || hContact == NULL)
 		return;
 
-	ApplyIcon(hContact, ConvertToClistSlot(slot));
+	ApplyIcon((WPARAM) hContact, (LPARAM) ConvertToClistSlot(slot));
 }
 
 int CallbackExtraIcon::setIcon(HANDLE hContact, void *icon)
