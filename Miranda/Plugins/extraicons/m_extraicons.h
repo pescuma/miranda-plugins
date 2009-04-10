@@ -53,7 +53,7 @@ typedef struct {
 
 	// [Optional] Callback called when extra icon was clicked
 	// wParam = HANDLE hContact
-	// lParam = 0
+	// lParam = int slot
 	int (*OnClick)(WPARAM wParam, LPARAM lParam);
 
 } EXTRAICON_INFO;
@@ -104,7 +104,8 @@ static HANDLE ExtraIcon_Register(const char *name, const char *description, cons
 	return (HANDLE) CallService(MS_EXTRAICON_REGISTER, (WPARAM) &ei, 0);
 }
 
-static HANDLE ExtraIcon_Register(const char *name, const char *description, const char *descIcon = NULL)
+static HANDLE ExtraIcon_Register(const char *name, const char *description, const char *descIcon = NULL,
+								 int (*OnClick)(WPARAM wParam, LPARAM lParam) = NULL)
 {
 	EXTRAICON_INFO ei = {0};
 	ei.cbSize = sizeof(ei);
@@ -112,6 +113,7 @@ static HANDLE ExtraIcon_Register(const char *name, const char *description, cons
 	ei.name = name;
 	ei.description = description;
 	ei.descIcon = descIcon;
+	ei.OnClick = OnClick;
 
 	return (HANDLE) CallService(MS_EXTRAICON_REGISTER, (WPARAM) &ei, 0);
 }

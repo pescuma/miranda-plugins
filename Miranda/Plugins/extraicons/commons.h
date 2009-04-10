@@ -54,6 +54,7 @@ using namespace std;
 #include <m_metacontacts.h>
 #include <m_icolib.h>
 #include <m_skin.h>
+#include <m_userinfo.h>
 
 #include "resource.h"
 #include "m_extraicons.h"

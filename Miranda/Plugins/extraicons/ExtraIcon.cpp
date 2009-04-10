@@ -75,3 +75,12 @@ void ExtraIcon::applyIcons()
 		hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDNEXT, (WPARAM) hContact, 0);
 	}
 }
+
+void ExtraIcon::onClick(HANDLE hContact)
+{
+	if (OnClick == NULL)
+		return;
+
+	OnClick((WPARAM) hContact, (LPARAM) ConvertToClistSlot(slot));
+}
+
