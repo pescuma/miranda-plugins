@@ -100,21 +100,25 @@ static void VisibilityInit()
 	}
 }
 
+static int EmailOnClick(WPARAM wParam, LPARAM lParam);
+static int HomepageOnClick(WPARAM wParam, LPARAM lParam);
+
 struct Info
 {
 	const char *name;
 	const char *desc;
 	const char *icon;
 	const char *db[4];
+	int (*OnClick)(WPARAM wParam, LPARAM lParam);
 	HANDLE hExtraIcon;
 
 } infos[] = {
 
-{ "email", "E-mail", "core_main_14", { NULL, "e-mail", "UserInfo", "Mye-mail0" }, NULL },
+{ "email", "E-mail", "core_main_14", { NULL, "e-mail", "UserInfo", "Mye-mail0" }, &EmailOnClick, NULL },
 
-{ "sms", "Phone/SMS", "core_main_17", { NULL, "Cellular", "UserInfo", "MyPhone0" }, NULL },
+{ "sms", "Phone/SMS", "core_main_17", { NULL, "Cellular", "UserInfo", "MyPhone0" }, NULL, NULL },
 
-{ "homepage", "Homepage", "core_main_2", { NULL, "Homepage", "UserInfo", "Homepage" }, NULL },
+{ "homepage", "Homepage", "core_main_2", { NULL, "Homepage", "UserInfo", "Homepage" }, &HomepageOnClick, NULL },
 
 };
 
@@ -196,12 +200,82 @@ static int SettingChanged(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+static int EmailOnClick(WPARAM wParam, LPARAM lParam)
+{
+	HANDLE hContact = (HANDLE) wParam;
+	if (hContact == NULL)
+		return 0;
+
+	char *proto = (char*) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
+	if (IsEmpty(proto))
+		return 0;
+
+	Info &info = infos[0];
+
+	bool found = false;
+	for (unsigned int j = 0; !found && j < MAX_REGS(info.db); j += 2)
+	{
+		if (info.db[j + 1] == NULL)
+			break;
+
+		DBVARIANT dbv = { 0 };
+		if (!DBGetContactSettingString(hContact, info.db[j] == NULL ? proto : info.db[j], info.db[j+1], &dbv))
+		{
+			if (!IsEmpty(dbv.ptszVal))
+			{
+				char cmd[1024];
+				mir_snprintf(cmd, MAX_REGS(cmd), "mailto:%s", dbv.ptszVal);
+				ShellExecute(NULL, "open", cmd, NULL, NULL, SW_SHOW);
+				found = true;
+			}
+
+			DBFreeVariant(&dbv);
+		}
+	}
+
+	return 0;
+}
+
+static int HomepageOnClick(WPARAM wParam, LPARAM lParam)
+{
+	HANDLE hContact = (HANDLE) wParam;
+	if (hContact == NULL)
+		return 0;
+
+	char *proto = (char*) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
+	if (IsEmpty(proto))
+		return 0;
+
+	Info &info = infos[2];
+
+	bool found = false;
+	for (unsigned int j = 0; !found && j < MAX_REGS(info.db); j += 2)
+	{
+		if (info.db[j + 1] == NULL)
+			break;
+
+		DBVARIANT dbv = { 0 };
+		if (!DBGetContactSettingString(hContact, info.db[j] == NULL ? proto : info.db[j], info.db[j+1], &dbv))
+		{
+			if (!IsEmpty(dbv.ptszVal))
+			{
+				ShellExecute(NULL, "open", dbv.ptszVal, NULL, NULL, SW_SHOW);
+				found = true;
+			}
+
+			DBFreeVariant(&dbv);
+		}
+	}
+
+	return 0;
+}
+
 static void DBExtraIconsInit()
 {
 	for (unsigned int i = 0; i < MAX_REGS(infos); ++i)
 	{
 		Info &info = infos[i];
-		info.hExtraIcon = ExtraIcon_Register(info.name, info.desc, info.icon);
+		info.hExtraIcon = ExtraIcon_Register(info.name, info.desc, info.icon, info.OnClick);
 	}
 
 	HANDLE hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDFIRST, 0, 0);
@@ -282,7 +356,18 @@ static int ProtocolApplyIcon(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+static int ProtocolOnClick(WPARAM wParam, LPARAM lParam)
+{
+	HANDLE hContact = (HANDLE) wParam;
+	if (hContact == NULL)
+		return 0;
+
+	CallService(MS_USERINFO_SHOWDIALOG, (WPARAM) hContact, 0);
+	return 0;
+}
+
 static void ProtocolInit()
 {
-	hExtraProto = ExtraIcon_Register("protocol", "Account", "core_main_34", ProtocolRebuildIcons, ProtocolApplyIcon);
+	hExtraProto = ExtraIcon_Register("protocol", "Account", "core_main_34", &ProtocolRebuildIcons, &ProtocolApplyIcon,
+			&ProtocolOnClick);
 }

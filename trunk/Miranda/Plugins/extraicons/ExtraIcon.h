@@ -33,6 +33,7 @@ public:
 	virtual void rebuildIcons() =0;
 	virtual void applyIcons();
 	virtual void applyIcon(HANDLE hContact) =0;
+	virtual void onClick(HANDLE hContact);
 
 	virtual int setIcon(HANDLE hContact, void *icon) =0;
 
