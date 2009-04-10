@@ -52,6 +52,7 @@ int PreShutdown(WPARAM wParam, LPARAM lParam);
 int IconsChanged(WPARAM wParam, LPARAM lParam);
 int ClistExtraListRebuild(WPARAM wParam, LPARAM lParam);
 int ClistExtraImageApply(WPARAM wParam, LPARAM lParam);
+int ClistExtraClick(WPARAM wParam, LPARAM lParam);
 
 int ExtraIcon_Register(WPARAM wParam, LPARAM lParam);
 int ExtraIcon_SetIcon(WPARAM wParam, LPARAM lParam);
@@ -95,6 +96,7 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	hHooks.push_back(HookEvent(ME_SYSTEM_PRESHUTDOWN, &PreShutdown));
 	hHooks.push_back(HookEvent(ME_CLIST_EXTRA_LIST_REBUILD, &ClistExtraListRebuild));
 	hHooks.push_back(HookEvent(ME_CLIST_EXTRA_IMAGE_APPLY, &ClistExtraImageApply));
+	hHooks.push_back(HookEvent(ME_CLIST_EXTRA_CLICK, &ClistExtraClick));
 
 
 	// Services
@@ -349,6 +351,26 @@ int ClistExtraImageApply(WPARAM wParam, LPARAM lParam)
 
 	for (unsigned int i = 0; i < extraIcons.size(); ++i)
 		extraIcons[i]->applyIcon(hContact);
+
+	return 0;
+}
+
+int ClistExtraClick(WPARAM wParam, LPARAM lParam)
+{
+	HANDLE hContact = (HANDLE) wParam;
+	if (hContact == NULL)
+		return 0;
+
+	int extra = (int) lParam;
+
+	for (unsigned int i = 0; i < extraIcons.size(); ++i)
+	{
+		if (ConvertToClistSlot(extraIcons[i]->getSlot()) == extra)
+		{
+			extraIcons[i]->onClick(hContact);
+			break;
+		}
+	}
 
 	return 0;
 }
