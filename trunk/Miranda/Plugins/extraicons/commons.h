@@ -83,7 +83,6 @@ extern vector<HANDLE> hHooks;
 extern vector<ExtraIcon*> extraIcons;
 ExtraIcon * GetExtraIconBySlot(int slot);
 
-int GetClistNumberOfSlots();
 int GetNumberOfSlots();
 int ConvertToClistSlot(int slot);
 

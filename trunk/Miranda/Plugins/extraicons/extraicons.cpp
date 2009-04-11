@@ -47,6 +47,9 @@ vector<ExtraIcon*> extraIcons;
 char *metacontacts_proto = NULL;
 BOOL clistRebuildAlreadyCalled = FALSE;
 
+int clistFirstSlot = 0;
+int clistSlotCount = 0;
+
 int ModulesLoaded(WPARAM wParam, LPARAM lParam);
 int PreShutdown(WPARAM wParam, LPARAM lParam);
 int IconsChanged(WPARAM wParam, LPARAM lParam);
@@ -83,6 +86,28 @@ extern "C" __declspec(dllexport) const MUUID* MirandaPluginInterfaces(void)
 	return interfaces;
 }
 
+static void RegisterIcon(char *name, char *section, char *description, int id)
+{
+	HICON hIcon = (HICON) CallService(MS_SKIN2_GETICON, 0, (LPARAM) name);
+	if (hIcon != NULL)
+		return;
+
+	SKINICONDESC sid = { 0 };
+	sid.cbSize = sizeof(SKINICONDESC);
+	sid.flags = SIDF_TCHAR;
+	sid.pszName = name;
+	sid.pszSection = section;
+	sid.pszDescription = description;
+
+	int cx = GetSystemMetrics(SM_CXSMICON);
+	sid.hDefaultIcon = (HICON) LoadImage(hInst, MAKEINTRESOURCE(id), IMAGE_ICON, cx, cx, LR_DEFAULTCOLOR | LR_SHARED);
+
+	CallService(MS_SKIN2_ADDICON, 0, (LPARAM)&sid);
+
+	if (sid.hDefaultIcon)
+		DestroyIcon(sid.hDefaultIcon);
+}
+
 extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 {
 	pluginLink = link;
@@ -90,8 +115,18 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	mir_getMMI(&mmi);
 	mir_getUTFI(&utfi);
 
+	DWORD ret = CallService(MS_CLUI_GETCAPS, CLUICAPS_FLAGS2, 0);
+	clistFirstSlot = HIWORD(ret);
+	clistSlotCount = LOWORD(ret);
 
-	// hooks
+
+	// Icons
+	RegisterIcon("AlwaysVis", "Contact List", "Always Visible", IDI_ALWAYSVIS);
+	RegisterIcon("NeverVis", "Contact List", "Never Visible", IDI_NEVERVIS);
+	RegisterIcon("ChatActivity", "Contact List", "Chat Activity", IDI_CHAT);
+
+
+	// Hooks
 	hHooks.push_back(HookEvent(ME_SYSTEM_MODULESLOADED, &ModulesLoaded));
 	hHooks.push_back(HookEvent(ME_SYSTEM_PRESHUTDOWN, &PreShutdown));
 	hHooks.push_back(HookEvent(ME_CLIST_EXTRA_LIST_REBUILD, &ClistExtraListRebuild));
@@ -175,17 +210,9 @@ int PreShutdown(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-int GetClistNumberOfSlots()
-{
-	if (!ServiceExists(MS_CLUI_GETCAPS))
-		return 0;
-
-	return CallService(MS_CLUI_GETCAPS, 0, CLUIF2_EXTRACOLUMNCOUNT);
-}
-
 int GetNumberOfSlots()
 {
-	return MIN(GetClistNumberOfSlots(), extraIcons.size());
+	return MIN(clistSlotCount, extraIcons.size());
 }
 
 int ConvertToClistSlot(int slot)
@@ -193,7 +220,7 @@ int ConvertToClistSlot(int slot)
 	if (slot < 0)
 		return slot;
 
-	return GetClistNumberOfSlots() - 1 - slot;
+	return clistSlotCount + clistFirstSlot - 1 - slot;
 }
 
 int Clist_SetExtraIcon(HANDLE hContact, int slot, HANDLE hImage)
@@ -286,6 +313,8 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 	if (slot == (WORD) -1)
 		slot = -1;
 	else if (slot == (WORD) -2)
+		slot = -2;
+	else if (slot >= clistSlotCount)
 		slot = -2;
 
 	int origSlot = slot;
