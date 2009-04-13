@@ -21,7 +21,7 @@
 
 ExtraIcon::ExtraIcon(const char *name, const char *description, const char *descIcon, int(*OnClick)(WPARAM wParam,
 		LPARAM lParam)) :
-	name(name), description(Translate(description)), descIcon(descIcon), OnClick(OnClick), slot(-1)
+	name(name), description(description), descIcon(descIcon), OnClick(OnClick), slot(-1)
 {
 }
 
@@ -39,9 +39,19 @@ const char *ExtraIcon::getDescription() const
 	return description.c_str();
 }
 
+void ExtraIcon::setDescription(const char *desc)
+{
+	description = desc;
+}
+
 const char *ExtraIcon::getDescIcon() const
 {
 	return descIcon.c_str();
+}
+
+void ExtraIcon::setDescIcon(const char *icon)
+{
+	descIcon = icon;
 }
 
 int ExtraIcon::getSlot() const

@@ -39,7 +39,9 @@ public:
 
 	virtual const char *getName() const;
 	virtual const char *getDescription() const;
+	virtual void setDescription(const char *desc);
 	virtual const char *getDescIcon() const;
+	virtual void setDescIcon(const char *icon);
 	virtual int getType() const =0;
 
 	virtual int getSlot() const;

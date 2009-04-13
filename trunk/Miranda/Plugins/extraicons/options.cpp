@@ -210,8 +210,14 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 
 				for (int j = 0; j < numSlots; ++j)
 				{
-					if (SendDlgItemMessage(hwndDlg, IDC_SLOT + j * 2, CB_GETCURSEL, 0, 0) != 0)
+					// Has icon?
+					bool found = false;
+					for (i = 0; !found && i < (int) extraIcons.size(); ++i)
+						found = (slots[i] == j);
+					if (found)
 						continue;
+
+					// Had icon?
 					if (GetExtraIconBySlot(j) == NULL)
 						continue;
 

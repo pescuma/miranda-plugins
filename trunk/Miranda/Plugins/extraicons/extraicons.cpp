@@ -86,7 +86,7 @@ extern "C" __declspec(dllexport) const MUUID* MirandaPluginInterfaces(void)
 	return interfaces;
 }
 
-static void RegisterIcon(char *name, char *section, char *description, int id)
+static void IcoLib_Register(char *name, char *section, char *description, int id)
 {
 	HICON hIcon = (HICON) CallService(MS_SKIN2_GETICON, 0, (LPARAM) name);
 	if (hIcon != NULL)
@@ -121,9 +121,9 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 
 
 	// Icons
-	RegisterIcon("AlwaysVis", "Contact List", "Always Visible", IDI_ALWAYSVIS);
-	RegisterIcon("NeverVis", "Contact List", "Never Visible", IDI_NEVERVIS);
-	RegisterIcon("ChatActivity", "Contact List", "Chat Activity", IDI_CHAT);
+	IcoLib_Register("AlwaysVis", "Contact List", "Always Visible", IDI_ALWAYSVIS);
+	IcoLib_Register("NeverVis", "Contact List", "Never Visible", IDI_NEVERVIS);
+	IcoLib_Register("ChatActivity", "Contact List", "Chat Activity", IDI_CHAT);
 
 
 	// Hooks
@@ -280,6 +280,8 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 	if (ei->type == EXTRAICON_TYPE_CALLBACK && (ei->ApplyIcon == NULL || ei->RebuildIcons == NULL))
 		return 0;
 
+	const char *desc = Translate(ei->description);
+
 	for (unsigned int i = 0; i < extraIcons.size(); ++i)
 	{
 		ExtraIcon *extra = extraIcons[i];
@@ -288,20 +290,32 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 
 		if (ei->type != extra->getType())
 			return 0;
-		else
-			return i + 1;
+
+		// Found one, now merge it
+
+		if (stricmp(extra->getDescription(), desc))
+		{
+			string newDesc = extra->getDescription();
+			newDesc += " / ";
+			newDesc += desc;
+			extra->setDescription(newDesc.c_str());
+		}
+
+		if (IsEmpty(extra->getDescIcon()) && !IsEmpty(ei->descIcon))
+			extra->setDescIcon(ei->descIcon);
+
+		return i + 1;
 	}
 
 	ExtraIcon *extra;
 	switch (ei->type)
 	{
 		case EXTRAICON_TYPE_CALLBACK:
-			extra = new CallbackExtraIcon(ei->name, ei->description, ei->descIcon == NULL ? "" : ei->descIcon,
-					ei->RebuildIcons, ei->ApplyIcon, ei->OnClick);
+			extra = new CallbackExtraIcon(ei->name, desc, ei->descIcon == NULL ? "" : ei->descIcon, ei->RebuildIcons,
+					ei->ApplyIcon, ei->OnClick);
 			break;
 		case EXTRAICON_TYPE_ICOLIB:
-			extra = new IcolibExtraIcon(ei->name, ei->description, ei->descIcon == NULL ? "" : ei->descIcon,
-					ei->OnClick);
+			extra = new IcolibExtraIcon(ei->name, desc, ei->descIcon == NULL ? "" : ei->descIcon, ei->OnClick);
 			break;
 		default:
 			return 0;
