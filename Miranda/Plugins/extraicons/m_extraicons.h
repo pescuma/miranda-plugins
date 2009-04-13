@@ -91,6 +91,9 @@ static HANDLE ExtraIcon_Register(const char *name, const char *description, cons
 								 int (*ApplyIcon)(WPARAM wParam, LPARAM lParam),
 								 int (*OnClick)(WPARAM wParam, LPARAM lParam) = NULL)
 {
+	if (!ServiceExists(MS_EXTRAICON_REGISTER))
+		return NULL;
+
 	EXTRAICON_INFO ei = {0};
 	ei.cbSize = sizeof(ei);
 	ei.type = EXTRAICON_TYPE_CALLBACK;
@@ -107,6 +110,9 @@ static HANDLE ExtraIcon_Register(const char *name, const char *description, cons
 static HANDLE ExtraIcon_Register(const char *name, const char *description, const char *descIcon = NULL,
 								 int (*OnClick)(WPARAM wParam, LPARAM lParam) = NULL)
 {
+	if (!ServiceExists(MS_EXTRAICON_REGISTER))
+		return NULL;
+
 	EXTRAICON_INFO ei = {0};
 	ei.cbSize = sizeof(ei);
 	ei.type = EXTRAICON_TYPE_ICOLIB;
