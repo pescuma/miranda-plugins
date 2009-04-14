@@ -139,7 +139,7 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 					char desc[256];
 					mir_snprintf(desc, MAX_REGS(desc), "Slot %d:", i + 1);
 
-					HWND tmp = CreateWindow("STATIC", desc,
+					HWND tmp = CreateWindow("STATIC", Translate(desc),
 							WS_CHILD | WS_VISIBLE,
 							rcLabel.left, rcLabel.top + i * height,
 							rcLabel.right - rcLabel.left, rcLabel.bottom - rcLabel.top,
@@ -175,8 +175,25 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 		}
 		case WM_COMMAND:
 		{
-			if (HIWORD(wParam) != CBN_SELCHANGE || (HWND) lParam != GetFocus())
+			HWND cbl = (HWND) lParam;
+			if (HIWORD(wParam) != CBN_SELCHANGE || cbl != GetFocus())
 				return 0;
+
+			int sel = SendMessage(cbl, CB_GETCURSEL, 0, 0);
+			if (sel > 0)
+			{
+				for (int i = 0; i < numSlots; ++i)
+				{
+					int id = IDC_SLOT + i * 2;
+
+					if (GetDlgItem(hwndDlg, id) == cbl)
+						continue;
+
+					int sl = SendDlgItemMessage(hwndDlg, id, CB_GETCURSEL, 0, 0);
+					if (sl == sel)
+						SendDlgItemMessage(hwndDlg, id, CB_SETCURSEL, 0, 0);
+				}
+			}
 
 			SendMessage(GetParent(hwndDlg), PSM_CHANGED, 0, 0);
 			break;

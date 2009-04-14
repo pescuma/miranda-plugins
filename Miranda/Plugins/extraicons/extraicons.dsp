@@ -212,6 +212,14 @@ SOURCE=.\res\Chatchannel.ico
 # End Source File
 # Begin Source File
 
+SOURCE=.\res\female.ico
+# End Source File
+# Begin Source File
+
+SOURCE=.\res\male.ico
+# End Source File
+# Begin Source File
+
 SOURCE=.\res\NeverVis.ico
 # End Source File
 # Begin Source File
