@@ -20,6 +20,7 @@ del *.dll
 copy ..\Docs\%name%_changelog.txt
 copy ..\Docs\%name%_version.txt
 copy ..\Docs\%name%_readme.txt
+copy ..\Docs\%name%.png
 mkdir Docs
 cd Docs
 del /Q *.*
@@ -89,6 +90,7 @@ pause
 "C:\Program Files\FileZilla\FileZilla.exe" -u .\%name%_changelog.txt %ftp% -overwrite -close 
 "C:\Program Files\FileZilla\FileZilla.exe" -u .\%name%_version.txt %ftp% -overwrite -close 
 "C:\Program Files\FileZilla\FileZilla.exe" -u .\%name%_readme.txt %ftp% -overwrite -close 
+"C:\Program Files\FileZilla\FileZilla.exe" -u .\%name%.png %ftp% -overwrite -close 
 
 :END
 
