@@ -125,14 +125,20 @@ struct Info
 	const char *name;
 	const char *desc;
 	const char *icon;
-	const char *db[6];
+	const char *db[8];
 	void (*SetIcon)(HANDLE hContact, Info *info, const char *text);
 	void (*OnClick)(Info *info, const char *text);
 	HANDLE hExtraIcon;
 } infos[] = { 
-	{ "email", "E-mail", "core_main_14", { NULL, "e-mail", "UserInfo", "Mye-mail0", "UserInfo", "e-mail" }, DefaultSetIcon, &EmailOnClick, NULL }, 
-	{ "sms", "Phone/SMS", "core_main_17", { NULL, "Cellular", "UserInfo", "MyPhone0", "UserInfo", "Phone" }, DefaultSetIcon, NULL, NULL }, 
-	{ "homepage", "Homepage", "core_main_2", { NULL, "Homepage", "UserInfo", "Homepage" }, DefaultSetIcon, &HomepageOnClick, NULL }, 
+	{ "email", "E-mail", "core_main_14", { NULL, "e-mail", 
+										   "UserInfo", "e-mail", 
+										   "UserInfo", "Mye-mail0" }, DefaultSetIcon, &EmailOnClick, NULL }, 
+	{ "sms", "Phone/SMS", "core_main_17", { NULL, "Cellular", 
+											"UserInfo", "Cellular",
+											"UserInfo", "Phone", 
+											"UserInfo", "MyPhone0" }, DefaultSetIcon, NULL, NULL }, 
+	{ "homepage", "Homepage", "core_main_2", { NULL, "Homepage", 
+											   "UserInfo", "Homepage" }, DefaultSetIcon, &HomepageOnClick, NULL }, 
 };
 
 static void EmailOnClick(Info *info, const char *text)

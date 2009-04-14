@@ -114,6 +114,8 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 	{
 		case WM_INITDIALOG:
 		{
+			TranslateDialogDefault(hwndDlg);
+
 			numSlots = GetNumberOfSlots();
 
 			RECT rcLabel;
