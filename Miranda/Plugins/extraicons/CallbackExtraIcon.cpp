@@ -20,10 +20,9 @@
 #include "commons.h"
 
 CallbackExtraIcon::CallbackExtraIcon(const char *name, const char *description, const char *descIcon,
-		int(*RebuildIcons)(WPARAM wParam, LPARAM lParam), int(*ApplyIcon)(WPARAM wParam, LPARAM lParam), int(*OnClick)(
-				WPARAM wParam, LPARAM lParam)) :
-	ExtraIcon(name, description, descIcon, OnClick), RebuildIcons(RebuildIcons), ApplyIcon(ApplyIcon), needToRebuild(
-			true)
+		MIRANDAHOOK RebuildIcons, MIRANDAHOOK ApplyIcon, MIRANDAHOOKPARAM OnClick, LPARAM param) :
+	ExtraIcon(name, description, descIcon, OnClick, param), RebuildIcons(RebuildIcons), ApplyIcon(ApplyIcon),
+			needToRebuild(true)
 {
 }
 

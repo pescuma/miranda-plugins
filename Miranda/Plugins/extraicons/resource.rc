@@ -70,6 +70,8 @@ END
 IDI_ALWAYSVIS           ICON    DISCARDABLE     "res\\AlwaysVis.ico"
 IDI_NEVERVIS            ICON    DISCARDABLE     "res\\NeverVis.ico"
 IDI_CHAT                ICON    DISCARDABLE     "res\\Chatchannel.ico"
+IDI_MALE                ICON    DISCARDABLE     "res\\male.ico"
+IDI_FEMALE              ICON    DISCARDABLE     "res\\female.ico"
 #endif    // Neutral resources
 /////////////////////////////////////////////////////////////////////////////
 

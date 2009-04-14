@@ -42,19 +42,22 @@ typedef struct {
 
 	// Callback to add icons to clist, calling MS_CLIST_EXTRA_ADD_ICON
 	// wParam=lParam=0
-	int (*RebuildIcons)(WPARAM wParam, LPARAM lParam);
+	MIRANDAHOOK RebuildIcons;
 
 	// Callback to set the icon to clist, calling MS_CLIST_EXTRA_SET_ICON or MS_EXTRAICON_SET_ICON
 	// wParam = HANDLE hContact
 	// lParam = int slot
-	int (*ApplyIcon)(WPARAM wParam, LPARAM lParam);
+	MIRANDAHOOK ApplyIcon;
 
 	// Other optional callbacks
 
 	// [Optional] Callback called when extra icon was clicked
 	// wParam = HANDLE hContact
 	// lParam = int slot
-	int (*OnClick)(WPARAM wParam, LPARAM lParam);
+	// param = onClickParam
+	MIRANDAHOOKPARAM OnClick;
+
+	LPARAM onClickParam;
 
 } EXTRAICON_INFO;
 
@@ -87,9 +90,9 @@ typedef struct {
 #ifdef __cplusplus
 
 static HANDLE ExtraIcon_Register(const char *name, const char *description, const char *descIcon,
-								 int (*RebuildIcons)(WPARAM wParam, LPARAM lParam),
-								 int (*ApplyIcon)(WPARAM wParam, LPARAM lParam),
-								 int (*OnClick)(WPARAM wParam, LPARAM lParam) = NULL)
+								 MIRANDAHOOK RebuildIcons,
+								 MIRANDAHOOK ApplyIcon,
+								 MIRANDAHOOKPARAM OnClick = NULL, LPARAM onClickParam = NULL)
 {
 	if (!ServiceExists(MS_EXTRAICON_REGISTER))
 		return NULL;
@@ -103,12 +106,13 @@ static HANDLE ExtraIcon_Register(const char *name, const char *description, cons
 	ei.RebuildIcons = RebuildIcons;
 	ei.ApplyIcon = ApplyIcon;
 	ei.OnClick = OnClick;
+	ei.onClickParam = onClickParam;
 
 	return (HANDLE) CallService(MS_EXTRAICON_REGISTER, (WPARAM) &ei, 0);
 }
 
 static HANDLE ExtraIcon_Register(const char *name, const char *description, const char *descIcon = NULL,
-								 int (*OnClick)(WPARAM wParam, LPARAM lParam) = NULL)
+								 MIRANDAHOOKPARAM OnClick = NULL, LPARAM onClickParam = NULL)
 {
 	if (!ServiceExists(MS_EXTRAICON_REGISTER))
 		return NULL;
@@ -120,6 +124,7 @@ static HANDLE ExtraIcon_Register(const char *name, const char *description, cons
 	ei.description = description;
 	ei.descIcon = descIcon;
 	ei.OnClick = OnClick;
+	ei.onClickParam = onClickParam;
 
 	return (HANDLE) CallService(MS_EXTRAICON_REGISTER, (WPARAM) &ei, 0);
 }
