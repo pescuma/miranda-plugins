@@ -19,7 +19,7 @@ By now it is supported my clist_modern and clist_mw from 0.8#29. I intend to add
 Thanks to FYR for some code that I copied from clist_modern and to Angeli-Ka for the nice icons.
 
 
-To report bugs/make suggestions, go to the forum thread: http://forums.miranda-im.org/showthread.php?t=
+To report bugs/make suggestions, go to the forum thread: http://forums.miranda-im.org/showthread.php?t=178318
 
 
 
