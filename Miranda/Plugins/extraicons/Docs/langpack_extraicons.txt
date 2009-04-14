@@ -1,6 +1,7 @@
 ; Extra Icons Service
 ; Author: Pescuma
 
+[Select the extra icons to be shown in the contact list:]
 [Slot 1]
 [Slot 2]
 [Slot 3]
