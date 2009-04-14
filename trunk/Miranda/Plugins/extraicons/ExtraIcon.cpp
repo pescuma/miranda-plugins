@@ -19,9 +19,9 @@
 
 #include "commons.h"
 
-ExtraIcon::ExtraIcon(const char *name, const char *description, const char *descIcon, int(*OnClick)(WPARAM wParam,
-		LPARAM lParam)) :
-	name(name), description(description), descIcon(descIcon), OnClick(OnClick), slot(-1)
+ExtraIcon::ExtraIcon(const char *name, const char *description, const char *descIcon, MIRANDAHOOKPARAM OnClick,
+		LPARAM param) :
+	name(name), description(description), descIcon(descIcon), OnClick(OnClick), onClickParam(param), slot(-1)
 {
 }
 
@@ -91,6 +91,6 @@ void ExtraIcon::onClick(HANDLE hContact)
 	if (OnClick == NULL)
 		return;
 
-	OnClick((WPARAM) hContact, (LPARAM) ConvertToClistSlot(slot));
+	OnClick((WPARAM) hContact, (LPARAM) ConvertToClistSlot(slot), onClickParam);
 }
 

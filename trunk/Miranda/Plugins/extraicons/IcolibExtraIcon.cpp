@@ -19,9 +19,9 @@
 
 #include "commons.h"
 
-IcolibExtraIcon::IcolibExtraIcon(const char *name, const char *description, const char *descIcon, int(*OnClick)(
-		WPARAM wParam, LPARAM lParam)) :
-	ExtraIcon(name, description, descIcon, OnClick)
+IcolibExtraIcon::IcolibExtraIcon(const char *name, const char *description, const char *descIcon,
+		MIRANDAHOOKPARAM OnClick, LPARAM param) :
+	ExtraIcon(name, description, descIcon, OnClick, param)
 {
 	char setting[512];
 	mir_snprintf(setting, MAX_REGS(setting), "%s/%s", MODULE_NAME, name);

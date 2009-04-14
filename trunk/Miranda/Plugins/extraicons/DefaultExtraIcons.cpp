@@ -34,13 +34,11 @@
 
 static void ProtocolInit();
 static void DBExtraIconsInit();
-static void VisibilityInit();
 
 void DefaultExtraIcons_Load()
 {
 	ProtocolInit();
 	DBExtraIconsInit();
-	VisibilityInit();
 }
 
 void DefaultExtraIcons_Unload()
@@ -49,7 +47,10 @@ void DefaultExtraIcons_Unload()
 
 // DB extra icons ///////////////////////////////////////////////////////////////////////
 
+struct Info;
+
 HANDLE hExtraVisibility = NULL;
+HANDLE hExtraGender = NULL;
 
 static void SetVisibility(HANDLE hContact, int apparentMode, BOOL clear)
 {
@@ -87,40 +88,69 @@ static void SetVisibility(HANDLE hContact, int apparentMode, BOOL clear)
 	ExtraIcon_SetIcon(hExtraVisibility, hContact, ico);
 }
 
-static void VisibilityInit()
+static void SetGender(HANDLE hContact, int gender, BOOL clear)
 {
-	hExtraVisibility = ExtraIcon_Register("visibility", "Visibility/Chat activity", "AlwaysVis");
+	if (hContact == NULL)
+		return;
 
-	HANDLE hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDFIRST, 0, 0);
-	while (hContact != NULL)
-	{
-		SetVisibility(hContact, -1, FALSE);
+	char *proto = (char*) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
+	if (IsEmpty(proto))
+		return;
 
-		hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDNEXT, (WPARAM) hContact, 0);
-	}
+	if (gender < 0)
+		gender = DBGetContactSettingByte(hContact, proto, "Gender", -1);
+	if (gender < 0)
+		gender = DBGetContactSettingByte(hContact, "UserInfo", "Gender", -1);
+
+	const char *ico = NULL;
+	if (gender == 'M')
+		ico = "gender_male";
+	else if (gender == 'F')
+		ico = "gender_female";
+	else
+		ico = NULL;
+
+	if (ico == NULL && !clear)
+		return;
+
+	ExtraIcon_SetIcon(hExtraGender, hContact, ico);
 }
 
-static int EmailOnClick(WPARAM wParam, LPARAM lParam);
-static int HomepageOnClick(WPARAM wParam, LPARAM lParam);
+static void EmailOnClick(Info *info, const char *text);
+static void HomepageOnClick(Info *info, const char *text);
+static void DefaultSetIcon(HANDLE hContact, Info *info, const char *text);
 
 struct Info
 {
 	const char *name;
 	const char *desc;
 	const char *icon;
-	const char *db[4];
-	int (*OnClick)(WPARAM wParam, LPARAM lParam);
+	const char *db[6];
+	void (*SetIcon)(HANDLE hContact, Info *info, const char *text);
+	void (*OnClick)(Info *info, const char *text);
 	HANDLE hExtraIcon;
-
-} infos[] = {
-
-{ "email", "E-mail", "core_main_14", { NULL, "e-mail", "UserInfo", "Mye-mail0" }, &EmailOnClick, NULL },
-
-{ "sms", "Phone/SMS", "core_main_17", { NULL, "Cellular", "UserInfo", "MyPhone0" }, NULL, NULL },
-
-{ "homepage", "Homepage", "core_main_2", { NULL, "Homepage", "UserInfo", "Homepage" }, &HomepageOnClick, NULL },
-
+} infos[] = { 
+	{ "email", "E-mail", "core_main_14", { NULL, "e-mail", "UserInfo", "Mye-mail0", "UserInfo", "e-mail" }, DefaultSetIcon, &EmailOnClick, NULL }, 
+	{ "sms", "Phone/SMS", "core_main_17", { NULL, "Cellular", "UserInfo", "MyPhone0", "UserInfo", "Phone" }, DefaultSetIcon, NULL, NULL }, 
+	{ "homepage", "Homepage", "core_main_2", { NULL, "Homepage", "UserInfo", "Homepage" }, DefaultSetIcon, &HomepageOnClick, NULL }, 
 };
+
+static void EmailOnClick(Info *info, const char *text)
+{
+	char cmd[1024];
+	mir_snprintf(cmd, MAX_REGS(cmd), "mailto:%s", text);
+	ShellExecute(NULL, "open", cmd, NULL, NULL, SW_SHOW);
+}
+
+static void HomepageOnClick(Info *info, const char *text)
+{
+	ShellExecute(NULL, "open", text, NULL, NULL, SW_SHOW);
+}
+
+static void DefaultSetIcon(HANDLE hContact, Info *info, const char *text)
+{
+	ExtraIcon_SetIcon(info->hExtraIcon, hContact, text ? info->icon : NULL);
+}
 
 static void SetExtraIcons(HANDLE hContact)
 {
@@ -145,13 +175,13 @@ static void SetExtraIcons(HANDLE hContact)
 			if (!DBGetContactSettingString(hContact, info.db[j] == NULL ? proto : info.db[j], info.db[j+1], &dbv))
 			{
 				if (!IsEmpty(dbv.pszVal))
+				{
+					info.SetIcon(hContact, &info, dbv.pszVal);
 					show = true;
+				}
 				DBFreeVariant(&dbv);
 			}
 		}
-
-		if (show)
-			ExtraIcon_SetIcon(info.hExtraIcon, hContact, info.icon);
 	}
 }
 
@@ -175,6 +205,12 @@ static int SettingChanged(WPARAM wParam, LPARAM lParam)
 		return 0;
 	}
 
+	if (strcmp(cws->szSetting, "Gender") == 0 && (isProto || strcmp(cws->szModule, "UserInfo") == 0))
+	{
+		SetGender(hContact, cws->value.type == DBVT_DELETED ? 0 : cws->value.bVal, TRUE);
+		return 0;
+	}
+
 	for (unsigned int i = 0; i < MAX_REGS(infos); ++i)
 	{
 		Info &info = infos[i];
@@ -191,7 +227,7 @@ static int SettingChanged(WPARAM wParam, LPARAM lParam)
 				continue;
 
 			bool show = (cws->value.type != DBVT_DELETED && !IsEmpty(cws->value.pszVal));
-			ExtraIcon_SetIcon(info.hExtraIcon, hContact, show ? info.icon : NULL);
+			info.SetIcon(hContact, &info, show ? cws->value.pszVal : NULL);
 
 			break;
 		}
@@ -200,8 +236,11 @@ static int SettingChanged(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-static int EmailOnClick(WPARAM wParam, LPARAM lParam)
+static int DefaultOnClick(WPARAM wParam, LPARAM lParam, LPARAM param)
 {
+	if (param == NULL)
+		return 0;
+
 	HANDLE hContact = (HANDLE) wParam;
 	if (hContact == NULL)
 		return 0;
@@ -210,56 +249,20 @@ static int EmailOnClick(WPARAM wParam, LPARAM lParam)
 	if (IsEmpty(proto))
 		return 0;
 
-	Info &info = infos[0];
+	Info *info = (Info *) param;
 
 	bool found = false;
-	for (unsigned int j = 0; !found && j < MAX_REGS(info.db); j += 2)
+	for (unsigned int j = 0; !found && j < MAX_REGS(info->db); j += 2)
 	{
-		if (info.db[j + 1] == NULL)
+		if (info->db[j + 1] == NULL)
 			break;
 
 		DBVARIANT dbv = { 0 };
-		if (!DBGetContactSettingString(hContact, info.db[j] == NULL ? proto : info.db[j], info.db[j+1], &dbv))
+		if (!DBGetContactSettingString(hContact, info->db[j] == NULL ? proto : info->db[j], info->db[j+1], &dbv))
 		{
 			if (!IsEmpty(dbv.ptszVal))
 			{
-				char cmd[1024];
-				mir_snprintf(cmd, MAX_REGS(cmd), "mailto:%s", dbv.ptszVal);
-				ShellExecute(NULL, "open", cmd, NULL, NULL, SW_SHOW);
-				found = true;
-			}
-
-			DBFreeVariant(&dbv);
-		}
-	}
-
-	return 0;
-}
-
-static int HomepageOnClick(WPARAM wParam, LPARAM lParam)
-{
-	HANDLE hContact = (HANDLE) wParam;
-	if (hContact == NULL)
-		return 0;
-
-	char *proto = (char*) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
-	if (IsEmpty(proto))
-		return 0;
-
-	Info &info = infos[2];
-
-	bool found = false;
-	for (unsigned int j = 0; !found && j < MAX_REGS(info.db); j += 2)
-	{
-		if (info.db[j + 1] == NULL)
-			break;
-
-		DBVARIANT dbv = { 0 };
-		if (!DBGetContactSettingString(hContact, info.db[j] == NULL ? proto : info.db[j], info.db[j+1], &dbv))
-		{
-			if (!IsEmpty(dbv.ptszVal))
-			{
-				ShellExecute(NULL, "open", dbv.ptszVal, NULL, NULL, SW_SHOW);
+				info->OnClick(info, dbv.ptszVal);
 				found = true;
 			}
 
@@ -275,13 +278,20 @@ static void DBExtraIconsInit()
 	for (unsigned int i = 0; i < MAX_REGS(infos); ++i)
 	{
 		Info &info = infos[i];
-		info.hExtraIcon = ExtraIcon_Register(info.name, info.desc, info.icon, info.OnClick);
+		if (info.OnClick)
+			info.hExtraIcon = ExtraIcon_Register(info.name, info.desc, info.icon, DefaultOnClick, (LPARAM) &info);
+		else
+			info.hExtraIcon = ExtraIcon_Register(info.name, info.desc, info.icon);
 	}
+	hExtraVisibility = ExtraIcon_Register("visibility", "Visibility/Chat activity", "AlwaysVis");
+	hExtraGender = ExtraIcon_Register("gender", "Gender", "gender_male");
 
 	HANDLE hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDFIRST, 0, 0);
 	while (hContact != NULL)
 	{
 		SetExtraIcons(hContact);
+		SetVisibility(hContact, -1, FALSE);
+		SetGender(hContact, -1, FALSE);
 
 		hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDNEXT, (WPARAM) hContact, 0);
 	}
@@ -356,7 +366,7 @@ static int ProtocolApplyIcon(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-static int ProtocolOnClick(WPARAM wParam, LPARAM lParam)
+static int ProtocolOnClick(WPARAM wParam, LPARAM lParam, LPARAM param)
 {
 	HANDLE hContact = (HANDLE) wParam;
 	if (hContact == NULL)
@@ -368,6 +378,6 @@ static int ProtocolOnClick(WPARAM wParam, LPARAM lParam)
 
 static void ProtocolInit()
 {
-	hExtraProto = ExtraIcon_Register("protocol", "Account", "core_main_34", &ProtocolRebuildIcons, &ProtocolApplyIcon,
-			&ProtocolOnClick);
+	hExtraProto = ExtraIcon_Register("protocol", "Account", "core_main_34", 
+					&ProtocolRebuildIcons, &ProtocolApplyIcon, &ProtocolOnClick);
 }

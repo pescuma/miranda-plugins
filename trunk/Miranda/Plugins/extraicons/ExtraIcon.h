@@ -25,8 +25,7 @@
 class ExtraIcon
 {
 public:
-	ExtraIcon(const char *name, const char *description, const char *descIcon, int(*OnClick)(WPARAM wParam,
-			LPARAM lParam));
+	ExtraIcon(const char *name, const char *description, const char *descIcon, MIRANDAHOOKPARAM OnClick, LPARAM param);
 	virtual ~ExtraIcon();
 
 	virtual bool needToRebuildIcons() =0;
@@ -53,7 +52,8 @@ protected:
 	std::string name;
 	std::string description;
 	std::string descIcon;
-	int(*OnClick)(WPARAM wParam, LPARAM lParam);
+	MIRANDAHOOKPARAM OnClick;
+	LPARAM onClickParam;
 
 	int slot;
 };

@@ -24,8 +24,8 @@
 PLUGININFOEX pluginInfo = {
 		sizeof(PLUGININFOEX),
 		"Extra Icons Service",
-		PLUGIN_MAKE_VERSION(0,0,0,1),
-		"Extra Icons",
+		PLUGIN_MAKE_VERSION(0,1,0,0),
+		"Extra Icons Service",
 		"Ricardo Pescuma Domenecci",
 		"",
 		"© 2009 Ricardo Pescuma Domenecci",
@@ -124,6 +124,8 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	IcoLib_Register("AlwaysVis", "Contact List", "Always Visible", IDI_ALWAYSVIS);
 	IcoLib_Register("NeverVis", "Contact List", "Never Visible", IDI_NEVERVIS);
 	IcoLib_Register("ChatActivity", "Contact List", "Chat Activity", IDI_CHAT);
+	IcoLib_Register("gender_male", "Contact List", "Male", IDI_MALE);
+	IcoLib_Register("gender_female", "Contact List", "Female", IDI_FEMALE);
 
 
 	// Hooks
@@ -312,10 +314,11 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 	{
 		case EXTRAICON_TYPE_CALLBACK:
 			extra = new CallbackExtraIcon(ei->name, desc, ei->descIcon == NULL ? "" : ei->descIcon, ei->RebuildIcons,
-					ei->ApplyIcon, ei->OnClick);
+					ei->ApplyIcon, ei->OnClick, ei->onClickParam);
 			break;
 		case EXTRAICON_TYPE_ICOLIB:
-			extra = new IcolibExtraIcon(ei->name, desc, ei->descIcon == NULL ? "" : ei->descIcon, ei->OnClick);
+			extra = new IcolibExtraIcon(ei->name, desc, ei->descIcon == NULL ? "" : ei->descIcon, ei->OnClick,
+					ei->onClickParam);
 			break;
 		default:
 			return 0;
