@@ -48,10 +48,11 @@
 <option defaultValue="true" id="gnu.c.link.mingw.so.debug.option.shared.1575843488" name="Shared (-shared)" superClass="gnu.c.link.mingw.so.debug.option.shared" valueType="boolean"/>
 </tool>
 <tool commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG}&quot;${OUTPUT_PREFIX}${OUTPUT}&quot; ${INPUTS}" id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.so.debug.836489507" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.so.debug">
-<option id="gnu.cpp.link.option.paths.1417684678" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths"/>
+<option id="gnu.cpp.link.option.paths.1417684678" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths"/>
 <option defaultValue="true" id="gnu.cpp.link.mingw.so.debug.option.shared.1239249880" name="Shared (-shared)" superClass="gnu.cpp.link.mingw.so.debug.option.shared" valueType="boolean"/>
 <option id="gnu.cpp.link.option.libs.1498281393" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 <listOptionValue builtIn="false" value="gdi32"/>
+<listOptionValue builtIn="false" value="comctl32"/>
 </option>
 <option id="gnu.cpp.link.option.flags.714506212" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 <inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.417851543" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">

@@ -46,6 +46,7 @@ vector<ExtraIcon*> extraIcons;
 
 char *metacontacts_proto = NULL;
 BOOL clistRebuildAlreadyCalled = FALSE;
+BOOL clistApplyAlreadyCalled = FALSE;
 
 int clistFirstSlot = 0;
 int clistSlotCount = 0;
@@ -214,7 +215,8 @@ int PreShutdown(WPARAM wParam, LPARAM lParam)
 
 int GetNumberOfSlots()
 {
-	return MIN(clistSlotCount, extraIcons.size());
+	//	return MIN(clistSlotCount, extraIcons.size());
+	return clistSlotCount;
 }
 
 int ConvertToClistSlot(int slot)
@@ -256,16 +258,13 @@ ExtraIcon * GetExtraIconBySlot(int slot)
 	return NULL;
 }
 
-int GetFirstEmptySlot()
+struct compareFunc : std::binary_function<const ExtraIcon *, const ExtraIcon *, bool>
 {
-	int slots = GetNumberOfSlots();
-	for (int i = 0; i < slots; ++i)
+	bool operator()(const ExtraIcon * one, const ExtraIcon * two) const
 	{
-		if (GetExtraIconBySlot(i) == NULL)
-			return i;
+		return *one < *two;
 	}
-	return -1;
-}
+};
 
 int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 {
@@ -309,15 +308,17 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 		return i + 1;
 	}
 
+	int id = extraIcons.size() + 1;
+
 	ExtraIcon *extra;
 	switch (ei->type)
 	{
 		case EXTRAICON_TYPE_CALLBACK:
-			extra = new CallbackExtraIcon(ei->name, desc, ei->descIcon == NULL ? "" : ei->descIcon, ei->RebuildIcons,
-					ei->ApplyIcon, ei->OnClick, ei->onClickParam);
+			extra = new CallbackExtraIcon(id, ei->name, desc, ei->descIcon == NULL ? "" : ei->descIcon,
+					ei->RebuildIcons, ei->ApplyIcon, ei->OnClick, ei->onClickParam);
 			break;
 		case EXTRAICON_TYPE_ICOLIB:
-			extra = new IcolibExtraIcon(ei->name, desc, ei->descIcon == NULL ? "" : ei->descIcon, ei->OnClick,
+			extra = new IcolibExtraIcon(id, ei->name, desc, ei->descIcon == NULL ? "" : ei->descIcon, ei->OnClick,
 					ei->onClickParam);
 			break;
 		default:
@@ -325,38 +326,43 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 	}
 
 	char setting[512];
+	mir_snprintf(setting, MAX_REGS(setting), "Position_%s", ei->name);
+	extra->setPosition(DBGetContactSettingWord(NULL, MODULE_NAME, setting, 1000));
+
 	mir_snprintf(setting, MAX_REGS(setting), "Slot_%s", ei->name);
-	int slot = DBGetContactSettingWord(NULL, MODULE_NAME, setting, -2);
+	int slot = DBGetContactSettingWord(NULL, MODULE_NAME, setting, 1);
 	if (slot == (WORD) -1)
 		slot = -1;
-	else if (slot == (WORD) -2)
-		slot = -2;
-	else if (slot >= clistSlotCount)
-		slot = -2;
-
-	int origSlot = slot;
-
-	if (slot >= 0)
-		if (GetExtraIconBySlot(slot) != NULL)
-			slot = -2;
+	extra->setSlot(slot);
 
 	extraIcons.push_back(extra);
 
-	if (slot == -2)
-		slot = GetFirstEmptySlot();
-
-	extra->setSlot(slot);
-
-	if (origSlot != slot)
-		DBWriteContactSettingWord(NULL, MODULE_NAME, setting, slot);
-
-	if (clistRebuildAlreadyCalled)
+	if (slot >= 0)
 	{
-		extra->rebuildIcons();
-		extra->applyIcons();
+		vector<ExtraIcon *> tmp;
+		tmp = extraIcons;
+		std::sort(tmp.begin(), tmp.end(), compareFunc());
+
+		if (clistRebuildAlreadyCalled)
+			extra->rebuildIcons();
+
+		slot = 0;
+		for (unsigned int i = 0; i < tmp.size(); ++i)
+		{
+			ExtraIcon *ex = tmp[i];
+			if (ex->getSlot() < 0)
+				continue;
+
+			int oldSlot = ex->getSlot();
+			ex->setSlot(slot++);
+
+			if (clistApplyAlreadyCalled && (ex == extra || oldSlot != slot))
+				extra->applyIcons();
+		}
 	}
 
-	return extraIcons.size();
+
+	return id;
 }
 
 int ExtraIcon_SetIcon(WPARAM wParam, LPARAM lParam)
@@ -394,6 +400,8 @@ int ClistExtraImageApply(WPARAM wParam, LPARAM lParam)
 	HANDLE hContact = (HANDLE) wParam;
 	if (hContact == NULL)
 		return 0;
+
+	clistApplyAlreadyCalled = TRUE;
 
 	for (unsigned int i = 0; i < extraIcons.size(); ++i)
 		extraIcons[i]->applyIcon(hContact);

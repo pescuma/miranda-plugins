@@ -26,14 +26,17 @@
 #endif
 
 
+#define _WIN32_IE 0x500
 #include <windows.h>
 #include <tchar.h>
 #include <stdio.h>
 #include <time.h>
+#include <commctrl.h>
 
 #include <map>
 #include <vector>
 #include <string>
+#include <algorithm>
 using namespace std;
 
 // Miranda headers

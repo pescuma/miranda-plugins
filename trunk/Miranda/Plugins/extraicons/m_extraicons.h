@@ -46,7 +46,7 @@ typedef struct {
 
 	// Callback to set the icon to clist, calling MS_CLIST_EXTRA_SET_ICON or MS_EXTRAICON_SET_ICON
 	// wParam = HANDLE hContact
-	// lParam = int slot
+	// lParam = 0
 	MIRANDAHOOK ApplyIcon;
 
 	// Other optional callbacks
@@ -92,7 +92,7 @@ typedef struct {
 static HANDLE ExtraIcon_Register(const char *name, const char *description, const char *descIcon,
 								 MIRANDAHOOK RebuildIcons,
 								 MIRANDAHOOK ApplyIcon,
-								 MIRANDAHOOKPARAM OnClick = NULL, LPARAM onClickParam = NULL)
+								 MIRANDAHOOKPARAM OnClick = NULL, LPARAM onClickParam = 0)
 {
 	if (!ServiceExists(MS_EXTRAICON_REGISTER))
 		return NULL;
@@ -112,7 +112,7 @@ static HANDLE ExtraIcon_Register(const char *name, const char *description, cons
 }
 
 static HANDLE ExtraIcon_Register(const char *name, const char *description, const char *descIcon = NULL,
-								 MIRANDAHOOKPARAM OnClick = NULL, LPARAM onClickParam = NULL)
+								 MIRANDAHOOKPARAM OnClick = NULL, LPARAM onClickParam = 0)
 {
 	if (!ServiceExists(MS_EXTRAICON_REGISTER))
 		return NULL;

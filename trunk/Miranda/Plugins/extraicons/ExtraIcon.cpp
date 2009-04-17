@@ -19,9 +19,10 @@
 
 #include "commons.h"
 
-ExtraIcon::ExtraIcon(const char *name, const char *description, const char *descIcon, MIRANDAHOOKPARAM OnClick,
+ExtraIcon::ExtraIcon(int id, const char *name, const char *description, const char *descIcon, MIRANDAHOOKPARAM OnClick,
 		LPARAM param) :
-	name(name), description(description), descIcon(descIcon), OnClick(OnClick), onClickParam(param), slot(-1)
+	id(id), name(name), description(description), descIcon(descIcon), OnClick(OnClick), onClickParam(param), slot(-1),
+			position(1000)
 {
 }
 
@@ -64,6 +65,21 @@ void ExtraIcon::setSlot(int slot)
 	this->slot = slot;
 }
 
+int ExtraIcon::getPosition() const
+{
+	return position;
+}
+
+void ExtraIcon::setPosition(int position)
+{
+	this->position = position;
+}
+
+int ExtraIcon::getID() const
+{
+	return id;
+}
+
 bool ExtraIcon::isEnabled() const
 {
 	return slot >= 0;
@@ -92,5 +108,49 @@ void ExtraIcon::onClick(HANDLE hContact)
 		return;
 
 	OnClick((WPARAM) hContact, (LPARAM) ConvertToClistSlot(slot), onClickParam);
+}
+
+int ExtraIcon::compare(const ExtraIcon *other) const
+{
+	int ret = getPosition() - other->getPosition();
+	if (ret != 0)
+		return ret;
+	return getID() - other->getID();
+}
+
+bool ExtraIcon::operator==(const ExtraIcon & other) const
+{
+	int c = compare(&other);
+	return c == 0;
+}
+
+bool ExtraIcon::operator!=(const ExtraIcon & other) const
+{
+	int c = compare(&other);
+	return c != 0;
+}
+
+bool ExtraIcon::operator<(const ExtraIcon & other) const
+{
+	int c = compare(&other);
+	return c < 0;
+}
+
+bool ExtraIcon::operator<=(const ExtraIcon & other) const
+{
+	int c = compare(&other);
+	return c <= 0;
+}
+
+bool ExtraIcon::operator>(const ExtraIcon & other) const
+{
+	int c = compare(&other);
+	return c > 0;
+}
+
+bool ExtraIcon::operator>=(const ExtraIcon & other) const
+{
+	int c = compare(&other);
+	return c >= 0;
 }
 

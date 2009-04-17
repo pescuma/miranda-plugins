@@ -19,9 +19,9 @@
 
 #include "commons.h"
 
-CallbackExtraIcon::CallbackExtraIcon(const char *name, const char *description, const char *descIcon,
+CallbackExtraIcon::CallbackExtraIcon(int id, const char *name, const char *description, const char *descIcon,
 		MIRANDAHOOK RebuildIcons, MIRANDAHOOK ApplyIcon, MIRANDAHOOKPARAM OnClick, LPARAM param) :
-	ExtraIcon(name, description, descIcon, OnClick, param), RebuildIcons(RebuildIcons), ApplyIcon(ApplyIcon),
+	ExtraIcon(id, name, description, descIcon, OnClick, param), RebuildIcons(RebuildIcons), ApplyIcon(ApplyIcon),
 			needToRebuild(true)
 {
 }
@@ -57,7 +57,7 @@ void CallbackExtraIcon::applyIcon(HANDLE hContact)
 	if (!isEnabled() || hContact == NULL)
 		return;
 
-	ApplyIcon((WPARAM) hContact, (LPARAM) ConvertToClistSlot(slot));
+	ApplyIcon((WPARAM) hContact, 0);
 }
 
 int CallbackExtraIcon::setIcon(HANDLE hContact, void *icon)
