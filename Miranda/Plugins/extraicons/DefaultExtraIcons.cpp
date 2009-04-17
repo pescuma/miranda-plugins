@@ -129,16 +129,16 @@ struct Info
 	void (*SetIcon)(HANDLE hContact, Info *info, const char *text);
 	void (*OnClick)(Info *info, const char *text);
 	HANDLE hExtraIcon;
-} infos[] = { 
-	{ "email", "E-mail", "core_main_14", { NULL, "e-mail", 
-										   "UserInfo", "e-mail", 
-										   "UserInfo", "Mye-mail0" }, DefaultSetIcon, &EmailOnClick, NULL }, 
-	{ "sms", "Phone/SMS", "core_main_17", { NULL, "Cellular", 
+} infos[] = {
+	{ "email", "E-mail", "core_main_14", { NULL, "e-mail",
+										   "UserInfo", "e-mail",
+										   "UserInfo", "Mye-mail0" }, DefaultSetIcon, &EmailOnClick, NULL },
+	{ "sms", "Phone/SMS", "core_main_17", { NULL, "Cellular",
 											"UserInfo", "Cellular",
-											"UserInfo", "Phone", 
-											"UserInfo", "MyPhone0" }, DefaultSetIcon, NULL, NULL }, 
-	{ "homepage", "Homepage", "core_main_2", { NULL, "Homepage", 
-											   "UserInfo", "Homepage" }, DefaultSetIcon, &HomepageOnClick, NULL }, 
+											"UserInfo", "Phone",
+											"UserInfo", "MyPhone0" }, DefaultSetIcon, NULL, NULL },
+	{ "homepage", "Homepage", "core_main_2", { NULL, "Homepage",
+											   "UserInfo", "Homepage" }, DefaultSetIcon, &HomepageOnClick, NULL },
 };
 
 static void EmailOnClick(Info *info, const char *text)
@@ -244,7 +244,8 @@ static int SettingChanged(WPARAM wParam, LPARAM lParam)
 
 static int DefaultOnClick(WPARAM wParam, LPARAM lParam, LPARAM param)
 {
-	if (param == NULL)
+	Info *info = (Info *) param;
+	if (info == NULL)
 		return 0;
 
 	HANDLE hContact = (HANDLE) wParam;
@@ -254,8 +255,6 @@ static int DefaultOnClick(WPARAM wParam, LPARAM lParam, LPARAM param)
 	char *proto = (char*) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
 	if (IsEmpty(proto))
 		return 0;
-
-	Info *info = (Info *) param;
 
 	bool found = false;
 	for (unsigned int j = 0; !found && j < MAX_REGS(info->db); j += 2)
@@ -363,11 +362,7 @@ static int ProtocolApplyIcon(WPARAM wParam, LPARAM lParam)
 	if (pi != NULL)
 		hImage = pi->hImage;
 
-	IconExtraColumn iec = { 0 };
-	iec.cbSize = sizeof(iec);
-	iec.ColumnType = slot;
-	iec.hImage = (hImage == NULL ? (HANDLE) -1 : hImage);
-	CallService(MS_CLIST_EXTRA_SET_ICON, (WPARAM) hContact, (LPARAM) &iec);
+	ExtraIcon_SetIcon(hExtraProto, hContact, hImage);
 
 	return 0;
 }
@@ -384,6 +379,6 @@ static int ProtocolOnClick(WPARAM wParam, LPARAM lParam, LPARAM param)
 
 static void ProtocolInit()
 {
-	hExtraProto = ExtraIcon_Register("protocol", "Account", "core_main_34", 
+	hExtraProto = ExtraIcon_Register("protocol", "Account", "core_main_34",
 					&ProtocolRebuildIcons, &ProtocolApplyIcon, &ProtocolOnClick);
 }

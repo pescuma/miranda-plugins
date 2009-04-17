@@ -25,8 +25,8 @@
 class CallbackExtraIcon : public ExtraIcon
 {
 public:
-	CallbackExtraIcon(const char *name, const char *description, const char *descIcon, MIRANDAHOOK RebuildIcons,
-			MIRANDAHOOK ApplyIcon, MIRANDAHOOKPARAM OnClick, LPARAM param);
+	CallbackExtraIcon(int id, const char *name, const char *description, const char *descIcon,
+			MIRANDAHOOK RebuildIcons, MIRANDAHOOK ApplyIcon, MIRANDAHOOKPARAM OnClick, LPARAM param);
 	virtual ~CallbackExtraIcon();
 
 	virtual int getType() const;

@@ -19,9 +19,9 @@
 
 #include "commons.h"
 
-IcolibExtraIcon::IcolibExtraIcon(const char *name, const char *description, const char *descIcon,
+IcolibExtraIcon::IcolibExtraIcon(int id, const char *name, const char *description, const char *descIcon,
 		MIRANDAHOOKPARAM OnClick, LPARAM param) :
-	ExtraIcon(name, description, descIcon, OnClick, param)
+	ExtraIcon(id, name, description, descIcon, OnClick, param)
 {
 	char setting[512];
 	mir_snprintf(setting, MAX_REGS(setting), "%s/%s", MODULE_NAME, name);
@@ -50,6 +50,9 @@ void IcolibExtraIcon::applyIcon(HANDLE hContact)
 {
 	if (!isEnabled() || hContact == NULL)
 		return;
+
+	if (hContact == (HANDLE) 0x004a984c)
+		OutputDebugString("t");
 
 	HANDLE hImage = NULL;
 
@@ -84,10 +87,11 @@ int IcolibExtraIcon::setIcon(HANDLE hContact, void *icon)
 		}
 	}
 
+	// Delete don't work and I don't know why
 	if (IsEmpty(icolibName))
-		DBDeleteContactSetting(hContact, MODULE_NAME, name.c_str());
-	else
-		DBWriteContactSettingString(hContact, MODULE_NAME, name.c_str(), icolibName);
+		icolibName = "";
+
+	DBWriteContactSettingString(hContact, MODULE_NAME, name.c_str(), icolibName);
 
 	if (isEnabled())
 	{

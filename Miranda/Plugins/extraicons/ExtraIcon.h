@@ -25,7 +25,8 @@
 class ExtraIcon
 {
 public:
-	ExtraIcon(const char *name, const char *description, const char *descIcon, MIRANDAHOOKPARAM OnClick, LPARAM param);
+	ExtraIcon(int id, const char *name, const char *description, const char *descIcon, MIRANDAHOOKPARAM OnClick,
+			LPARAM param);
 	virtual ~ExtraIcon();
 
 	virtual bool needToRebuildIcons() =0;
@@ -36,6 +37,7 @@ public:
 
 	virtual int setIcon(HANDLE hContact, void *icon) =0;
 
+	virtual int getID() const;
 	virtual const char *getName() const;
 	virtual const char *getDescription() const;
 	virtual void setDescription(const char *desc);
@@ -46,9 +48,23 @@ public:
 	virtual int getSlot() const;
 	virtual void setSlot(int slot);
 
+	virtual int getPosition() const;
+	virtual void setPosition(int position);
+
 	virtual bool isEnabled() const;
 
+	/// @retun <0 if this < other, 0 if this == other, >0 if this > other
+	virtual int compare(const ExtraIcon *other) const;
+
+	bool operator==(const ExtraIcon &other) const;
+	bool operator!=(const ExtraIcon &other) const;
+	bool operator<(const ExtraIcon &other) const;
+	bool operator<=(const ExtraIcon &other) const;
+	bool operator>(const ExtraIcon &other) const;
+	bool operator>=(const ExtraIcon &other) const;
+
 protected:
+	int id;
 	std::string name;
 	std::string description;
 	std::string descIcon;
@@ -56,6 +72,8 @@ protected:
 	LPARAM onClickParam;
 
 	int slot;
+	int position;
 };
+
 
 #endif // __EXTRAICON_H__

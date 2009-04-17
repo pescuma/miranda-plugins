@@ -93,17 +93,21 @@ void RemoveIcon(const char *icolibName)
 
 		icon->refCount--;
 
-		if (icon->refCount <= 0)
-			usedIcons.erase(it);
-
 		break;
 	}
 }
 
 void ResetIcons()
 {
-	for (unsigned int i = 0; i < usedIcons.size(); ++i)
-		usedIcons[i].hImage = NULL;
+	for (vector<Icon>::iterator it = usedIcons.begin(); it != usedIcons.end(); it++)
+	{
+		Icon *icon = &*it;
+
+		if (icon->refCount <= 0)
+			usedIcons.erase(it);
+		else
+			icon->hImage = NULL;
+	}
 }
 
 
