@@ -17,25 +17,38 @@
  Boston, MA 02111-1307, USA.
  */
 
-#ifndef __ICOLIBEXTRAICON_H__
-#define __ICOLIBEXTRAICON_H__
+#ifndef __EXTRAICONGROUP_H__
+#define __EXTRAICONGROUP_H__
 
-#include "BaseExtraIcon.h"
+#include <vector>
+#include "ExtraIcon.h"
 
-class IcolibExtraIcon : public BaseExtraIcon
+class ExtraIconGroup : public ExtraIcon
 {
 public:
-	IcolibExtraIcon(int id, const char *name, const char *description, const char *descIcon, MIRANDAHOOKPARAM OnClick,
-			LPARAM param);
-	virtual ~IcolibExtraIcon();
+	ExtraIconGroup(int id, const char *name);
+	virtual ~ExtraIconGroup();
 
-	virtual int getType() const;
+	virtual void addExtraIcon(ExtraIcon *extra);
 
 	virtual void rebuildIcons();
 	virtual void applyIcon(HANDLE hContact);
+	virtual void onClick(HANDLE hContact);
 
 	virtual int setIcon(int id, HANDLE hContact, void *icon);
 	virtual void storeIcon(HANDLE hContact, void *icon);
+
+	virtual const char *getDescription() const;
+	virtual const char *getDescIcon() const;
+	virtual int getType() const;
+
+protected:
+	std::string description;
+	std::vector<ExtraIcon*> items;
+	bool setValidExtraIcon;
+
+	virtual ExtraIcon * getCurrentItem(HANDLE hContact) const;
+	virtual int ClistSetExtraIcon(HANDLE hContact, int slot, HANDLE hImage);
 };
 
-#endif // __ICOLIBEXTRAICON_H__
+#endif // __EXTRAICONGROUP_H__

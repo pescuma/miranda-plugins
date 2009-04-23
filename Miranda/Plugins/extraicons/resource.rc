@@ -43,15 +43,15 @@ END
 IDD_OPTIONS DIALOGEX 0, 0, 276, 229
 STYLE DS_FIXEDSYS | WS_CHILD | WS_VISIBLE
 EXSTYLE WS_EX_CONTROLPARENT
-FONT 8, "MS Shell Dlg", 0, 0, 0x1
+FONT 8, "MS Shell Dlg"
 BEGIN
     LTEXT           "Select the extra icons to be shown in the contact list:",
                     IDC_STATIC,1,9,274,13
     CONTROL         "",IDC_EXTRAORDER,"SysTreeView32",TVS_NOTOOLTIPS | 
                     TVS_CHECKBOXES | TVS_FULLROWSELECT | WS_BORDER | 
                     WS_TABSTOP,1,24,274,160
-    LTEXT           "* only the first 10 icons will be shown",IDC_STATIC,1,
-                    190,274,13
+    LTEXT           "* only the first %d icons will be shown",
+                    IDC_MAX_ICONS_L,1,190,274,13,NOT WS_VISIBLE
 END
 
 
@@ -95,6 +95,20 @@ IDI_CHAT                ICON    DISCARDABLE     "res\\Chatchannel.ico"
 IDI_MALE                ICON    DISCARDABLE     "res\\male.ico"
 IDI_FEMALE              ICON    DISCARDABLE     "res\\female.ico"
 IDI_EMPTY               ICON    DISCARDABLE     "res\\empty.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_OPT_POPUP MENU DISCARDABLE 
+BEGIN
+    POPUP "Group"
+    BEGIN
+        MENUITEM "Group",                       ID_GROUP
+    END
+END
+
 #endif    // Neutral resources
 /////////////////////////////////////////////////////////////////////////////
 

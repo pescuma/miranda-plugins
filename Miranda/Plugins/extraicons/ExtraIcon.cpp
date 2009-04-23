@@ -19,10 +19,8 @@
 
 #include "commons.h"
 
-ExtraIcon::ExtraIcon(int id, const char *name, const char *description, const char *descIcon, MIRANDAHOOKPARAM OnClick,
-		LPARAM param) :
-	id(id), name(name), description(description), descIcon(descIcon), OnClick(OnClick), onClickParam(param), slot(-1),
-			position(1000)
+ExtraIcon::ExtraIcon(int id, const char *name) :
+	id(id), name(name), slot(-1), position(1000)
 {
 }
 
@@ -33,26 +31,6 @@ ExtraIcon::~ExtraIcon()
 const char *ExtraIcon::getName() const
 {
 	return name.c_str();
-}
-
-const char *ExtraIcon::getDescription() const
-{
-	return description.c_str();
-}
-
-void ExtraIcon::setDescription(const char *desc)
-{
-	description = desc;
-}
-
-const char *ExtraIcon::getDescIcon() const
-{
-	return descIcon.c_str();
-}
-
-void ExtraIcon::setDescIcon(const char *icon)
-{
-	descIcon = icon;
 }
 
 int ExtraIcon::getSlot() const
@@ -102,14 +80,6 @@ void ExtraIcon::applyIcons()
 	}
 }
 
-void ExtraIcon::onClick(HANDLE hContact)
-{
-	if (OnClick == NULL)
-		return;
-
-	OnClick((WPARAM) hContact, (LPARAM) ConvertToClistSlot(slot), onClickParam);
-}
-
 int ExtraIcon::compare(const ExtraIcon *other) const
 {
 	int ret = getPosition() - other->getPosition();
@@ -152,5 +122,10 @@ bool ExtraIcon::operator>=(const ExtraIcon & other) const
 {
 	int c = compare(&other);
 	return c >= 0;
+}
+
+int ExtraIcon::ClistSetExtraIcon(HANDLE hContact, int slot, HANDLE hImage)
+{
+	return Clist_SetExtraIcon(hContact, slot, hImage);
 }
 

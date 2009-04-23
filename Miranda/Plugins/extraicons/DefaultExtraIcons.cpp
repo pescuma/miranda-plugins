@@ -350,15 +350,14 @@ static ProtoInfo *FindProto(const char * proto)
 static int ProtocolApplyIcon(WPARAM wParam, LPARAM lParam)
 {
 	HANDLE hContact = (HANDLE) wParam;
-	int slot = (int) lParam;
 
 	char *proto = (char*) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
 	if (IsEmpty(proto))
 		return 0;
 
-	HANDLE hImage = NULL;
-
 	ProtoInfo *pi = FindProto(proto);
+
+	HANDLE hImage = NULL;
 	if (pi != NULL)
 		hImage = pi->hImage;
 
@@ -379,6 +378,6 @@ static int ProtocolOnClick(WPARAM wParam, LPARAM lParam, LPARAM param)
 
 static void ProtocolInit()
 {
-	hExtraProto = ExtraIcon_Register("protocol", "Account", "core_main_34",
-					&ProtocolRebuildIcons, &ProtocolApplyIcon, &ProtocolOnClick);
+	hExtraProto = ExtraIcon_Register("protocol", "Account", "core_main_34", &ProtocolRebuildIcons, &ProtocolApplyIcon,
+			&ProtocolOnClick);
 }

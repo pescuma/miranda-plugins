@@ -17,31 +17,43 @@
  Boston, MA 02111-1307, USA.
  */
 
-#ifndef __CALLBACKEXTRAICON_H__
-#define __CALLBACKEXTRAICON_H__
+#include "commons.h"
 
-#include "BaseExtraIcon.h"
-
-class CallbackExtraIcon : public BaseExtraIcon
+BaseExtraIcon::BaseExtraIcon(int id, const char *name, const char *description, const char *descIcon,
+		MIRANDAHOOKPARAM OnClick, LPARAM param) :
+	ExtraIcon(id, name), description(description), descIcon(descIcon), OnClick(OnClick), onClickParam(param)
 {
-public:
-	CallbackExtraIcon(int id, const char *name, const char *description, const char *descIcon,
-			MIRANDAHOOK RebuildIcons, MIRANDAHOOK ApplyIcon, MIRANDAHOOKPARAM OnClick, LPARAM param);
-	virtual ~CallbackExtraIcon();
+}
 
-	virtual int getType() const;
+BaseExtraIcon::~BaseExtraIcon()
+{
+}
 
-	virtual void rebuildIcons();
-	virtual void applyIcon(HANDLE hContact);
+const char *BaseExtraIcon::getDescription() const
+{
+	return description.c_str();
+}
 
-	virtual int setIcon(int id, HANDLE hContact, void *icon);
-	virtual void storeIcon(HANDLE hContact, void *icon);
+void BaseExtraIcon::setDescription(const char *desc)
+{
+	description = desc;
+}
 
-private:
-	int(*RebuildIcons)(WPARAM wParam, LPARAM lParam);
-	int(*ApplyIcon)(WPARAM wParam, LPARAM lParam);
+const char *BaseExtraIcon::getDescIcon() const
+{
+	return descIcon.c_str();
+}
 
-	bool needToRebuild;
-};
+void BaseExtraIcon::setDescIcon(const char *icon)
+{
+	descIcon = icon;
+}
 
-#endif // __CALLBACKEXTRAICON_H__
+void BaseExtraIcon::onClick(HANDLE hContact)
+{
+	if (OnClick == NULL)
+		return;
+
+	OnClick((WPARAM) hContact, (LPARAM) ConvertToClistSlot(slot), onClickParam);
+}
+
