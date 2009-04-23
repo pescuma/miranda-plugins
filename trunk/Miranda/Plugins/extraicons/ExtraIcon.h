@@ -22,27 +22,26 @@
 
 #include <string>
 
+#define EXTRAICON_TYPE_GROUP -1
+
 class ExtraIcon
 {
 public:
-	ExtraIcon(int id, const char *name, const char *description, const char *descIcon, MIRANDAHOOKPARAM OnClick,
-			LPARAM param);
+	ExtraIcon(int id, const char *name);
 	virtual ~ExtraIcon();
 
-	virtual bool needToRebuildIcons() =0;
 	virtual void rebuildIcons() =0;
 	virtual void applyIcons();
 	virtual void applyIcon(HANDLE hContact) =0;
-	virtual void onClick(HANDLE hContact);
+	virtual void onClick(HANDLE hContact) =0;
 
-	virtual int setIcon(HANDLE hContact, void *icon) =0;
+	virtual int setIcon(int id, HANDLE hContact, void *icon) =0;
+	virtual void storeIcon(HANDLE hContact, void *icon) =0;
 
 	virtual int getID() const;
 	virtual const char *getName() const;
-	virtual const char *getDescription() const;
-	virtual void setDescription(const char *desc);
-	virtual const char *getDescIcon() const;
-	virtual void setDescIcon(const char *icon);
+	virtual const char *getDescription() const =0;
+	virtual const char *getDescIcon() const =0;
 	virtual int getType() const =0;
 
 	virtual int getSlot() const;
@@ -66,14 +65,11 @@ public:
 protected:
 	int id;
 	std::string name;
-	std::string description;
-	std::string descIcon;
-	MIRANDAHOOKPARAM OnClick;
-	LPARAM onClickParam;
 
 	int slot;
 	int position;
-};
 
+	virtual int ClistSetExtraIcon(HANDLE hContact, int slot, HANDLE hImage);
+};
 
 #endif // __EXTRAICON_H__

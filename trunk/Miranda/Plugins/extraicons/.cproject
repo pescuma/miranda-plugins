@@ -47,7 +47,7 @@
 <tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.so.debug.650923336" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.so.debug">
 <option defaultValue="true" id="gnu.c.link.mingw.so.debug.option.shared.1575843488" name="Shared (-shared)" superClass="gnu.c.link.mingw.so.debug.option.shared" valueType="boolean"/>
 </tool>
-<tool commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG}&quot;${OUTPUT_PREFIX}${OUTPUT}&quot; ${INPUTS}" id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.so.debug.836489507" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.so.debug">
+<tool commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG}&quot;C:\Desenvolvimento\Miranda\bin\Debug Unicode\Plugins\${OUTPUT_PREFIX}${OUTPUT}&quot; ${INPUTS}" id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.so.debug.836489507" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.so.debug">
 <option id="gnu.cpp.link.option.paths.1417684678" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths"/>
 <option defaultValue="true" id="gnu.cpp.link.mingw.so.debug.option.shared.1239249880" name="Shared (-shared)" superClass="gnu.cpp.link.mingw.so.debug.option.shared" valueType="boolean"/>
 <option id="gnu.cpp.link.option.libs.1498281393" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
@@ -64,7 +64,7 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry excluding="resource.aps|extraicons.plg|extraicons.opt|extraicons.ncb" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry excluding="multitree|resource.aps|extraicons.plg|extraicons.opt|extraicons.ncb" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 </sourceEntries>
 </configuration>
 </storageModule>
@@ -551,7 +551,7 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry excluding="resource.aps|extraicons.plg|extraicons.opt|extraicons.ncb" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry excluding="multitree|resource.aps|extraicons.plg|extraicons.opt|extraicons.ncb" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 </sourceEntries>
 </configuration>
 </storageModule>

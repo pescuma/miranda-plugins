@@ -63,6 +63,7 @@ using namespace std;
 #include "m_extraicons.h"
 
 #include "ExtraIcon.h"
+#include "ExtraIconGroup.h"
 #include "CallbackExtraIcon.h"
 #include "IcolibExtraIcon.h"
 #include "usedIcons.h"
@@ -83,7 +84,7 @@ extern PLUGINLINK *pluginLink;
 
 extern vector<HANDLE> hHooks;
 
-extern vector<ExtraIcon*> extraIcons;
+extern vector<BaseExtraIcon*> registeredExtraIcons;
 ExtraIcon * GetExtraIconBySlot(int slot);
 
 int GetNumberOfSlots();

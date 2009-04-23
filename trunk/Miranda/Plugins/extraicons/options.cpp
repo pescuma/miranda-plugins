@@ -98,246 +98,321 @@ static void RemoveExtraIcons(int slot)
 	}
 }
 
-static BOOL CALLBACK OptionsDlgProcOld(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	static int numSlots;
+/*
+ static BOOL CALLBACK OptionsDlgProcOld(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+ {
+ static int numSlots;
 
+ switch (msg)
+ {
+ case WM_INITDIALOG:
+ {
+ TranslateDialogDefault(hwndDlg);
+
+ numSlots = GetNumberOfSlots();
+
+ RECT rcLabel;
+ GetWindowRect(GetDlgItem(hwndDlg, IDC_SLOT_L), &rcLabel);
+ ScreenToClient(hwndDlg, &rcLabel);
+
+ RECT rcCombo;
+ GetWindowRect(GetDlgItem(hwndDlg, IDC_SLOT), &rcCombo);
+ ScreenToClient(hwndDlg, &rcCombo);
+
+ HFONT hFont = (HFONT) SendMessage(hwndDlg, WM_GETFONT, 0, 0);
+
+ int height = MAX(rcLabel.bottom - rcLabel.top, rcCombo.bottom - rcCombo.top) + 3;
+
+ for (int i = 0; i < numSlots; ++i)
+ {
+ int id = IDC_SLOT + i * 2;
+
+
+ // Create controls
+ if (i > 0)
+ {
+ char desc[256];
+ mir_snprintf(desc, MAX_REGS(desc), "Slot %d:", i + 1);
+
+ HWND tmp = CreateWindow("STATIC", Translate(desc),
+ WS_CHILD | WS_VISIBLE,
+ rcLabel.left, rcLabel.top + i * height,
+ rcLabel.right - rcLabel.left, rcLabel.bottom - rcLabel.top,
+ hwndDlg, 0, hInst, NULL);
+ SendMessage(tmp, WM_SETFONT, (WPARAM) hFont, FALSE);
+
+ HWND combo = CreateWindow("COMBOBOX", "",
+ WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL
+ | CBS_OWNERDRAWFIXED | CBS_HASSTRINGS,
+ rcCombo.left, rcCombo.top + i * height,
+ rcCombo.right - rcCombo.left, rcCombo.bottom - rcCombo.top,
+ hwndDlg, (HMENU) id, hInst, NULL);
+ SendMessage(combo, WM_SETFONT, (WPARAM) hFont, FALSE);
+ }
+
+ // Fill combo
+ int sel = 0;
+ SendDlgItemMessage(hwndDlg, id, CB_ADDSTRING, 0, (LPARAM) Translate("<Empty>"));
+ for (int j = 0; j < (int) extraIcons.size(); ++j)
+ {
+ ExtraIcon *extra = extraIcons[j];
+
+ int pos = SendDlgItemMessage(hwndDlg, id, CB_ADDSTRING, 0, (LPARAM) extra->getDescription());
+ SendDlgItemMessage(hwndDlg, id, CB_SETITEMDATA, pos, (DWORD) extra);
+
+ if (extra->getSlot() == i)
+ sel = j + 1;
+ }
+ SendDlgItemMessage(hwndDlg, id, CB_SETCURSEL, sel, 0);
+ }
+
+ break;
+ }
+ case WM_COMMAND:
+ {
+ HWND cbl = (HWND) lParam;
+ if (HIWORD(wParam) != CBN_SELCHANGE || cbl != GetFocus())
+ return 0;
+
+ int sel = SendMessage(cbl, CB_GETCURSEL, 0, 0);
+ if (sel > 0)
+ {
+ for (int i = 0; i < numSlots; ++i)
+ {
+ int id = IDC_SLOT + i * 2;
+
+ if (GetDlgItem(hwndDlg, id) == cbl)
+ continue;
+
+ int sl = SendDlgItemMessage(hwndDlg, id, CB_GETCURSEL, 0, 0);
+ if (sl == sel)
+ SendDlgItemMessage(hwndDlg, id, CB_SETCURSEL, 0, 0);
+ }
+ }
+
+ SendMessage(GetParent(hwndDlg), PSM_CHANGED, 0, 0);
+ break;
+ }
+ case WM_NOTIFY:
+ {
+ LPNMHDR lpnmhdr = (LPNMHDR) lParam;
+
+ if (lpnmhdr->idFrom == 0 && lpnmhdr->code == (UINT) PSN_APPLY)
+ {
+ int * slots = new int[extraIcons.size()];
+
+ int i;
+ for (i = 0; i < (int) extraIcons.size(); ++i)
+ slots[i] = -1;
+
+ for (i = 0; i < (int) extraIcons.size(); ++i)
+ {
+ if (slots[i] != -1)
+ continue;
+
+ for (int j = 0; j < numSlots; ++j)
+ {
+ if (SendDlgItemMessage(hwndDlg, IDC_SLOT + j * 2, CB_GETCURSEL, 0, 0) == i + 1)
+ {
+ slots[i] = j;
+ break;
+ }
+ }
+ }
+
+ for (int j = 0; j < numSlots; ++j)
+ {
+ // Has icon?
+ bool found = false;
+ for (i = 0; !found && i < (int) extraIcons.size(); ++i)
+ found = (slots[i] == j);
+ if (found)
+ continue;
+
+ // Had icon?
+ if (GetExtraIconBySlot(j) == NULL)
+ continue;
+
+
+ // Had and icon and lost
+ RemoveExtraIcons(j);
+ }
+
+ for (i = 0; i < (int) extraIcons.size(); ++i)
+ {
+ ExtraIcon *extra = extraIcons[i];
+
+ int oldSlot = extra->getSlot();
+ if (oldSlot == slots[i])
+ continue;
+
+ extra->setSlot(slots[i]);
+
+ char setting[512];
+ mir_snprintf(setting, MAX_REGS(setting), "Slot_%s", extra->getName());
+ DBWriteContactSettingWord(NULL, MODULE_NAME, setting, extra->getSlot());
+
+ extra->applyIcons();
+ }
+
+ delete[] slots;
+ }
+
+ break;
+ }
+ case WM_DRAWITEM:
+ {
+ LPDRAWITEMSTRUCT lpdis = (LPDRAWITEMSTRUCT) lParam;
+ if ((lpdis->CtlID % 2) != 0)
+ break;
+ int slot = (lpdis->CtlID - IDC_SLOT) / 2;
+ if (slot < 0 || slot > numSlots * 2)
+ break;
+ if (lpdis->itemID == (UINT) -1)
+ break;
+
+ ExtraIcon *extra = (ExtraIcon *) lpdis->itemData;
+
+ TEXTMETRIC tm;
+ RECT rc;
+
+ GetTextMetrics(lpdis->hDC, &tm);
+
+ COLORREF clrfore = SetTextColor(lpdis->hDC, GetSysColor(lpdis->itemState & ODS_SELECTED
+ ? COLOR_HIGHLIGHTTEXT : COLOR_WINDOWTEXT));
+ COLORREF clrback = SetBkColor(lpdis->hDC, GetSysColor(lpdis->itemState & ODS_SELECTED ? COLOR_HIGHLIGHT
+ : COLOR_WINDOW));
+
+ FillRect(lpdis->hDC, &lpdis->rcItem, GetSysColorBrush(lpdis->itemState & ODS_SELECTED ? COLOR_HIGHLIGHT
+ : COLOR_WINDOW));
+
+ rc.left = lpdis->rcItem.left + 2;
+
+
+ // Draw icon
+ HICON hIcon = NULL;
+ if (extra != NULL && !IsEmpty(extra->getDescIcon()))
+ hIcon = (HICON) CallService(MS_SKIN2_GETICON, 0, (LPARAM) extra->getDescIcon());
+ if (hIcon != NULL)
+ {
+ rc.top = (lpdis->rcItem.bottom + lpdis->rcItem.top - ICON_SIZE) / 2;
+ DrawIconEx(lpdis->hDC, rc.left, rc.top, hIcon, 16, 16, 0, NULL, DI_NORMAL);
+ CallService(MS_SKIN2_RELEASEICON, (WPARAM) hIcon, 0);
+ }
+
+ rc.left += ICON_SIZE + 4;
+
+
+ // Draw text
+ rc.right = lpdis->rcItem.right - 2;
+ rc.top = (lpdis->rcItem.bottom + lpdis->rcItem.top - tm.tmHeight) / 2;
+ rc.bottom = rc.top + tm.tmHeight;
+ DrawText(lpdis->hDC, extra == NULL ? Translate("<Empty>") : extra->getDescription(), -1, &rc,
+ DT_END_ELLIPSIS | DT_NOPREFIX | DT_SINGLELINE);
+
+
+ // Restore old colors
+ SetTextColor(lpdis->hDC, clrfore);
+ SetBkColor(lpdis->hDC, clrback);
+
+ return TRUE;
+ }
+
+ case WM_MEASUREITEM:
+ {
+ LPMEASUREITEMSTRUCT lpmis = (LPMEASUREITEMSTRUCT) lParam;
+ if ((lpmis->CtlID % 2) != 0)
+ break;
+ int slot = (lpmis->CtlID - IDC_SLOT) / 2;
+ if (slot < 0 || slot > numSlots * 2)
+ break;
+
+ TEXTMETRIC tm;
+ GetTextMetrics(GetDC(hwndDlg), &tm);
+
+ lpmis->itemHeight = MAX(ICON_SIZE, tm.tmHeight);
+
+ return TRUE;
+ }
+ }
+
+ return 0;
+ }
+ */
+
+#ifndef TVIS_FOCUSED
+#define TVIS_FOCUSED	1
+#endif
+
+WNDPROC origTreeProc;
+
+static bool IsSelected(HWND tree, HTREEITEM hItem)
+{
+	return (TVIS_SELECTED & TreeView_GetItemState(tree, hItem, TVIS_SELECTED)) == TVIS_SELECTED;
+}
+
+static void UnselectAllExcept(HWND tree, HTREEITEM hIgnore)
+{
+	HTREEITEM hItem = TreeView_GetRoot(tree);
+	while (hItem)
+	{
+		if (hItem != hIgnore)
+			if (IsSelected(tree, hItem))
+				TreeView_SetItemState(tree, hItem, 0, TVIS_SELECTED);
+		hItem = TreeView_GetNextVisible(tree, hItem);
+	}
+}
+
+static int GetNumSelected(HWND tree)
+{
+	int ret = 0;
+	HTREEITEM hItem = TreeView_GetRoot(tree);
+	while (hItem)
+	{
+		if (IsSelected(tree, hItem))
+			ret++;
+		hItem = TreeView_GetNextVisible(tree, hItem);
+	}
+	return ret;
+}
+
+static void Select(HWND tree, HTREEITEM hItem)
+{
+	TreeView_SetItemState(tree, hItem, TVIS_FOCUSED | TVIS_SELECTED, TVIS_FOCUSED | TVIS_SELECTED);
+}
+
+LRESULT CALLBACK TreeProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+{
 	switch (msg)
 	{
-		case WM_INITDIALOG:
+		case WM_LBUTTONDOWN:
 		{
-			TranslateDialogDefault(hwndDlg);
+			DWORD pos = (DWORD) lParam;
 
-			numSlots = GetNumberOfSlots();
-
-			RECT rcLabel;
-			GetWindowRect(GetDlgItem(hwndDlg, IDC_SLOT_L), &rcLabel);
-			ScreenToClient(hwndDlg, &rcLabel);
-
-			RECT rcCombo;
-			GetWindowRect(GetDlgItem(hwndDlg, IDC_SLOT), &rcCombo);
-			ScreenToClient(hwndDlg, &rcCombo);
-
-			HFONT hFont = (HFONT) SendMessage(hwndDlg, WM_GETFONT, 0, 0);
-
-			int height = MAX(rcLabel.bottom - rcLabel.top, rcCombo.bottom - rcCombo.top) + 3;
-
-			for (int i = 0; i < numSlots; ++i)
+			TVHITTESTINFO hti;
+			hti.pt.x = (short) LOWORD(pos);
+			hti.pt.y = (short) HIWORD(pos);
+			if (!TreeView_HitTest(hwndDlg, &hti))
 			{
-				int id = IDC_SLOT + i * 2;
-
-
-				// Create controls
-				if (i > 0)
-				{
-					char desc[256];
-					mir_snprintf(desc, MAX_REGS(desc), "Slot %d:", i + 1);
-
-					HWND tmp = CreateWindow("STATIC", Translate(desc),
-							WS_CHILD | WS_VISIBLE,
-							rcLabel.left, rcLabel.top + i * height,
-							rcLabel.right - rcLabel.left, rcLabel.bottom - rcLabel.top,
-							hwndDlg, 0, hInst, NULL);
-					SendMessage(tmp, WM_SETFONT, (WPARAM) hFont, FALSE);
-
-					HWND combo = CreateWindow("COMBOBOX", "",
-							WS_CHILD | WS_VISIBLE | WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL
-							| CBS_OWNERDRAWFIXED | CBS_HASSTRINGS,
-							rcCombo.left, rcCombo.top + i * height,
-							rcCombo.right - rcCombo.left, rcCombo.bottom - rcCombo.top,
-							hwndDlg, (HMENU) id, hInst, NULL);
-					SendMessage(combo, WM_SETFONT, (WPARAM) hFont, FALSE);
-				}
-
-				// Fill combo
-				int sel = 0;
-				SendDlgItemMessage(hwndDlg, id, CB_ADDSTRING, 0, (LPARAM) Translate("<Empty>"));
-				for (int j = 0; j < (int) extraIcons.size(); ++j)
-				{
-					ExtraIcon *extra = extraIcons[j];
-
-					int pos = SendDlgItemMessage(hwndDlg, id, CB_ADDSTRING, 0, (LPARAM) extra->getDescription());
-					SendDlgItemMessage(hwndDlg, id, CB_SETITEMDATA, pos, (DWORD) extra);
-
-					if (extra->getSlot() == i)
-						sel = j + 1;
-				}
-				SendDlgItemMessage(hwndDlg, id, CB_SETCURSEL, sel, 0);
+				UnselectAllExcept(hwndDlg, NULL);
+				break;
 			}
 
-			break;
-		}
-		case WM_COMMAND:
-		{
-			HWND cbl = (HWND) lParam;
-			if (HIWORD(wParam) != CBN_SELCHANGE || cbl != GetFocus())
-				return 0;
-
-			int sel = SendMessage(cbl, CB_GETCURSEL, 0, 0);
-			if (sel > 0)
+			if (!(wParam & MK_CONTROL) || !(hti.flags & (TVHT_ONITEMICON | TVHT_ONITEMLABEL | TVHT_ONITEMRIGHT)))
 			{
-				for (int i = 0; i < numSlots; ++i)
-				{
-					int id = IDC_SLOT + i * 2;
-
-					if (GetDlgItem(hwndDlg, id) == cbl)
-						continue;
-
-					int sl = SendDlgItemMessage(hwndDlg, id, CB_GETCURSEL, 0, 0);
-					if (sl == sel)
-						SendDlgItemMessage(hwndDlg, id, CB_SETCURSEL, 0, 0);
-				}
+				UnselectAllExcept(hwndDlg, hti.hItem);
+				break;
 			}
 
-			SendMessage(GetParent(hwndDlg), PSM_CHANGED, 0, 0);
-			break;
-		}
-		case WM_NOTIFY:
-		{
-			LPNMHDR lpnmhdr = (LPNMHDR) lParam;
-
-			if (lpnmhdr->idFrom == 0 && lpnmhdr->code == (UINT) PSN_APPLY)
-			{
-				int * slots = new int[extraIcons.size()];
-
-				int i;
-				for (i = 0; i < (int) extraIcons.size(); ++i)
-					slots[i] = -1;
-
-				for (i = 0; i < (int) extraIcons.size(); ++i)
-				{
-					if (slots[i] != -1)
-						continue;
-
-					for (int j = 0; j < numSlots; ++j)
-					{
-						if (SendDlgItemMessage(hwndDlg, IDC_SLOT + j * 2, CB_GETCURSEL, 0, 0) == i + 1)
-						{
-							slots[i] = j;
-							break;
-						}
-					}
-				}
-
-				for (int j = 0; j < numSlots; ++j)
-				{
-					// Has icon?
-					bool found = false;
-					for (i = 0; !found && i < (int) extraIcons.size(); ++i)
-						found = (slots[i] == j);
-					if (found)
-						continue;
-
-					// Had icon?
-					if (GetExtraIconBySlot(j) == NULL)
-						continue;
-
-
-					// Had and icon and lost
-					RemoveExtraIcons(j);
-				}
-
-				for (i = 0; i < (int) extraIcons.size(); ++i)
-				{
-					ExtraIcon *extra = extraIcons[i];
-
-					int oldSlot = extra->getSlot();
-					if (oldSlot == slots[i])
-						continue;
-
-					extra->setSlot(slots[i]);
-
-					char setting[512];
-					mir_snprintf(setting, MAX_REGS(setting), "Slot_%s", extra->getName());
-					DBWriteContactSettingWord(NULL, MODULE_NAME, setting, extra->getSlot());
-
-					if (oldSlot < 0 && extra->needToRebuildIcons())
-						extra->rebuildIcons();
-					extra->applyIcons();
-				}
-
-				delete[] slots;
-			}
-
-			break;
-		}
-		case WM_DRAWITEM:
-		{
-			LPDRAWITEMSTRUCT lpdis = (LPDRAWITEMSTRUCT) lParam;
-			if ((lpdis->CtlID % 2) != 0)
-				break;
-			int slot = (lpdis->CtlID - IDC_SLOT) / 2;
-			if (slot < 0 || slot > numSlots * 2)
-				break;
-			if (lpdis->itemID == (UINT) -1)
-				break;
-
-			ExtraIcon *extra = (ExtraIcon *) lpdis->itemData;
-
-			TEXTMETRIC tm;
-			RECT rc;
-
-			GetTextMetrics(lpdis->hDC, &tm);
-
-			COLORREF clrfore = SetTextColor(lpdis->hDC, GetSysColor(lpdis->itemState & ODS_SELECTED
-					? COLOR_HIGHLIGHTTEXT : COLOR_WINDOWTEXT));
-			COLORREF clrback = SetBkColor(lpdis->hDC, GetSysColor(lpdis->itemState & ODS_SELECTED ? COLOR_HIGHLIGHT
-					: COLOR_WINDOW));
-
-			FillRect(lpdis->hDC, &lpdis->rcItem, GetSysColorBrush(lpdis->itemState & ODS_SELECTED ? COLOR_HIGHLIGHT
-					: COLOR_WINDOW));
-
-			rc.left = lpdis->rcItem.left + 2;
-
-
-			// Draw icon
-			HICON hIcon = NULL;
-			if (extra != NULL && !IsEmpty(extra->getDescIcon()))
-				hIcon = (HICON) CallService(MS_SKIN2_GETICON, 0, (LPARAM) extra->getDescIcon());
-			if (hIcon != NULL)
-			{
-				rc.top = (lpdis->rcItem.bottom + lpdis->rcItem.top - ICON_SIZE) / 2;
-				DrawIconEx(lpdis->hDC, rc.left, rc.top, hIcon, 16, 16, 0, NULL, DI_NORMAL);
-				CallService(MS_SKIN2_RELEASEICON, (WPARAM) hIcon, 0);
-			}
-
-			rc.left += ICON_SIZE + 4;
-
-
-			// Draw text
-			rc.right = lpdis->rcItem.right - 2;
-			rc.top = (lpdis->rcItem.bottom + lpdis->rcItem.top - tm.tmHeight) / 2;
-			rc.bottom = rc.top + tm.tmHeight;
-			DrawText(lpdis->hDC, extra == NULL ? Translate("<Empty>") : extra->getDescription(), -1, &rc,
-					DT_END_ELLIPSIS | DT_NOPREFIX | DT_SINGLELINE);
-
-
-			// Restore old colors
-			SetTextColor(lpdis->hDC, clrfore);
-			SetBkColor(lpdis->hDC, clrback);
-
-			return TRUE;
-		}
-
-		case WM_MEASUREITEM:
-		{
-			LPMEASUREITEMSTRUCT lpmis = (LPMEASUREITEMSTRUCT) lParam;
-			if ((lpmis->CtlID % 2) != 0)
-				break;
-			int slot = (lpmis->CtlID - IDC_SLOT) / 2;
-			if (slot < 0 || slot > numSlots * 2)
-				break;
-
-			TEXTMETRIC tm;
-			GetTextMetrics(GetDC(hwndDlg), &tm);
-
-			lpmis->itemHeight = MAX(ICON_SIZE, tm.tmHeight);
-
-			return TRUE;
+			HTREEITEM hItem = TreeView_GetSelection(hwndDlg);
+			TreeView_SelectItem(hwndDlg, hti.hItem);
+			if (hItem != NULL)
+				Select(hwndDlg, hItem);
+			return 0;
 		}
 	}
 
-	return 0;
+	return CallWindowProc(origTreeProc, hwndDlg, msg, wParam, lParam);
 }
 
 static int CALLBACK CompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
@@ -358,6 +433,17 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 		{
 			TranslateDialogDefault(hwndDlg);
 
+			int numSlots = GetNumberOfSlots();
+			if (numSlots < (int) registeredExtraIcons.size())
+			{
+				char txt[512];
+				mir_snprintf(txt, MAX_REGS(txt), Translate("* only the first %d icons will be shown"), numSlots);
+
+				HWND label = GetDlgItem(hwndDlg, IDC_MAX_ICONS_L);
+				SetWindowText(label, txt);
+				ShowWindow(label, SW_SHOW);
+			}
+
 			HWND tree = GetDlgItem(hwndDlg, IDC_EXTRAORDER);
 			SetWindowLong(tree, GWL_STYLE, GetWindowLong(tree, GWL_STYLE) | TVS_NOHSCROLL);
 
@@ -365,9 +451,9 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 			HIMAGELIST hImageList = ImageList_Create(cx, cx, ILC_COLOR32 | ILC_MASK, 2, 2);
 
 			unsigned int i;
-			for (i = 0; i < extraIcons.size(); ++i)
+			for (i = 0; i < registeredExtraIcons.size(); ++i)
 			{
-				ExtraIcon *extra = extraIcons[i];
+				ExtraIcon *extra = registeredExtraIcons[i];
 
 				HICON hIcon = NULL;
 				if (!IsEmpty(extra->getDescIcon()))
@@ -393,9 +479,9 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 			tvis.hInsertAfter = TVI_LAST;
 			tvis.item.mask = TVIF_PARAM | TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_STATE;
 			tvis.item.stateMask = TVIS_STATEIMAGEMASK;
-			for (i = 0; i < extraIcons.size(); ++i)
+			for (i = 0; i < registeredExtraIcons.size(); ++i)
 			{
-				ExtraIcon *extra = extraIcons[i];
+				ExtraIcon *extra = registeredExtraIcons[i];
 
 				tvis.item.lParam = (LPARAM) extra;
 				tvis.item.pszText = (char *) extra->getDescription();
@@ -409,6 +495,8 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 			sort.lParam = 0;
 			sort.lpfnCompare = CompareFunc;
 			TreeView_SortChildrenCB(tree, &sort, 0);
+
+			origTreeProc = (WNDPROC) SetWindowLong(tree, GWL_WNDPROC, (LONG) TreeProc);
 
 			return TRUE;
 		}
@@ -424,10 +512,10 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 			{
 				if (lpnmhdr->code == (UINT) PSN_APPLY)
 				{
-					int *slots = new int[extraIcons.size()];
+					int *slots = new int[registeredExtraIcons.size()];
 
 					unsigned int i;
-					for (i = 0; i < extraIcons.size(); ++i)
+					for (i = 0; i < registeredExtraIcons.size(); ++i)
 						slots[i] = -1;
 
 					HWND tree = GetDlgItem(hwndDlg, IDC_EXTRAORDER);
@@ -463,9 +551,9 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 					}
 
 					// Apply icons to new slots
-					for (i = 0; i < extraIcons.size(); ++i)
+					for (i = 0; i < registeredExtraIcons.size(); ++i)
 					{
-						ExtraIcon *extra = extraIcons[i];
+						ExtraIcon *extra = registeredExtraIcons[i];
 
 						char setting[512];
 						mir_snprintf(setting, MAX_REGS(setting), "Position_%s", extra->getName());
@@ -483,8 +571,6 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 						if (slots[i] < 0)
 							continue;
 
-						if (oldSlot < 0 && extra->needToRebuildIcons())
-							extra->rebuildIcons();
 						extra->applyIcons();
 					}
 
@@ -523,7 +609,6 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 								SendMessage(GetParent(hwndDlg), PSM_CHANGED, (WPARAM) hwndDlg, 0);
 							}
 						}
-
 						break;
 					}
 					case TVN_KEYDOWN:
@@ -541,8 +626,41 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 					case NM_RCLICK:
 					{
 						HTREEITEM hSelected = (HTREEITEM) SendMessage(tree, TVM_GETNEXTITEM, TVGN_DROPHILITE, 0);
-						if (hSelected != NULL)
-							TreeView_SelectItem(tree, hSelected);
+						if (hSelected != NULL && !IsSelected(tree, hSelected))
+						{
+//							if (GetKeyState(VK_CONTROL) & 0xFF00)
+//							{
+//								HTREEITEM hItem = TreeView_GetSelection(tree);
+//								TreeView_SelectItem(tree, hSelected);
+//								Select(tree, hItem);
+//							}
+//							else
+//							{
+								UnselectAllExcept(tree, hSelected);
+								TreeView_SelectItem(tree, hSelected);
+//							}
+						}
+						if (GetNumSelected(tree) > 1)
+						{
+							HMENU menu = LoadMenu(hInst, MAKEINTRESOURCE(IDR_OPT_POPUP));
+							HMENU submenu = GetSubMenu(menu, 0);
+							CallService(MS_LANGPACK_TRANSLATEMENU, (WPARAM) submenu, 0);
+
+							DWORD pos = GetMessagePos();
+							int ret = TrackPopupMenu(submenu, TPM_TOPALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD
+									| TPM_LEFTALIGN, LOWORD(pos), HIWORD(pos), 0, hwndDlg, NULL);
+
+							DestroyMenu(menu);
+
+							switch (ret)
+							{
+								case ID_GROUP:
+								{
+									OutputDebugString("GROUP\n");
+									break;
+								}
+							}
+						}
 						break;
 					}
 				}

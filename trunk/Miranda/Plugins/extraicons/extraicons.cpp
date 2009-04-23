@@ -42,6 +42,8 @@ UTF8_INTERFACE utfi;
 
 vector<HANDLE> hHooks;
 vector<HANDLE> hServices;
+vector<BaseExtraIcon*> registeredExtraIcons;
+vector<BaseExtraIcon*> extraIconsByHandle;
 vector<ExtraIcon*> extraIcons;
 
 char *metacontacts_proto = NULL;
@@ -215,7 +217,6 @@ int PreShutdown(WPARAM wParam, LPARAM lParam)
 
 int GetNumberOfSlots()
 {
-	//	return MIN(clistSlotCount, extraIcons.size());
 	return clistSlotCount;
 }
 
@@ -224,7 +225,7 @@ int ConvertToClistSlot(int slot)
 	if (slot < 0)
 		return slot;
 
-	return clistSlotCount + clistFirstSlot - 1 - slot;
+	return clistFirstSlot + slot;
 }
 
 int Clist_SetExtraIcon(HANDLE hContact, int slot, HANDLE hImage)
@@ -241,10 +242,10 @@ ExtraIcon *GetExtraIcon(HANDLE id)
 {
 	unsigned int i = (int) id;
 
-	if (i < 1 || i > extraIcons.size())
+	if (i < 1 || i > extraIconsByHandle.size())
 		return NULL;
 
-	return extraIcons[i - 1];
+	return extraIconsByHandle[i - 1];
 }
 
 ExtraIcon * GetExtraIconBySlot(int slot)
@@ -283,9 +284,9 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 
 	const char *desc = Translate(ei->description);
 
-	for (unsigned int i = 0; i < extraIcons.size(); ++i)
+	for (unsigned int i = 0; i < registeredExtraIcons.size(); ++i)
 	{
-		ExtraIcon *extra = extraIcons[i];
+		BaseExtraIcon *extra = registeredExtraIcons[i];
 		if (strcmp(ei->name, extra->getName()) != 0)
 			continue;
 
@@ -296,6 +297,7 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 
 		if (stricmp(extra->getDescription(), desc))
 		{
+			// TODO Handle group
 			string newDesc = extra->getDescription();
 			newDesc += " / ";
 			newDesc += desc;
@@ -308,9 +310,9 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 		return i + 1;
 	}
 
-	int id = extraIcons.size() + 1;
+	int id = registeredExtraIcons.size() + 1;
 
-	ExtraIcon *extra;
+	BaseExtraIcon *extra;
 	switch (ei->type)
 	{
 		case EXTRAICON_TYPE_CALLBACK:
@@ -335,12 +337,14 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 		slot = -1;
 	extra->setSlot(slot);
 
+	registeredExtraIcons.push_back(extra);
+	extraIconsByHandle.push_back(extra);
 	extraIcons.push_back(extra);
 
 	if (slot >= 0)
 	{
-		vector<ExtraIcon *> tmp;
-		tmp = extraIcons;
+		vector<BaseExtraIcon *> tmp;
+		tmp = registeredExtraIcons;
 		std::sort(tmp.begin(), tmp.end(), compareFunc());
 
 		if (clistRebuildAlreadyCalled)
@@ -361,7 +365,6 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 		}
 	}
 
-
 	return id;
 }
 
@@ -380,7 +383,7 @@ int ExtraIcon_SetIcon(WPARAM wParam, LPARAM lParam)
 	if (extra == NULL)
 		return -1;
 
-	return extra->setIcon(ei->hContact, ei->hImage);
+	return extra->setIcon((int) ei->hExtraIcon, ei->hContact, ei->hImage);
 }
 
 int ClistExtraListRebuild(WPARAM wParam, LPARAM lParam)
@@ -389,8 +392,8 @@ int ClistExtraListRebuild(WPARAM wParam, LPARAM lParam)
 
 	ResetIcons();
 
-	for (unsigned int i = 0; i < extraIcons.size(); ++i)
-		extraIcons[i]->rebuildIcons();
+	for (unsigned int i = 0; i < registeredExtraIcons.size(); ++i)
+		registeredExtraIcons[i]->rebuildIcons();
 
 	return 0;
 }
@@ -403,8 +406,8 @@ int ClistExtraImageApply(WPARAM wParam, LPARAM lParam)
 
 	clistApplyAlreadyCalled = TRUE;
 
-	for (unsigned int i = 0; i < extraIcons.size(); ++i)
-		extraIcons[i]->applyIcon(hContact);
+	for (unsigned int i = 0; i < registeredExtraIcons.size(); ++i)
+		registeredExtraIcons[i]->applyIcon(hContact);
 
 	return 0;
 }
@@ -417,11 +420,11 @@ int ClistExtraClick(WPARAM wParam, LPARAM lParam)
 
 	int extra = (int) lParam;
 
-	for (unsigned int i = 0; i < extraIcons.size(); ++i)
+	for (unsigned int i = 0; i < registeredExtraIcons.size(); ++i)
 	{
-		if (ConvertToClistSlot(extraIcons[i]->getSlot()) == extra)
+		if (ConvertToClistSlot(registeredExtraIcons[i]->getSlot()) == extra)
 		{
-			extraIcons[i]->onClick(hContact);
+			registeredExtraIcons[i]->onClick(hContact);
 			break;
 		}
 	}

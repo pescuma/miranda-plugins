@@ -21,7 +21,7 @@
 
 CallbackExtraIcon::CallbackExtraIcon(int id, const char *name, const char *description, const char *descIcon,
 		MIRANDAHOOK RebuildIcons, MIRANDAHOOK ApplyIcon, MIRANDAHOOKPARAM OnClick, LPARAM param) :
-	ExtraIcon(id, name, description, descIcon, OnClick, param), RebuildIcons(RebuildIcons), ApplyIcon(ApplyIcon),
+	BaseExtraIcon(id, name, description, descIcon, OnClick, param), RebuildIcons(RebuildIcons), ApplyIcon(ApplyIcon),
 			needToRebuild(true)
 {
 }
@@ -33,11 +33,6 @@ CallbackExtraIcon::~CallbackExtraIcon()
 int CallbackExtraIcon::getType() const
 {
 	return EXTRAICON_TYPE_CALLBACK;
-}
-
-bool CallbackExtraIcon::needToRebuildIcons()
-{
-	return needToRebuild;
 }
 
 void CallbackExtraIcon::rebuildIcons()
@@ -57,13 +52,21 @@ void CallbackExtraIcon::applyIcon(HANDLE hContact)
 	if (!isEnabled() || hContact == NULL)
 		return;
 
+	if (needToRebuild)
+		rebuildIcons();
+
 	ApplyIcon((WPARAM) hContact, 0);
 }
 
-int CallbackExtraIcon::setIcon(HANDLE hContact, void *icon)
+int CallbackExtraIcon::setIcon(int id, HANDLE hContact, void *icon)
 {
-	if (!isEnabled() || hContact == NULL)
+	if (!isEnabled() || hContact == NULL || id != this->id)
 		return -1;
 
-	return Clist_SetExtraIcon(hContact, slot, (HANDLE) icon);
+	return ClistSetExtraIcon(hContact, slot, (HANDLE) icon);
 }
+
+void CallbackExtraIcon::storeIcon(HANDLE hContact, void *icon)
+{
+}
+

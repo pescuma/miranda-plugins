@@ -21,7 +21,7 @@
 
 IcolibExtraIcon::IcolibExtraIcon(int id, const char *name, const char *description, const char *descIcon,
 		MIRANDAHOOKPARAM OnClick, LPARAM param) :
-	ExtraIcon(id, name, description, descIcon, OnClick, param)
+	BaseExtraIcon(id, name, description, descIcon, OnClick, param)
 {
 	char setting[512];
 	mir_snprintf(setting, MAX_REGS(setting), "%s/%s", MODULE_NAME, name);
@@ -37,11 +37,6 @@ int IcolibExtraIcon::getType() const
 	return EXTRAICON_TYPE_ICOLIB;
 }
 
-bool IcolibExtraIcon::needToRebuildIcons()
-{
-	return false;
-}
-
 void IcolibExtraIcon::rebuildIcons()
 {
 }
@@ -50,9 +45,6 @@ void IcolibExtraIcon::applyIcon(HANDLE hContact)
 {
 	if (!isEnabled() || hContact == NULL)
 		return;
-
-	if (hContact == (HANDLE) 0x004a984c)
-		OutputDebugString("t");
 
 	HANDLE hImage = NULL;
 
@@ -68,12 +60,10 @@ void IcolibExtraIcon::applyIcon(HANDLE hContact)
 	Clist_SetExtraIcon(hContact, slot, hImage);
 }
 
-int IcolibExtraIcon::setIcon(HANDLE hContact, void *icon)
+int IcolibExtraIcon::setIcon(int id, HANDLE hContact, void *icon)
 {
-	if (hContact == NULL)
+	if (hContact == NULL || id != this->id)
 		return -1;
-
-	const char *icolibName = (const char *) icon;
 
 	if (isEnabled())
 	{
@@ -87,21 +77,33 @@ int IcolibExtraIcon::setIcon(HANDLE hContact, void *icon)
 		}
 	}
 
-	// Delete don't work and I don't know why
-	if (IsEmpty(icolibName))
-		icolibName = "";
-
-	DBWriteContactSettingString(hContact, MODULE_NAME, name.c_str(), icolibName);
+	storeIcon(hContact, icon);
 
 	if (isEnabled())
 	{
-		HANDLE hImage = NULL;
-		if (!IsEmpty(icolibName))
+		const char *icolibName = (const char *) icon;
+
+		HANDLE hImage;
+		if (IsEmpty(icolibName))
+			hImage = NULL;
+		else
 			hImage = AddIcon(icolibName);
 
-		return Clist_SetExtraIcon(hContact, slot, hImage);
+		return ClistSetExtraIcon(hContact, slot, hImage);
 	}
 
 	return 0;
+}
+
+void IcolibExtraIcon::storeIcon(HANDLE hContact, void *icon)
+{
+	if (hContact == NULL)
+		return;
+
+	const char *icolibName = (const char *) icon;
+	if (IsEmpty(icolibName))
+		icolibName = ""; // Delete don't work and I don't know why
+
+	DBWriteContactSettingString(hContact, MODULE_NAME, name.c_str(), icolibName);
 }
 
