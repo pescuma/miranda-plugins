@@ -20,11 +20,9 @@
 #ifndef __COMMONS_H__
 # define __COMMONS_H__
 
-
 #ifdef UNICODE
 #error "Unicode not needed by this plugin"
 #endif
-
 
 #define _WIN32_IE 0x500
 #include <windows.h>
@@ -70,7 +68,6 @@ using namespace std;
 #include "DefaultExtraIcons.h"
 #include "options.h"
 
-
 #define MODULE_NAME		"ExtraIcons"
 
 // Global Variables
@@ -85,7 +82,9 @@ extern PLUGINLINK *pluginLink;
 extern vector<HANDLE> hHooks;
 
 extern vector<BaseExtraIcon*> registeredExtraIcons;
+extern vector<ExtraIcon*> extraIcons;
 ExtraIcon * GetExtraIconBySlot(int slot);
+ExtraIcon * GetExtraIcon(HANDLE id);
 
 int GetNumberOfSlots();
 int ConvertToClistSlot(int slot);
