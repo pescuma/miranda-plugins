@@ -107,6 +107,10 @@ BEGIN
     BEGIN
         MENUITEM "Group",                       ID_GROUP
     END
+    POPUP "Ungroup"
+    BEGIN
+        MENUITEM "Ungroup",                     ID_UNGROUP
+    END
 END
 
 #endif    // Neutral resources

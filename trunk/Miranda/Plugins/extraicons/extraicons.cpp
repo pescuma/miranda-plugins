@@ -238,7 +238,7 @@ int Clist_SetExtraIcon(HANDLE hContact, int slot, HANDLE hImage)
 	return CallService(MS_CLIST_EXTRA_SET_ICON, (WPARAM) hContact, (LPARAM) &iec);
 }
 
-ExtraIcon *GetExtraIcon(HANDLE id)
+ExtraIcon * GetExtraIcon(HANDLE id)
 {
 	unsigned int i = (int) id;
 
