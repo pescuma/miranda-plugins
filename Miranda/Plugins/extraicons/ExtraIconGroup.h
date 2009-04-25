@@ -42,9 +42,10 @@ public:
 	virtual const char *getDescIcon() const;
 	virtual int getType() const;
 
+	std::vector<ExtraIcon*> items;
+
 protected:
 	std::string description;
-	std::vector<ExtraIcon*> items;
 	bool setValidExtraIcon;
 
 	virtual ExtraIcon * getCurrentItem(HANDLE hContact) const;
