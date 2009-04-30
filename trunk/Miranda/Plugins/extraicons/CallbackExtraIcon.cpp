@@ -63,7 +63,7 @@ int CallbackExtraIcon::setIcon(int id, HANDLE hContact, void *icon)
 	if (!isEnabled() || hContact == NULL || id != this->id)
 		return -1;
 
-	return ClistSetExtraIcon(hContact, slot, (HANDLE) icon);
+	return ClistSetExtraIcon(hContact, (HANDLE) icon);
 }
 
 void CallbackExtraIcon::storeIcon(HANDLE hContact, void *icon)

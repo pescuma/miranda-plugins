@@ -27,19 +27,6 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 // Dialog
 //
 
-IDD_OPTIONS_OLD DIALOGEX 0, 0, 276, 229
-STYLE DS_FIXEDSYS | WS_CHILD | WS_VISIBLE
-EXSTYLE WS_EX_CONTROLPARENT
-FONT 8, "MS Shell Dlg", 0, 0, 0x1
-BEGIN
-    LTEXT           "Select the extra icons to be shown in the contact list:",
-                    IDC_STATIC,1,9,274,13
-    LTEXT           "Slot 1:",IDC_SLOT_L,1,31,21,8
-    COMBOBOX        IDC_SLOT,35,28,173,60,CBS_DROPDOWNLIST | 
-                    CBS_OWNERDRAWFIXED | CBS_HASSTRINGS | WS_VSCROLL | 
-                    WS_TABSTOP
-END
-
 IDD_OPTIONS DIALOGEX 0, 0, 276, 229
 STYLE DS_FIXEDSYS | WS_CHILD | WS_VISIBLE
 EXSTYLE WS_EX_CONTROLPARENT
@@ -52,6 +39,8 @@ BEGIN
                     WS_TABSTOP,1,24,274,160
     LTEXT           "* only the first %d icons will be shown",
                     IDC_MAX_ICONS_L,1,190,274,13,NOT WS_VISIBLE
+    LTEXT           "You can group/ungroup icons by selecting then and using the popup menu",
+                    IDC_STATIC,1,208,274,20
 END
 
 
@@ -63,14 +52,6 @@ END
 #ifdef APSTUDIO_INVOKED
 GUIDELINES DESIGNINFO DISCARDABLE 
 BEGIN
-    IDD_OPTIONS_OLD, DIALOG
-    BEGIN
-        LEFTMARGIN, 1
-        RIGHTMARGIN, 275
-        TOPMARGIN, 1
-        BOTTOMMARGIN, 228
-    END
-
     IDD_OPTIONS, DIALOG
     BEGIN
         LEFTMARGIN, 1

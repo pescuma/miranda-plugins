@@ -27,7 +27,7 @@
 class ExtraIcon
 {
 public:
-	ExtraIcon(int id, const char *name);
+	ExtraIcon(const char *name);
 	virtual ~ExtraIcon();
 
 	virtual void rebuildIcons() =0;
@@ -38,7 +38,6 @@ public:
 	virtual int setIcon(int id, HANDLE hContact, void *icon) =0;
 	virtual void storeIcon(HANDLE hContact, void *icon) =0;
 
-	virtual int getID() const;
 	virtual const char *getName() const;
 	virtual const char *getDescription() const =0;
 	virtual const char *getDescIcon() const =0;
@@ -62,14 +61,13 @@ public:
 	bool operator>(const ExtraIcon &other) const;
 	bool operator>=(const ExtraIcon &other) const;
 
+	virtual int ClistSetExtraIcon(HANDLE hContact, HANDLE hImage) =0;
+
 protected:
-	int id;
 	std::string name;
 
 	int slot;
 	int position;
-
-	virtual int ClistSetExtraIcon(HANDLE hContact, int slot, HANDLE hImage);
 };
 
 #endif // __EXTRAICON_H__
