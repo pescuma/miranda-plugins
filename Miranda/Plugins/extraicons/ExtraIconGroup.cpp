@@ -23,8 +23,8 @@
 
 #include "commons.h"
 
-ExtraIconGroup::ExtraIconGroup(int id, const char *name) :
-	ExtraIcon(id, name), setValidExtraIcon(false)
+ExtraIconGroup::ExtraIconGroup(const char *name) :
+	ExtraIcon(name), setValidExtraIcon(false)
 {
 	char setting[512];
 	mir_snprintf(setting, MAX_REGS(setting), "%s/%s", MODULE_NAME, name);
@@ -36,7 +36,7 @@ ExtraIconGroup::~ExtraIconGroup()
 	items.clear();
 }
 
-void ExtraIconGroup::addExtraIcon(ExtraIcon *extra)
+void ExtraIconGroup::addExtraIcon(BaseExtraIcon *extra)
 {
 	items.push_back(extra);
 
@@ -63,10 +63,23 @@ void ExtraIconGroup::applyIcon(HANDLE hContact)
 	setValidExtraIcon = false;
 
 	unsigned int i;
-	for (i = 0; !setValidExtraIcon && i < items.size(); ++i)
+	for (i = 0; i < items.size(); ++i)
+	{
 		items[i]->applyIcon(hContact);
 
+		if (setValidExtraIcon)
+			break;
+	}
+
 	DBWriteContactSettingDword(hContact, MODULE_NAME, name.c_str(), setValidExtraIcon ? items[i]->getID() : 0);
+}
+
+void ExtraIconGroup::setSlot(int slot)
+{
+	ExtraIcon::setSlot(slot);
+
+	for (unsigned int i = 0; i < items.size(); ++i)
+		items[i]->setSlot(slot);
 }
 
 ExtraIcon * ExtraIconGroup::getCurrentItem(HANDLE hContact) const
@@ -152,11 +165,11 @@ int ExtraIconGroup::getType() const
 	return EXTRAICON_TYPE_GROUP;
 }
 
-int ExtraIconGroup::ClistSetExtraIcon(HANDLE hContact, int slot, HANDLE hImage)
+int ExtraIconGroup::ClistSetExtraIcon(HANDLE hContact, HANDLE hImage)
 {
 	if (hImage != NULL && hImage != (HANDLE) -1)
 		setValidExtraIcon = true;
 
-	return ExtraIcon::ClistSetExtraIcon(hContact, slot, hImage);
+	return Clist_SetExtraIcon(hContact, slot, hImage);
 }
 

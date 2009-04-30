@@ -24,7 +24,7 @@
 PLUGININFOEX pluginInfo = {
 		sizeof(PLUGININFOEX),
 		"Extra Icons Service",
-		PLUGIN_MAKE_VERSION(0,1,0,0),
+		PLUGIN_MAKE_VERSION(0,2,0,0),
 		"Extra Icons Service",
 		"Ricardo Pescuma Domenecci",
 		"",
@@ -43,8 +43,8 @@ UTF8_INTERFACE utfi;
 vector<HANDLE> hHooks;
 vector<HANDLE> hServices;
 vector<BaseExtraIcon*> registeredExtraIcons;
-vector<BaseExtraIcon*> extraIconsByHandle;
-vector<ExtraIcon*> extraIcons;
+vector<ExtraIcon*> extraIconsByHandle;
+vector<ExtraIcon*> extraIconsBySlot;
 
 char *metacontacts_proto = NULL;
 BOOL clistRebuildAlreadyCalled = FALSE;
@@ -162,6 +162,7 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 	// add our modules to the KnownModules list
 	CallService("DBEditorpp/RegisterSingleModule", (WPARAM) MODULE_NAME, 0);
+	CallService("DBEditorpp/RegisterSingleModule", (WPARAM) MODULE_NAME "Groups", 0);
 
 
 	// updater plugin support
@@ -250,11 +251,82 @@ ExtraIcon * GetExtraIcon(HANDLE id)
 
 ExtraIcon * GetExtraIconBySlot(int slot)
 {
-	for (unsigned int i = 0; i < extraIcons.size(); ++i)
+	for (unsigned int i = 0; i < extraIconsBySlot.size(); ++i)
 	{
-		ExtraIcon *extra = extraIcons[i];
+		ExtraIcon *extra = extraIconsBySlot[i];
 		if (extra->getSlot() == slot)
 			return extra;
+	}
+	return NULL;
+}
+
+BaseExtraIcon * GetExtraIconByName(const char *name)
+{
+	for (unsigned int i = 0; i < registeredExtraIcons.size(); ++i)
+	{
+		BaseExtraIcon *extra = registeredExtraIcons[i];
+		if (strcmp(name, extra->getName()) == 0)
+			return extra;
+	}
+	return NULL;
+}
+
+static void LoadGroups(vector<ExtraIconGroup *> &groups)
+{
+	unsigned int count = DBGetContactSettingWord(NULL, MODULE_NAME "Groups", "Count", 0);
+	for (unsigned int i = 0; i < count; ++i)
+	{
+		char setting[512];
+		mir_snprintf(setting, MAX_REGS(setting), "%d_count", i);
+		unsigned int items = DBGetContactSettingWord(NULL, MODULE_NAME "Groups", setting, 0);
+		if (items < 1)
+			continue;
+
+		mir_snprintf(setting, MAX_REGS(setting), "__group_%d", i);
+		ExtraIconGroup *group = new ExtraIconGroup(setting); // TODO Remove name
+
+		for (unsigned int j = 0; j < items; ++j)
+		{
+			mir_snprintf(setting, MAX_REGS(setting), "%d_%d", i, j);
+
+			DBVARIANT dbv = { 0 };
+			if (!DBGetContactSettingString(NULL, MODULE_NAME "Groups", setting, &dbv))
+			{
+				if (!IsEmpty(dbv.pszVal))
+				{
+					BaseExtraIcon *extra = GetExtraIconByName(dbv.pszVal);
+					if (extra != NULL)
+					{
+						group->items.push_back(extra);
+
+						if (extra->getSlot() >= 0)
+							group->setSlot(extra->getSlot());
+					}
+				}
+				DBFreeVariant(&dbv);
+			}
+		}
+
+		if (group->items.size() < 2)
+		{
+			delete group;
+			continue;
+		}
+
+		groups.push_back(group);
+	}
+}
+
+static ExtraIconGroup * IsInGroup(vector<ExtraIconGroup *> &groups, BaseExtraIcon *extra)
+{
+	for (unsigned int i = 0; i < groups.size(); ++i)
+	{
+		ExtraIconGroup *group = groups[i];
+		for (unsigned int j = 0; j < group->items.size(); ++j)
+		{
+			if (extra == group->items[j])
+				return group;
+		}
 	}
 	return NULL;
 }
@@ -266,6 +338,42 @@ struct compareFunc : std::binary_function<const ExtraIcon *, const ExtraIcon *, 
 		return *one < *two;
 	}
 };
+
+void RebuildListsBasedOnGroups(vector<ExtraIconGroup *> &groups)
+{
+	unsigned int i;
+	for (i = 0; i < extraIconsByHandle.size(); ++i)
+		extraIconsByHandle[i] = registeredExtraIcons[i];
+
+	for (i = 0; i < extraIconsBySlot.size(); ++i)
+	{
+		ExtraIcon *extra = extraIconsBySlot[i];
+		if (extra->getType() != EXTRAICON_TYPE_GROUP)
+			continue;
+
+		delete extra;
+	}
+	extraIconsBySlot.clear();
+
+	for (i = 0; i < groups.size(); ++i)
+	{
+		ExtraIconGroup *group = groups[i];
+
+		for (unsigned int j = 0; j < group->items.size(); ++j)
+			extraIconsByHandle[group->items[j]->getID() - 1] = group;
+
+		extraIconsBySlot.push_back(group);
+	}
+
+	for (i = 0; i < extraIconsByHandle.size(); ++i)
+	{
+		ExtraIcon *extra = extraIconsByHandle[i];
+		if (extra->getType() != EXTRAICON_TYPE_GROUP)
+			extraIconsBySlot.push_back(extra);
+	}
+
+	std::sort(extraIconsBySlot.begin(), extraIconsBySlot.end(), compareFunc());
+}
 
 int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 {
@@ -284,13 +392,10 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 
 	const char *desc = Translate(ei->description);
 
-	for (unsigned int i = 0; i < registeredExtraIcons.size(); ++i)
+	BaseExtraIcon *extra = GetExtraIconByName(ei->name);
+	if (extra != NULL)
 	{
-		BaseExtraIcon *extra = registeredExtraIcons[i];
-		if (strcmp(ei->name, extra->getName()) != 0)
-			continue;
-
-		if (ei->type != extra->getType())
+		if (ei->type != extra->getType() || ei->type != EXTRAICON_TYPE_CALLBACK)
 			return 0;
 
 		// Found one, now merge it
@@ -304,15 +409,25 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 			extra->setDescription(newDesc.c_str());
 		}
 
-		if (IsEmpty(extra->getDescIcon()) && !IsEmpty(ei->descIcon))
+		if (!IsEmpty(ei->descIcon))
 			extra->setDescIcon(ei->descIcon);
 
-		return i + 1;
+		if (ei->OnClick != NULL)
+			extra->setOnClick(ei->OnClick, ei->onClickParam);
+
+		if (extra->getSlot() > 0)
+		{
+			if (clistRebuildAlreadyCalled)
+				extra->rebuildIcons();
+			if (clistApplyAlreadyCalled)
+				extraIconsByHandle[extra->getID() - 1]->applyIcons();
+		}
+
+		return extra->getID();
 	}
 
 	int id = registeredExtraIcons.size() + 1;
 
-	BaseExtraIcon *extra;
 	switch (ei->type)
 	{
 		case EXTRAICON_TYPE_CALLBACK:
@@ -339,28 +454,40 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 
 	registeredExtraIcons.push_back(extra);
 	extraIconsByHandle.push_back(extra);
-	extraIcons.push_back(extra);
 
-	if (slot >= 0)
+	vector<ExtraIconGroup *> groups;
+	LoadGroups(groups);
+
+	ExtraIconGroup *group = IsInGroup(groups, extra);
+	if (group != NULL)
 	{
-		vector<BaseExtraIcon *> tmp;
-		tmp = registeredExtraIcons;
-		std::sort(tmp.begin(), tmp.end(), compareFunc());
+		RebuildListsBasedOnGroups(groups);
+	}
+	else
+	{
+		for (unsigned int i = 0; i < groups.size(); ++i)
+			delete groups[i];
 
+		extraIconsBySlot.push_back(extra);
+		std::sort(extraIconsBySlot.begin(), extraIconsBySlot.end(), compareFunc());
+	}
+
+	if (slot >= 0 || group != NULL)
+	{
 		if (clistRebuildAlreadyCalled)
 			extra->rebuildIcons();
 
 		slot = 0;
-		for (unsigned int i = 0; i < tmp.size(); ++i)
+		for (unsigned int i = 0; i < extraIconsBySlot.size(); ++i)
 		{
-			ExtraIcon *ex = tmp[i];
+			ExtraIcon *ex = extraIconsBySlot[i];
 			if (ex->getSlot() < 0)
 				continue;
 
 			int oldSlot = ex->getSlot();
 			ex->setSlot(slot++);
 
-			if (clistApplyAlreadyCalled && (ex == extra || oldSlot != slot))
+			if (clistApplyAlreadyCalled && (ex == group || ex == extra || oldSlot != slot))
 				extra->applyIcons();
 		}
 	}
@@ -392,8 +519,8 @@ int ClistExtraListRebuild(WPARAM wParam, LPARAM lParam)
 
 	ResetIcons();
 
-	for (unsigned int i = 0; i < registeredExtraIcons.size(); ++i)
-		registeredExtraIcons[i]->rebuildIcons();
+	for (unsigned int i = 0; i < extraIconsBySlot.size(); ++i)
+		extraIconsBySlot[i]->rebuildIcons();
 
 	return 0;
 }
@@ -406,8 +533,8 @@ int ClistExtraImageApply(WPARAM wParam, LPARAM lParam)
 
 	clistApplyAlreadyCalled = TRUE;
 
-	for (unsigned int i = 0; i < registeredExtraIcons.size(); ++i)
-		registeredExtraIcons[i]->applyIcon(hContact);
+	for (unsigned int i = 0; i < extraIconsBySlot.size(); ++i)
+		extraIconsBySlot[i]->applyIcon(hContact);
 
 	return 0;
 }
@@ -418,13 +545,14 @@ int ClistExtraClick(WPARAM wParam, LPARAM lParam)
 	if (hContact == NULL)
 		return 0;
 
-	int extra = (int) lParam;
+	int clistSlot = (int) lParam;
 
-	for (unsigned int i = 0; i < registeredExtraIcons.size(); ++i)
+	for (unsigned int i = 0; i < extraIconsBySlot.size(); ++i)
 	{
-		if (ConvertToClistSlot(registeredExtraIcons[i]->getSlot()) == extra)
+		ExtraIcon *extra = extraIconsBySlot[i];
+		if (ConvertToClistSlot(extra->getSlot()) == clistSlot)
 		{
-			registeredExtraIcons[i]->onClick(hContact);
+			extra->onClick(hContact);
 			break;
 		}
 	}

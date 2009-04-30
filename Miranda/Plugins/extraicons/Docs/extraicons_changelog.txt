@@ -2,5 +2,9 @@ Extra Icons Service
 
 Changelog:
 
+. 0.2.0.0
+  + Allows group/ungroup of icons
+  + New options dialog
+
 . 0.1.0.0
   + Initial version

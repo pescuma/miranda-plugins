@@ -57,7 +57,7 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 user32.lib shell32.lib wininet.lib gdi32.lib /nologo /base:"0x67100000" /dll /machine:I386 /filealign:0x200
 # SUBTRACT BASE LINK32 /pdb:none /map
-# ADD LINK32 shell32.lib kernel32.lib user32.lib gdi32.lib /nologo /base:"0x3EC20000" /dll /map /machine:I386 /out:"..\..\bin\release\Plugins\extraicons.dll" /filealign:0x200 /ALIGN:4096 /ignore:4108
+# ADD LINK32 shell32.lib kernel32.lib user32.lib gdi32.lib comctl32.lib /nologo /base:"0x3EC20000" /dll /map /machine:I386 /out:"..\..\bin\release\Plugins\extraicons.dll" /filealign:0x200 /ALIGN:4096 /ignore:4108
 # SUBTRACT LINK32 /profile /pdb:none
 
 !ELSEIF  "$(CFG)" == "extraicons - Win32 Debug"

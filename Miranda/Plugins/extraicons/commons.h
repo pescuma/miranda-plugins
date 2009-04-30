@@ -82,9 +82,10 @@ extern PLUGINLINK *pluginLink;
 extern vector<HANDLE> hHooks;
 
 extern vector<BaseExtraIcon*> registeredExtraIcons;
-extern vector<ExtraIcon*> extraIcons;
+extern vector<ExtraIcon*> extraIconsByHandle;
+extern vector<ExtraIcon*> extraIconsBySlot;
+void RebuildListsBasedOnGroups(vector<ExtraIconGroup *> &groups);
 ExtraIcon * GetExtraIconBySlot(int slot);
-ExtraIcon * GetExtraIcon(HANDLE id);
 
 int GetNumberOfSlots();
 int ConvertToClistSlot(int slot);

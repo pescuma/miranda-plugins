@@ -19,8 +19,8 @@
 
 #include "commons.h"
 
-ExtraIcon::ExtraIcon(int id, const char *name) :
-	id(id), name(name), slot(-1), position(1000)
+ExtraIcon::ExtraIcon(const char *name) :
+	name(name), slot(-1), position(1000)
 {
 }
 
@@ -53,11 +53,6 @@ void ExtraIcon::setPosition(int position)
 	this->position = position;
 }
 
-int ExtraIcon::getID() const
-{
-	return id;
-}
-
 bool ExtraIcon::isEnabled() const
 {
 	return slot >= 0;
@@ -85,7 +80,14 @@ int ExtraIcon::compare(const ExtraIcon *other) const
 	int ret = getPosition() - other->getPosition();
 	if (ret != 0)
 		return ret;
-	return getID() - other->getID();
+
+	int id = 0;
+	if (getType() != EXTRAICON_TYPE_GROUP)
+		id = ((BaseExtraIcon*) this)->getID();
+	int otherId = 0;
+	if (other->getType() != EXTRAICON_TYPE_GROUP)
+		otherId = ((BaseExtraIcon*) other)->getID();
+	return id - otherId;
 }
 
 bool ExtraIcon::operator==(const ExtraIcon & other) const
@@ -123,9 +125,3 @@ bool ExtraIcon::operator>=(const ExtraIcon & other) const
 	int c = compare(&other);
 	return c >= 0;
 }
-
-int ExtraIcon::ClistSetExtraIcon(HANDLE hContact, int slot, HANDLE hImage)
-{
-	return Clist_SetExtraIcon(hContact, slot, hImage);
-}
-

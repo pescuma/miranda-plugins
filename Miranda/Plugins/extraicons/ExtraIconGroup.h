@@ -23,13 +23,15 @@
 #include <vector>
 #include "ExtraIcon.h"
 
+class BaseExtraIcon;
+
 class ExtraIconGroup : public ExtraIcon
 {
 public:
-	ExtraIconGroup(int id, const char *name);
+	ExtraIconGroup(const char *name);
 	virtual ~ExtraIconGroup();
 
-	virtual void addExtraIcon(ExtraIcon *extra);
+	virtual void addExtraIcon(BaseExtraIcon *extra);
 
 	virtual void rebuildIcons();
 	virtual void applyIcon(HANDLE hContact);
@@ -42,14 +44,17 @@ public:
 	virtual const char *getDescIcon() const;
 	virtual int getType() const;
 
-	std::vector<ExtraIcon*> items;
+	virtual void setSlot(int slot);
+
+	std::vector<BaseExtraIcon*> items;
+
+	virtual int ClistSetExtraIcon(HANDLE hContact, HANDLE hImage);
 
 protected:
 	std::string description;
 	bool setValidExtraIcon;
 
 	virtual ExtraIcon * getCurrentItem(HANDLE hContact) const;
-	virtual int ClistSetExtraIcon(HANDLE hContact, int slot, HANDLE hImage);
 };
 
 #endif // __EXTRAICONGROUP_H__
