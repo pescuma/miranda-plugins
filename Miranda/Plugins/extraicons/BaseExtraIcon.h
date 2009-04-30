@@ -10,6 +10,7 @@ public:
 			LPARAM param);
 	virtual ~BaseExtraIcon();
 
+	virtual int getID() const;
 	virtual const char *getDescription() const;
 	virtual void setDescription(const char *desc);
 	virtual const char *getDescIcon() const;
@@ -17,9 +18,12 @@ public:
 	virtual int getType() const =0;
 
 	virtual void onClick(HANDLE hContact);
+	virtual void setOnClick(MIRANDAHOOKPARAM OnClick, LPARAM param);
 
+	virtual int ClistSetExtraIcon(HANDLE hContact, HANDLE hImage);
 
 protected:
+	int id;
 	std::string description;
 	std::string descIcon;
 	MIRANDAHOOKPARAM OnClick;

@@ -57,7 +57,7 @@ void IcolibExtraIcon::applyIcon(HANDLE hContact)
 		DBFreeVariant(&dbv);
 	}
 
-	Clist_SetExtraIcon(hContact, slot, hImage);
+	ClistSetExtraIcon(hContact, hImage);
 }
 
 int IcolibExtraIcon::setIcon(int id, HANDLE hContact, void *icon)
@@ -89,7 +89,7 @@ int IcolibExtraIcon::setIcon(int id, HANDLE hContact, void *icon)
 		else
 			hImage = AddIcon(icolibName);
 
-		return ClistSetExtraIcon(hContact, slot, hImage);
+		return ClistSetExtraIcon(hContact, hImage);
 	}
 
 	return 0;

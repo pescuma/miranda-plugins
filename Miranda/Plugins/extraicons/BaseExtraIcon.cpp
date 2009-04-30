@@ -21,12 +21,23 @@
 
 BaseExtraIcon::BaseExtraIcon(int id, const char *name, const char *description, const char *descIcon,
 		MIRANDAHOOKPARAM OnClick, LPARAM param) :
-	ExtraIcon(id, name), description(description), descIcon(descIcon), OnClick(OnClick), onClickParam(param)
+	ExtraIcon(name), id(id), description(description), descIcon(descIcon), OnClick(OnClick), onClickParam(param)
 {
 }
 
 BaseExtraIcon::~BaseExtraIcon()
 {
+}
+
+void BaseExtraIcon::setOnClick(MIRANDAHOOKPARAM OnClick, LPARAM param)
+{
+	this->OnClick = OnClick;
+	this->onClickParam = param;
+}
+
+int BaseExtraIcon::getID() const
+{
+	return id;
 }
 
 const char *BaseExtraIcon::getDescription() const
@@ -55,5 +66,14 @@ void BaseExtraIcon::onClick(HANDLE hContact)
 		return;
 
 	OnClick((WPARAM) hContact, (LPARAM) ConvertToClistSlot(slot), onClickParam);
+}
+
+int BaseExtraIcon::ClistSetExtraIcon(HANDLE hContact, HANDLE hImage)
+{
+	ExtraIcon *tmp = extraIconsByHandle[id - 1];
+	if (tmp != this)
+		return tmp->ClistSetExtraIcon(hContact, hImage);
+	else
+		return Clist_SetExtraIcon(hContact, slot, hImage);
 }
 

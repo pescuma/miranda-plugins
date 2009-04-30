@@ -37,8 +37,8 @@ static void DBExtraIconsInit();
 
 void DefaultExtraIcons_Load()
 {
-	ProtocolInit();
 	DBExtraIconsInit();
+	ProtocolInit();
 }
 
 void DefaultExtraIcons_Unload()
@@ -50,6 +50,7 @@ void DefaultExtraIcons_Unload()
 struct Info;
 
 HANDLE hExtraVisibility = NULL;
+HANDLE hExtraChat = NULL;
 HANDLE hExtraGender = NULL;
 
 static void SetVisibility(HANDLE hContact, int apparentMode, BOOL clear)
@@ -71,6 +72,11 @@ static void SetVisibility(HANDLE hContact, int apparentMode, BOOL clear)
 		// Is chat
 		if (apparentMode == ID_STATUS_OFFLINE)
 			ico = "ChatActivity";
+
+		if (ico == NULL && !clear)
+			return;
+
+		ExtraIcon_SetIcon(hExtraChat, hContact, ico);
 	}
 	else
 	{
@@ -80,12 +86,12 @@ static void SetVisibility(HANDLE hContact, int apparentMode, BOOL clear)
 
 		else if (apparentMode == ID_STATUS_ONLINE)
 			ico = "AlwaysVis";
+
+		if (ico == NULL && !clear)
+			return;
+
+		ExtraIcon_SetIcon(hExtraVisibility, hContact, ico);
 	}
-
-	if (ico == NULL && !clear)
-		return;
-
-	ExtraIcon_SetIcon(hExtraVisibility, hContact, ico);
 }
 
 static void SetGender(HANDLE hContact, int gender, BOOL clear)
@@ -129,16 +135,16 @@ struct Info
 	void (*SetIcon)(HANDLE hContact, Info *info, const char *text);
 	void (*OnClick)(Info *info, const char *text);
 	HANDLE hExtraIcon;
-} infos[] = {
-	{ "email", "E-mail", "core_main_14", { NULL, "e-mail",
-										   "UserInfo", "e-mail",
-										   "UserInfo", "Mye-mail0" }, DefaultSetIcon, &EmailOnClick, NULL },
+} infos[] = { 
+	{ "homepage", "Homepage", "core_main_2", { NULL, "Homepage",
+											"UserInfo", "Homepage" }, DefaultSetIcon, &HomepageOnClick, NULL }, 
 	{ "sms", "Phone/SMS", "core_main_17", { NULL, "Cellular",
 											"UserInfo", "Cellular",
 											"UserInfo", "Phone",
-											"UserInfo", "MyPhone0" }, DefaultSetIcon, NULL, NULL },
-	{ "homepage", "Homepage", "core_main_2", { NULL, "Homepage",
-											   "UserInfo", "Homepage" }, DefaultSetIcon, &HomepageOnClick, NULL },
+											"UserInfo", "MyPhone0" }, DefaultSetIcon, NULL, NULL }, 
+	{ "email", "E-mail", "core_main_14", { NULL, "e-mail", 
+											"UserInfo", "e-mail", 
+											"UserInfo", "Mye-mail0" }, DefaultSetIcon, &EmailOnClick, NULL }, 
 };
 
 static void EmailOnClick(Info *info, const char *text)
@@ -280,6 +286,9 @@ static int DefaultOnClick(WPARAM wParam, LPARAM lParam, LPARAM param)
 
 static void DBExtraIconsInit()
 {
+	hExtraChat = ExtraIcon_Register("chat_activity", "Chat activity", "ChatActivity");
+	hExtraVisibility = ExtraIcon_Register("visibility", "Visibility", "AlwaysVis");
+	hExtraGender = ExtraIcon_Register("gender", "Gender", "gender_male");
 	for (unsigned int i = 0; i < MAX_REGS(infos); ++i)
 	{
 		Info &info = infos[i];
@@ -288,8 +297,6 @@ static void DBExtraIconsInit()
 		else
 			info.hExtraIcon = ExtraIcon_Register(info.name, info.desc, info.icon);
 	}
-	hExtraVisibility = ExtraIcon_Register("visibility", "Visibility/Chat activity", "AlwaysVis");
-	hExtraGender = ExtraIcon_Register("gender", "Gender", "gender_male");
 
 	HANDLE hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDFIRST, 0, 0);
 	while (hContact != NULL)
