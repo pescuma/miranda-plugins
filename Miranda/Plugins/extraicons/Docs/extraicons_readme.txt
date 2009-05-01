@@ -11,7 +11,8 @@ It is based on the idea that plugins register icons, the contact list shows them
  - E-mail
  - Phone/SMS
  - Homepage
- - Visibility/Chat activity
+ - Visibility
+ - Chat activity
  - Gender
 
 By now it is supported my clist_modern and clist_mw from 0.8#29. I intend to add clist_nicer next.
