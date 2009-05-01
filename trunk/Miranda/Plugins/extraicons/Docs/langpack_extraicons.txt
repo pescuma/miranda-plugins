@@ -12,4 +12,4 @@
 [Gender]
 
 [* only the first %d icons will be shown]
-[You can group/ungroup icons by selecting then and using the popup menu]
+[You can group/ungroup icons by selecting then (CTRL+left click) and using the popup menu (right click)]
