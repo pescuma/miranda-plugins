@@ -192,6 +192,25 @@ static int GetNumSelected(HWND tree)
 	return ret;
 }
 
+static void Tree_GetSelected(HWND tree, vector<HTREEITEM> &selected)
+{
+	int ret = 0;
+	HTREEITEM hItem = TreeView_GetRoot(tree);
+	while (hItem)
+	{
+		if (IsSelected(tree, hItem))
+			selected.push_back(hItem);
+		hItem = TreeView_GetNextSibling(tree, hItem);
+	}
+}
+
+static void Tree_Select(HWND tree, vector<HTREEITEM> &selected)
+{
+	for(unsigned int i = 0; i < selected.size(); i++)
+		if (selected[i] != NULL)
+			Tree_Select(tree, selected[i]);
+}
+
 LRESULT CALLBACK TreeProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
@@ -219,10 +238,33 @@ LRESULT CALLBACK TreeProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			if (wParam & MK_CONTROL)
 			{
-				HTREEITEM hItem = TreeView_GetSelection(hwndDlg);
+				vector<HTREEITEM> selected;
+				Tree_GetSelected(hwndDlg, selected);
+
+				// Check if have to deselect it
+				for(unsigned int i = 0; i < selected.size(); i++)
+				{
+					if (selected[i] == hti.hItem)
+					{
+						// Deselect it
+						UnselectAll(hwndDlg);
+						selected[i] = NULL;
+
+						if (i > 0)
+							hti.hItem = selected[0];
+
+						else if (i + 1 < selected.size())
+							hti.hItem = selected[i+1];
+
+						else
+							hti.hItem = NULL;
+
+						break;
+					}
+				}
+
 				TreeView_SelectItem(hwndDlg, hti.hItem);
-				if (hItem != NULL)
-					Tree_Select(hwndDlg, hItem);
+				Tree_Select(hwndDlg, selected);
 			}
 			else if (wParam & MK_SHIFT)
 			{
@@ -230,9 +272,12 @@ LRESULT CALLBACK TreeProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				if (hItem == NULL)
 					break;
 
-				TreeView_SelectItem(hwndDlg, NULL);
-				Tree_SelectRange(hwndDlg, hItem, hti.hItem);
+				vector<HTREEITEM> selected;
+				Tree_GetSelected(hwndDlg, selected);
+
 				TreeView_SelectItem(hwndDlg, hti.hItem);
+				Tree_Select(hwndDlg, selected);
+				Tree_SelectRange(hwndDlg, hItem, hti.hItem);
 			}
 
 			return 0;

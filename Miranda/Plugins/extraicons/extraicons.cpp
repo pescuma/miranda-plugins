@@ -24,7 +24,7 @@
 PLUGININFOEX pluginInfo = {
 		sizeof(PLUGININFOEX),
 		"Extra Icons Service",
-		PLUGIN_MAKE_VERSION(0,2,0,0),
+		PLUGIN_MAKE_VERSION(0,2,1,0),
 		"Extra Icons Service",
 		"Ricardo Pescuma Domenecci",
 		"",
