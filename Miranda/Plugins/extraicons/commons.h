@@ -57,6 +57,8 @@ using namespace std;
 #include <m_skin.h>
 #include <m_userinfo.h>
 
+#include "..\utils\mir_icons.h"
+
 #include "resource.h"
 #include "m_extraicons.h"
 

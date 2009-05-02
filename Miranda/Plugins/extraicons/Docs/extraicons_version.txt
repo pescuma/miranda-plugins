@@ -1,1 +1,1 @@
-Extra Icons Service 0.2.1.0
+Extra Icons Service 0.2.3.0

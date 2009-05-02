@@ -192,7 +192,7 @@ SOURCE=.\m_extraicons.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\utils\mir_memory.h
+SOURCE=..\utils\mir_icons.h
 # End Source File
 # Begin Source File
 
@@ -269,6 +269,10 @@ SOURCE=.\extraicons.cpp
 # Begin Source File
 
 SOURCE=.\IcolibExtraIcon.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\utils\mir_icons.cpp
 # End Source File
 # Begin Source File
 
