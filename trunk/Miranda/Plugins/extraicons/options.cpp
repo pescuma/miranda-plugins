@@ -194,7 +194,6 @@ static int GetNumSelected(HWND tree)
 
 static void Tree_GetSelected(HWND tree, vector<HTREEITEM> &selected)
 {
-	int ret = 0;
 	HTREEITEM hItem = TreeView_GetRoot(tree);
 	while (hItem)
 	{
@@ -206,7 +205,7 @@ static void Tree_GetSelected(HWND tree, vector<HTREEITEM> &selected)
 
 static void Tree_Select(HWND tree, vector<HTREEITEM> &selected)
 {
-	for(unsigned int i = 0; i < selected.size(); i++)
+	for (unsigned int i = 0; i < selected.size(); i++)
 		if (selected[i] != NULL)
 			Tree_Select(tree, selected[i]);
 }
@@ -241,8 +240,9 @@ LRESULT CALLBACK TreeProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				vector<HTREEITEM> selected;
 				Tree_GetSelected(hwndDlg, selected);
 
+
 				// Check if have to deselect it
-				for(unsigned int i = 0; i < selected.size(); i++)
+				for (unsigned int i = 0; i < selected.size(); i++)
 				{
 					if (selected[i] == hti.hItem)
 					{
@@ -254,7 +254,7 @@ LRESULT CALLBACK TreeProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 							hti.hItem = selected[0];
 
 						else if (i + 1 < selected.size())
-							hti.hItem = selected[i+1];
+							hti.hItem = selected[i + 1];
 
 						else
 							hti.hItem = NULL;
@@ -505,9 +505,7 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 			{
 				ExtraIcon *extra = registeredExtraIcons[i];
 
-				HICON hIcon = NULL;
-				if (!IsEmpty(extra->getDescIcon()))
-					hIcon = (HICON) CallService(MS_SKIN2_GETICON, 0, (LPARAM) extra->getDescIcon());
+				HICON hIcon = IcoLib_LoadIcon(extra->getDescIcon());
 
 				if (hIcon == NULL)
 				{
@@ -517,10 +515,10 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 					DestroyIcon(hDefaultIcon);
 				}
 				else
+				{
 					ImageList_AddIcon(hImageList, hIcon);
-
-				if (hIcon != NULL)
-					CallService(MS_SKIN2_RELEASEICON, (WPARAM) hIcon, 0);
+					IcoLib_ReleaseIcon(hIcon);
+				}
 			}
 			TreeView_SetImageList(tree, hImageList, TVSIL_NORMAL);
 
@@ -614,7 +612,6 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 							mir_snprintf(name, MAX_REGS(name), "__group_%d", groups.size());
 
 							ExtraIconGroup *group = new ExtraIconGroup(name);
-							group->setPosition(pos);
 
 							for (i = 0; i < ids->size(); ++i)
 							{
@@ -635,7 +632,7 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 					// Store data
 					for (i = 0; i < registeredExtraIcons.size(); ++i)
 					{
-						ExtraIcon *extra = registeredExtraIcons[i];
+						BaseExtraIcon *extra = registeredExtraIcons[i];
 
 						char setting[512];
 						mir_snprintf(setting, MAX_REGS(setting), "Position_%s", extra->getName());

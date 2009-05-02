@@ -19,7 +19,6 @@
 
 #include "commons.h"
 
-
 struct Icon
 {
 	string name;
@@ -56,14 +55,14 @@ static Icon * FindIcon(const char *icolibName)
 
 	if (icon->hImage == NULL)
 	{
-		HICON hIcon = (HICON) CallService(MS_SKIN2_GETICON, 0, (LPARAM) icon->name.c_str());
+		HICON hIcon = IcoLib_LoadIcon(icon->name.c_str());
 		if (hIcon != NULL)
 		{
 			icon->hImage = (HANDLE) CallService(MS_CLIST_EXTRA_ADD_ICON, (WPARAM) hIcon, 0);
 			if (icon->hImage == (HANDLE) -1)
 				icon->hImage = NULL;
 
-			CallService(MS_SKIN2_RELEASEICON, (WPARAM) hIcon, 0);
+			IcoLib_ReleaseIcon(hIcon);
 		}
 	}
 
@@ -109,5 +108,4 @@ void ResetIcons()
 			icon->hImage = NULL;
 	}
 }
-
 

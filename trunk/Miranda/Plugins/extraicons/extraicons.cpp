@@ -24,7 +24,7 @@
 PLUGININFOEX pluginInfo = {
 		sizeof(PLUGININFOEX),
 		"Extra Icons Service",
-		PLUGIN_MAKE_VERSION(0,2,1,0),
+		PLUGIN_MAKE_VERSION(0,2,3,0),
 		"Extra Icons Service",
 		"Ricardo Pescuma Domenecci",
 		"",
@@ -87,28 +87,6 @@ static const MUUID interfaces[] = { MIID_EXTRAICONSSERVICE, MIID_LAST };
 extern "C" __declspec(dllexport) const MUUID* MirandaPluginInterfaces(void)
 {
 	return interfaces;
-}
-
-static void IcoLib_Register(char *name, char *section, char *description, int id)
-{
-	HICON hIcon = (HICON) CallService(MS_SKIN2_GETICON, 0, (LPARAM) name);
-	if (hIcon != NULL)
-		return;
-
-	SKINICONDESC sid = { 0 };
-	sid.cbSize = sizeof(SKINICONDESC);
-	sid.flags = SIDF_TCHAR;
-	sid.pszName = name;
-	sid.pszSection = section;
-	sid.pszDescription = description;
-
-	int cx = GetSystemMetrics(SM_CXSMICON);
-	sid.hDefaultIcon = (HICON) LoadImage(hInst, MAKEINTRESOURCE(id), IMAGE_ICON, cx, cx, LR_DEFAULTCOLOR | LR_SHARED);
-
-	CallService(MS_SKIN2_ADDICON, 0, (LPARAM)&sid);
-
-	if (sid.hDefaultIcon)
-		DestroyIcon(sid.hDefaultIcon);
 }
 
 extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
@@ -283,7 +261,7 @@ static void LoadGroups(vector<ExtraIconGroup *> &groups)
 			continue;
 
 		mir_snprintf(setting, MAX_REGS(setting), "__group_%d", i);
-		ExtraIconGroup *group = new ExtraIconGroup(setting); // TODO Remove name
+		ExtraIconGroup *group = new ExtraIconGroup(setting);
 
 		for (unsigned int j = 0; j < items; ++j)
 		{
@@ -395,14 +373,13 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 	BaseExtraIcon *extra = GetExtraIconByName(ei->name);
 	if (extra != NULL)
 	{
-		if (ei->type != extra->getType() || ei->type != EXTRAICON_TYPE_CALLBACK)
+		if (ei->type != extra->getType() || ei->type != EXTRAICON_TYPE_ICOLIB)
 			return 0;
 
 		// Found one, now merge it
 
 		if (stricmp(extra->getDescription(), desc))
 		{
-			// TODO Handle group
 			string newDesc = extra->getDescription();
 			newDesc += " / ";
 			newDesc += desc;

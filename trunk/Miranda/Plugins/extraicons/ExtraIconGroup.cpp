@@ -70,6 +70,14 @@ void ExtraIconGroup::applyIcon(HANDLE hContact)
 	DBWriteContactSettingDword(hContact, MODULE_NAME, name.c_str(), setValidExtraIcon ? items[i]->getID() : 0);
 }
 
+int ExtraIconGroup::getPosition() const
+{
+	int pos = INT_MAX;
+	for (unsigned int i = 0; i < items.size(); ++i)
+		pos = MIN(pos, items[i]->getPosition());
+	return pos;
+}
+
 void ExtraIconGroup::setSlot(int slot)
 {
 	ExtraIcon::setSlot(slot);

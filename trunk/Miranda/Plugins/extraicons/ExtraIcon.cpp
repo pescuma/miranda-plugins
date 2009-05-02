@@ -77,6 +77,9 @@ void ExtraIcon::applyIcons()
 
 int ExtraIcon::compare(const ExtraIcon *other) const
 {
+	if (this == other)
+		return 0;
+
 	int ret = getPosition() - other->getPosition();
 	if (ret != 0)
 		return ret;
