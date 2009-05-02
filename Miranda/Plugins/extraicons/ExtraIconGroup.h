@@ -54,6 +54,7 @@ public:
 protected:
 	std::string description;
 	bool setValidExtraIcon;
+	bool insideApply;
 
 	virtual ExtraIcon * getCurrentItem(HANDLE hContact) const;
 };

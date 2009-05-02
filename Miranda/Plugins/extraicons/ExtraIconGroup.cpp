@@ -20,7 +20,7 @@
 #include "commons.h"
 
 ExtraIconGroup::ExtraIconGroup(const char *name) :
-	ExtraIcon(name), setValidExtraIcon(false)
+	ExtraIcon(name), setValidExtraIcon(false), insideApply(false)
 {
 	char setting[512];
 	mir_snprintf(setting, MAX_REGS(setting), "%s/%s", MODULE_NAME, name);
@@ -53,10 +53,12 @@ void ExtraIconGroup::rebuildIcons()
 
 void ExtraIconGroup::applyIcon(HANDLE hContact)
 {
-	if (hContact == NULL)
+	if (!isEnabled() || hContact == NULL)
 		return;
 
 	setValidExtraIcon = false;
+
+	insideApply = true;
 
 	unsigned int i;
 	for (i = 0; i < items.size(); ++i)
@@ -66,6 +68,8 @@ void ExtraIconGroup::applyIcon(HANDLE hContact)
 		if (setValidExtraIcon)
 			break;
 	}
+
+	insideApply = false;
 
 	DBWriteContactSettingDword(hContact, MODULE_NAME, name.c_str(), setValidExtraIcon ? items[i]->getID() : 0);
 }
@@ -108,42 +112,72 @@ void ExtraIconGroup::onClick(HANDLE hContact)
 
 int ExtraIconGroup::setIcon(int id, HANDLE hContact, void *icon)
 {
+	if (insideApply)
+	{
+		for (unsigned int i = 0; i < items.size(); ++i)
+			if (items[i]->getID() == id)
+				return items[i]->setIcon(id, hContact, icon);
+
+		return -1;
+	}
+
 	ExtraIcon *current = getCurrentItem(hContact);
 	int currentPos = items.size();
-	ExtraIcon *store = NULL;
 	int storePos = items.size();
 	for (unsigned int i = 0; i < items.size(); ++i)
 	{
 		if (items[i]->getID() == id)
-		{
-			store = items[i];
 			storePos = i;
-		}
 
 		if (items[i] == current)
-		{
 			currentPos = i;
-		}
 	}
 
-	if (store == NULL)
+	if (storePos == items.size())
 	{
 		return -1;
 	}
-	else if (storePos < currentPos)
+	else if (storePos > currentPos)
 	{
-		DBWriteContactSettingDword(hContact, MODULE_NAME, name.c_str(), id);
-		return store->setIcon(id, hContact, icon);
-	}
-	else if (storePos == currentPos) // store == current
-	{
-		return store->setIcon(id, hContact, icon);
-	}
-	else // if (storePos > currentPos)
-	{
-		store->storeIcon(hContact, icon);
+		items[storePos]->storeIcon(hContact, icon);
 		return 0;
 	}
+
+	// Ok, we have to set the icon, but we have to assert it is a valid icon
+
+	setValidExtraIcon = false;
+
+	int ret = items[storePos]->setIcon(id, hContact, icon);
+
+	if (storePos < currentPos)
+	{
+		if (setValidExtraIcon)
+			DBWriteContactSettingDword(hContact, MODULE_NAME, name.c_str(), items[storePos]->getID());
+	}
+	else if (storePos == currentPos)
+	{
+		if (!setValidExtraIcon)
+		{
+			DBWriteContactSettingDword(hContact, MODULE_NAME, name.c_str(), 0);
+
+			insideApply = true;
+
+			for (++storePos; storePos < items.size(); ++storePos)
+			{
+				items[storePos]->applyIcon(hContact);
+
+				if (setValidExtraIcon)
+					break;
+			}
+
+			insideApply = false;
+
+			if (setValidExtraIcon)
+				DBWriteContactSettingDword(hContact, MODULE_NAME, name.c_str(), items[storePos]->getID());
+		}
+	}
+
+	return ret;
 }
 
 void ExtraIconGroup::storeIcon(HANDLE hContact, void *icon)
