@@ -44,6 +44,7 @@ public:
 	virtual const char *getDescIcon() const;
 	virtual int getType() const;
 
+	virtual int getPosition() const;
 	virtual void setSlot(int slot);
 
 	std::vector<BaseExtraIcon*> items;

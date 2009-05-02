@@ -62,7 +62,7 @@ static void SetVisibility(HANDLE hContact, int apparentMode, BOOL clear)
 	if (IsEmpty(proto))
 		return;
 
-	if (apparentMode < 0)
+	if (apparentMode <= 0)
 		apparentMode = DBGetContactSettingWord(hContact, proto, "ApparentMode", 0);
 
 	const char *ico = NULL;
@@ -103,10 +103,10 @@ static void SetGender(HANDLE hContact, int gender, BOOL clear)
 	if (IsEmpty(proto))
 		return;
 
-	if (gender < 0)
-		gender = DBGetContactSettingByte(hContact, proto, "Gender", -1);
-	if (gender < 0)
-		gender = DBGetContactSettingByte(hContact, "UserInfo", "Gender", -1);
+	if (gender <= 0)
+		gender = DBGetContactSettingByte(hContact, proto, "Gender", 0);
+	if (gender <= 0)
+		gender = DBGetContactSettingByte(hContact, "UserInfo", "Gender", 0);
 
 	const char *ico = NULL;
 	if (gender == 'M')
