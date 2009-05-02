@@ -3,22 +3,20 @@
 
 
 template<class T> 
-class mir_scope 
+class scope 
 {
 public:
-	mir_scope() : p(NULL) {}
-	mir_scope(T t) : p(t) {}
-	~mir_scope() { release(); }
+	scope(T t) : p(t) {}
+	~scope() { free(); }
 
-	void release()
+	void free()
 	{
 		if (p != NULL)
 			mir_free(p);
 		p = NULL;
 	}
 
-	T operator=(T t) { release(); p = t; return t; }
-	T operator->() const { return p; }
+//	T operator->() const { return p; }
 	operator T() const { return p; }
 
 	T detach() 
