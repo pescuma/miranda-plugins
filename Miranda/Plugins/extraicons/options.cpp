@@ -40,8 +40,7 @@ int InitOptionsCallback(WPARAM wParam, LPARAM lParam)
 	odp.hInstance = hInst;
 	odp.pszGroup = LPGENT("Contact List");
 	odp.pszTitle = LPGENT("Extra icons");
-	//	odp.pszTitle = LPGENT("Contact List");
-	//	odp.pszTab = LPGENT("Extra icons");
+	odp.pszTab = LPGENT("General");
 	odp.pfnDlgProc = OptionsDlgProc;
 	odp.pszTemplate = MAKEINTRESOURCEA(IDD_OPTIONS);
 	odp.flags = ODPF_BOLDGROUPS | ODPF_EXPERTONLY;
