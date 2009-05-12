@@ -2,6 +2,9 @@ Extra Icons Service
 
 Changelog:
 
+. 0.2.5.0
+  * Fix for crash on reseting icons
+
 . 0.2.4.0
   * Fix for removing grouped icon
 
