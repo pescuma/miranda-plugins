@@ -83,29 +83,28 @@ HANDLE AddIcon(const char *icolibName)
 
 void RemoveIcon(const char *icolibName)
 {
-	for (vector<Icon>::iterator it = usedIcons.begin(); it != usedIcons.end(); it++)
+	for (unsigned int i = 0; i < usedIcons.size(); ++i)
 	{
-		Icon *icon = &*it;
+		Icon *icon = &usedIcons[i];
 
 		if (icon->name != icolibName)
 			continue;
 
 		icon->refCount--;
-
 		break;
 	}
 }
 
+static bool NotUsedIcon(const Icon &icon) 
+{
+	return icon.refCount <= 0;
+}
+
 void ResetIcons()
 {
-	for (vector<Icon>::iterator it = usedIcons.begin(); it != usedIcons.end(); it++)
-	{
-		Icon *icon = &*it;
+	usedIcons.erase(std::remove_if(usedIcons.begin(), usedIcons.end(), NotUsedIcon), usedIcons.end());
 
-		if (icon->refCount <= 0)
-			usedIcons.erase(it);
-		else
-			icon->hImage = NULL;
-	}
+	for (unsigned int i = 0; i < usedIcons.size(); ++i)
+		usedIcons[i].hImage = NULL;
 }
 
