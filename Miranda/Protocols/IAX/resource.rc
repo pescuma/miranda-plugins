@@ -14,11 +14,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Neutral resources
+// English (U.S.) resources
 
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 #ifdef _WIN32
-LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
 #endif //_WIN32
 
@@ -27,54 +27,24 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 // Dialog
 //
 
-IDD_EMOTICON_SELECTION DIALOGEX 0, 0, 188, 90
-STYLE DS_SETFONT | WS_POPUP | WS_VISIBLE | WS_BORDER
-EXSTYLE WS_EX_NOPARENTNOTIFY
-FONT 8, "MS Sans Serif", 0, 0, 0x1
-BEGIN
-END
-
-IDD_OPTIONS DIALOGEX 0, 0, 293, 247
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_VISIBLE
+IDD_ACCMGRUI DIALOGEX 0, 0, 186, 134
+STYLE DS_FIXEDSYS | WS_CHILD
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg"
 BEGIN
-    LISTBOX         IDC_PACK,7,2,277,148,LBS_OWNERDRAWVARIABLE | 
-                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Embed videos",IDC_VIDEO,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,159,277,10
-    CONTROL         "Enable custom smileys",IDC_CUSTOM_SMILEYS,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,171,277,10
-    CONTROL         "Replace emoticons in text input area too",IDC_INPUT_TOO,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,183,277,10
-    CONTROL         "Use default emoticon pack for unknown protocols",
-                    IDC_USE_DEFAULT_PACK,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,195,277,10
-    CONTROL         "Only replace emoticons surrounded by spaces",
-                    IDC_ONLY_ISOLATED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
-                    7,207,277,10
-    CONTROL         "Download more emoticon packs",IDC_GETMORE,"Hyperlink",
-                    WS_TABSTOP | 0x1,7,231,277,12
+    LTEXT           "Server:",IDC_STATIC,0,0,53,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_HOST,54,0,92,12,ES_AUTOHSCROLL
+    CTEXT           ":",IDC_STATIC,147,0,8,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_PORT,155,0,30,12,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "User:",IDC_STATIC,0,16,53,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_USERNAME,54,16,131,12,ES_AUTOHSCROLL
+    LTEXT           "Password:",IDC_STATIC,0,31,53,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_PASSWORD,54,32,131,12,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "Save password",IDC_SAVEPASSWORD,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,54,48,131,10
 END
 
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// DESIGNINFO
-//
-
-#ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO MOVEABLE PURE 
-BEGIN
-    IDD_OPTIONS, DIALOG
-    BEGIN
-        LEFTMARGIN, 1
-        TOPMARGIN, 1
-    END
-END
-#endif    // APSTUDIO_INVOKED
-
-#endif    // Neutral resources
+#endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

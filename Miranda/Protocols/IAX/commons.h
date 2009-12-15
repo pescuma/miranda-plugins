@@ -31,6 +31,7 @@ Boston, MA 02111-1307, USA.
 #include <time.h>
 
 #include <vector>
+#include <list>
 
 // Miranda headers
 #define MIRANDA_VER 0x0900
@@ -62,12 +63,14 @@ Boston, MA 02111-1307, USA.
 #include "../../plugins/utils/mir_options.h"
 #include "../../plugins/utils/mir_icons.h"
 #include "../../plugins/utils/mir_log.h"
+#include "../../plugins/utils/utf8_helpers.h"
 
 #include <iaxclient.h>
 
 #include "resource.h"
 #include "m_iax.h"
 #include "options.h"
+#include "IAXProto.h"
 
 
 #define MODULE_NAME		"IAX"
@@ -76,6 +79,7 @@ Boston, MA 02111-1307, USA.
 // Global Variables
 extern HINSTANCE hInst;
 extern PLUGINLINK *pluginLink;
+extern OBJLIST<IAXProto> instances;
 
 #define MAX_REGS(_A_) ( sizeof(_A_) / sizeof(_A_[0]) )
 #define MIR_FREE(_X_) if (_X_ != NULL) { mir_free(_X_); _X_ = NULL; }
