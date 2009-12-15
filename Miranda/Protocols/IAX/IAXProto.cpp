@@ -35,18 +35,6 @@ IAXProto::IAXProto(const char *aProtoName, const TCHAR *aUserName)
 	m_szProtoName = mir_strdup(aProtoName);
 	m_szModuleName = mir_strdup(aProtoName);
 
-	TCHAR buffer[MAX_PATH]; 
-	mir_sntprintf(buffer, MAX_REGS(buffer), TranslateT("%s plugin connections"), m_tszUserName);
-		
-	NETLIBUSER nl_user = {0};
-	nl_user.cbSize = sizeof(nl_user);
-	nl_user.flags = NUF_OUTGOING | NUF_TCHAR;
-	nl_user.szSettingsModule = m_szModuleName;
-	nl_user.ptszDescriptiveName = buffer;
-	hNetlibUser = (HANDLE) CallService(MS_NETLIB_REGISTERUSER, 0, (LPARAM)&nl_user);
-
-	CreateProtoService(PS_CREATEACCMGRUI, &IAXProto::CreateAccMgrUI);
-
 	static OptPageControl ctrls[] = { 
 		{ NULL,	CONTROL_TEXT,		IDC_HOST,			"Host", NULL, 0, 0, 256 },
 		{ NULL,	CONTROL_INT,		IDC_PORT,			"Port", 4569, 0, 1 },
@@ -64,29 +52,12 @@ IAXProto::IAXProto(const char *aProtoName, const TCHAR *aUserName)
 
 	LoadOpts(accountManagerCtrls, MAX_REGS(accountManagerCtrls), m_szModuleName);
 
-	iaxc_set_event_callback(&static_iaxc_callback, this); 
-	
-	// TODO Handle network out port
-	iaxc_set_preferred_source_udp_port(-1);
-	if (iaxc_initialize(3))
-		throw "!!";
-
-	iaxc_set_formats(IAXC_FORMAT_SPEEX,
-					 IAXC_FORMAT_ULAW|IAXC_FORMAT_ALAW|IAXC_FORMAT_GSM|IAXC_FORMAT_SPEEX|IAXC_FORMAT_ILBC);
-	iaxc_set_speex_settings(1,-1,-1,0,8000,3);
-	iaxc_set_silence_threshold(-99);
-
-	if (iaxc_start_processing_thread())
-		throw "!!";
+	CreateProtoService(PS_CREATEACCMGRUI, &IAXProto::CreateAccMgrUI);
 }
 
 
 IAXProto::~IAXProto()
 {
-	iaxc_stop_processing_thread();
-
-	iaxc_shutdown();
-
 	Netlib_CloseHandle(hNetlibUser);
 
 	mir_free(m_tszUserName);
@@ -419,3 +390,72 @@ static INT_PTR CALLBACK DlgProcAccMgrUI(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 							proto->m_szModuleName, hwnd, msg, wParam, lParam);
 }
 
+
+int __cdecl IAXProto::OnEvent( PROTOEVENTTYPE iEventType, WPARAM wParam, LPARAM lParam ) 
+{
+	switch(iEventType) 
+	{
+		case EV_PROTO_ONLOAD:    
+			return OnModulesLoaded(0, 0);
+
+		case EV_PROTO_ONEXIT:    
+			return OnPreShutdown(0, 0);
+
+		case EV_PROTO_ONOPTIONS: 
+			return OnOptionsInit(wParam, lParam);
+
+		case EV_PROTO_ONRENAME:
+		{	
+			break;
+		}
+	}
+	return 1;
+}
+
+
+int  __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
+{
+	TCHAR buffer[MAX_PATH]; 
+	mir_sntprintf(buffer, MAX_REGS(buffer), TranslateT("%s plugin connections"), m_tszUserName);
+		
+	NETLIBUSER nl_user = {0};
+	nl_user.cbSize = sizeof(nl_user);
+	nl_user.flags = NUF_INCOMING | NUF_OUTGOING | NUF_TCHAR;
+	nl_user.szSettingsModule = m_szModuleName;
+	nl_user.ptszDescriptiveName = buffer;
+	hNetlibUser = (HANDLE) CallService(MS_NETLIB_REGISTERUSER, 0, (LPARAM)&nl_user);
+
+
+	iaxc_set_event_callback(&static_iaxc_callback, this); 
+	
+	// TODO Handle network out port
+	iaxc_set_preferred_source_udp_port(-1);
+	if (iaxc_initialize(3))
+		throw "!!";
+
+	iaxc_set_formats(IAXC_FORMAT_SPEEX,
+					 IAXC_FORMAT_ULAW|IAXC_FORMAT_ALAW|IAXC_FORMAT_GSM|IAXC_FORMAT_SPEEX|IAXC_FORMAT_ILBC);
+	iaxc_set_speex_settings(1,-1,-1,0,8000,3);
+	iaxc_set_silence_threshold(-99);
+
+	if (iaxc_start_processing_thread())
+		throw "!!";
+
+	return 0;
+}
+
+
+int  __cdecl IAXProto::OnOptionsInit(WPARAM wParam,LPARAM lParam)
+{
+	return 0;
+}
+
+
+int  __cdecl IAXProto::OnPreShutdown(WPARAM wParam,LPARAM lParam)
+{
+	iaxc_stop_processing_thread();
+
+	iaxc_shutdown();
+
+	return 0;
+}
