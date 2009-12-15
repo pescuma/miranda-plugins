@@ -95,7 +95,7 @@ public:
 
 	virtual	int       __cdecl UserIsTyping( HANDLE hContact, int type ) { return 0; }
 
-	virtual	int       __cdecl OnEvent( PROTOEVENTTYPE iEventType, WPARAM wParam, LPARAM lParam ) { return 1; }
+	virtual	int       __cdecl OnEvent( PROTOEVENTTYPE iEventType, WPARAM wParam, LPARAM lParam );
 
 	int iaxc_callback(iaxc_event &e);
 
@@ -105,6 +105,10 @@ private:
 	void CreateProtoService(const char* szService, IAXServiceFuncParam serviceProc, LPARAM lParam);
 	HANDLE CreateProtoEvent(const char* szService);
 	int SendBroadcast(HANDLE hContact, int type, int result, HANDLE hProcess, LPARAM lParam);
+
+	int  __cdecl OnModulesLoaded(WPARAM wParam, LPARAM lParam);
+	int  __cdecl OnOptionsInit(WPARAM wParam,LPARAM lParam);
+	int  __cdecl OnPreShutdown(WPARAM wParam,LPARAM lParam);
 
 	void ShowMessage(bool error, TCHAR *fmt, ...);
 	void Disconnect();
