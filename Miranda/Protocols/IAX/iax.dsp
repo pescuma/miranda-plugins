@@ -164,6 +164,10 @@ SOURCE=.\commons.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\IAXProto.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\m_iax.h
 # End Source File
 # Begin Source File
@@ -205,6 +209,10 @@ SOURCE=.\resource.rc
 # Begin Source File
 
 SOURCE=.\iax.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\IAXProto.cpp
 # End Source File
 # Begin Source File
 
