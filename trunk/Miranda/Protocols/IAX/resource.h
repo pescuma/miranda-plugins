@@ -5,6 +5,12 @@
 #define IDD_OPTIONS                     119
 #define IDD_OPTIONS_OLD                 120
 #define IDD_EMOTICON_SELECTION          126
+#define IDD_ACCMGRUI                    227
+#define IDC_USERNAME                    1000
+#define IDC_PASSWORD                    1001
+#define IDC_PORT                        1004
+#define IDC_HOST                        1043
+#define IDC_SAVEPASSWORD                1048
 #define IDC_INPUT_TOO                   1060
 #define IDC_IGNORE_UPPERCASE            1065
 #define IDC_AUTO_USER                   1066

@@ -599,13 +599,14 @@ typedef struct iaxc_event_struct {
 	
 	\return The result of processing the event; > 0 if successfully handled the event, 0 if not handled, < 0 to indicate an error occurred processing the event.
 */
-typedef int (*iaxc_event_callback_t)(iaxc_event e);
+typedef int (*iaxc_event_callback_t)(iaxc_event e, void *param);
 
 /*!
 	Sets the callback to call with IAXClient events
 	\param func The callback function to call with events
+	\param param User data to pass to the callback function
 */
-EXPORT void iaxc_set_event_callback(iaxc_event_callback_t func);
+EXPORT void iaxc_set_event_callback(iaxc_event_callback_t func, void *param);
 
 /*!
 	Sets iaxclient to post a pointer to a copy of event using o/s specific Post method 
