@@ -19,6 +19,8 @@ Boston, MA 02111-1307, USA.
 
 #include "commons.h"
 
+#define NUM_LINES 3
+
 
 static INT_PTR CALLBACK DlgProcAccMgrUI(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 static int static_iaxc_callback(iaxc_event e, void *param);
@@ -29,6 +31,8 @@ IAXProto::IAXProto(const char *aProtoName, const TCHAR *aUserName)
 	InitializeCriticalSection(&cs);
 
 	reg_id = 0;
+	hNetlibUser = 0;
+	hCallStateEvent = 0;
 	m_iDesiredStatus = m_iStatus = ID_STATUS_OFFLINE;
 
 	m_tszUserName = mir_tstrdup(aUserName);
@@ -111,6 +115,8 @@ int __cdecl IAXProto::SetStatus( int iNewStatus )
 	}
 	else if (m_iStatus == ID_STATUS_OFFLINE)
 	{
+		Trace(_T("Connecting..."));
+
 		BroadcastStatus(ID_STATUS_CONNECTING);
 
 		TCHAR server_port[1024];
@@ -119,6 +125,7 @@ int __cdecl IAXProto::SetStatus( int iNewStatus )
 		reg_id = iaxc_register(TcharToUtf8(opts.username), opts.password, TcharToUtf8(server_port));
 		if (reg_id <= 0)
 		{
+			Error(TranslateT("Error registering with IAX"));
 			BroadcastStatus(ID_STATUS_OFFLINE);
 			return -1;
 		}
@@ -141,6 +148,8 @@ INT_PTR  __cdecl IAXProto::CreateAccMgrUI(WPARAM wParam, LPARAM lParam)
 
 void IAXProto::BroadcastStatus(int newStatus)
 {
+	Trace(_T("BroadcastStatus %d"), newStatus);
+
 	int oldStatus = m_iStatus;
 	m_iStatus = newStatus;
 	SendBroadcast(NULL, ACKTYPE_STATUS, ACKRESULT_SUCCESS, (HANDLE)oldStatus, m_iStatus);
@@ -186,23 +195,66 @@ int IAXProto::SendBroadcast(HANDLE hContact, int type, int result, HANDLE hProce
 }
 
 
-void IAXProto::ShowMessage(bool error, TCHAR *fmt, ...) 
+#define MESSAGE_TYPE_TRACE 0
+#define MESSAGE_TYPE_INFO 1
+#define MESSAGE_TYPE_ERROR 2
+
+
+void IAXProto::Trace(TCHAR *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
 
-	TCHAR buff[1024];
-	mir_sntprintf(buff, MAX_REGS(buff), fmt, args);
-
-	OutputDebugString(buff);
-	CallService(MS_NETLIB_LOG, (WPARAM) hNetlibUser, (LPARAM) (const char *) TcharToChar(buff));
+	ShowMessage(MESSAGE_TYPE_TRACE, fmt, args);
 
 	va_end(args);
 }
 
 
+void IAXProto::Info(TCHAR *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+
+	ShowMessage(MESSAGE_TYPE_INFO, fmt, args);
+
+	va_end(args);
+}
+
+
+void IAXProto::Error(TCHAR *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+
+	ShowMessage(MESSAGE_TYPE_ERROR, fmt, args);
+
+	va_end(args);
+}
+
+
+void IAXProto::ShowMessage(int type, TCHAR *fmt, va_list args) 
+{
+	TCHAR buff[1024];
+	if (type == MESSAGE_TYPE_TRACE)
+		lstrcpy(buff, _T("TRACE: "));
+	else if (type == MESSAGE_TYPE_INFO)
+		lstrcpy(buff, _T("INFO : "));
+	else
+		lstrcpy(buff, _T("ERROR: "));
+
+	mir_vsntprintf(&buff[7], MAX_REGS(buff)-7, fmt, args);
+
+	OutputDebugString(buff);
+	OutputDebugString(_T("\n"));
+	CallService(MS_NETLIB_LOG, (WPARAM) hNetlibUser, (LPARAM) TcharToChar(buff).get());
+}
+
+
 void IAXProto::Disconnect()
 {
+	Trace(_T("Disconnecting..."));
+
 	iaxc_dump_all_calls();
 
 	if (reg_id > 0)
@@ -227,28 +279,28 @@ int IAXProto::text_callback(iaxc_ev_text &text)
 	{
 		case IAXC_TEXT_TYPE_STATUS:
 		{
-			ShowMessage(false, TranslateT("Status: %s"), Utf8ToTchar(text.message));
+			Trace(_T("Status: %s"), Utf8ToTchar(text.message));
 			return 1;
 		}
 		case IAXC_TEXT_TYPE_NOTICE:
 		{
-			ShowMessage(false, TranslateT("Notice: %s"), Utf8ToTchar(text.message));
+			Info(TranslateT("Notice: %s"), Utf8ToTchar(text.message));
 			return 1;
 		}
 		case IAXC_TEXT_TYPE_ERROR:
 		{
-			ShowMessage(true, Utf8ToTchar(text.message));
+			Error(Utf8ToTchar(text.message));
 			return 1;
 		}
 		case IAXC_TEXT_TYPE_FATALERROR:
 		{
-			ShowMessage(true, TranslateT("Fatal: %s"), Utf8ToTchar(text.message));
+			Error(TranslateT("Fatal: %s"), Utf8ToTchar(text.message));
 			Disconnect();
 			return 1;
 		}
 		case IAXC_TEXT_TYPE_IAX:
 		{
-			ShowMessage(false, TranslateT("IAX: %s"), Utf8ToTchar(text.message));
+			Trace(_T("IAX: %s"), Utf8ToTchar(text.message));
 			return 1;
 		}
 		default:
@@ -261,24 +313,68 @@ int IAXProto::text_callback(iaxc_ev_text &text)
 
 int IAXProto::state_callback(iaxc_ev_call_state &call)
 {
+	bool outgoing = ((call.state & IAXC_CALL_STATE_OUTGOING) != 0);
+
+	TCHAR buffer[256] = {0};
+	TCHAR *number = NULL;
+
+	if (!outgoing)
+	{
+		mir_sntprintf(buffer, MAX_REGS(buffer), _T("%s %s"), 
+						Utf8ToTchar(call.remote_name).get(), 
+						Utf8ToTchar(call.remote).get());
+		lstrtrim(buffer);
+		number = buffer;
+	}
+
+	Trace(_T("callNo %d state %d"), call.callNo, call.state);
+
+	if (call.state & IAXC_CALL_STATE_FREE)
+	{
+		NotifyCall(call.callNo, VOICE_STATE_ENDED);
+	}
+	else if (call.state & IAXC_CALL_STATE_BUSY)
+	{
+		NotifyCall(call.callNo, VOICE_STATE_BUSY, NULL, number);
+	}
+	else if (call.state & IAXC_CALL_STATE_RINGING)
+	{
+		if (outgoing)
+			NotifyCall(call.callNo, VOICE_STATE_CALLING, NULL, number);
+		else
+			NotifyCall(call.callNo, VOICE_STATE_RINGING, NULL, number);
+	}
+	else if (call.state & IAXC_CALL_STATE_SELECTED)
+	{
+		NotifyCall(call.callNo, VOICE_STATE_TALKING, NULL, number);
+	}
+	else
+	{
+		NotifyCall(call.callNo, VOICE_STATE_ON_HOLD, NULL, number);
+	}
+
 	return 0;
 }
 
 
 int IAXProto::netstats_callback(iaxc_ev_netstats &netstats)
 {
+	Trace(_T("netstats"));
 	return 0;
 }
 
 
 int IAXProto::url_callback(iaxc_ev_url &url)
 {
+	Trace(_T("URL"));
 	return 0;
 }
 
 
 int IAXProto::registration_callback(iaxc_ev_registration &reg)
 {
+	Trace(_T("registration_callback %d : %d"), reg.id, reg.reply);
+
 	if (reg.id != reg_id)
 		return 0;
 
@@ -289,20 +385,20 @@ int IAXProto::registration_callback(iaxc_ev_registration &reg)
 			BroadcastStatus(m_iDesiredStatus > ID_STATUS_OFFLINE ? m_iDesiredStatus : ID_STATUS_ONLINE);
 
 			if (reg.msgcount > 0) 
-				ShowMessage(false, TranslateT("You have %d voicemail message(s)."), reg.msgcount);
+				Info(TranslateT("You have %d voicemail message(s)"), reg.msgcount);
 
 			return 1;
 		}
 		case IAXC_REGISTRATION_REPLY_REJ:
 		{
-			ShowMessage(true, TranslateT("Registration rejected"));
+			Error(TranslateT("Registration rejected"));
 			Disconnect();
 
 			return 1;
 		}
 		case IAXC_REGISTRATION_REPLY_TIMEOUT:
 		{
-			ShowMessage(true, TranslateT("Registration timeout"));
+			Error(TranslateT("Registration timeout"));
 			Disconnect();
 
 			return 1;
@@ -413,7 +509,7 @@ int __cdecl IAXProto::OnEvent( PROTOEVENTTYPE iEventType, WPARAM wParam, LPARAM 
 }
 
 
-int  __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
+int __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 {
 	TCHAR buffer[MAX_PATH]; 
 	mir_sntprintf(buffer, MAX_REGS(buffer), TranslateT("%s plugin connections"), m_tszUserName);
@@ -425,13 +521,21 @@ int  __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 	nl_user.ptszDescriptiveName = buffer;
 	hNetlibUser = (HANDLE) CallService(MS_NETLIB_REGISTERUSER, 0, (LPARAM)&nl_user);
 
+	if (!ServiceExists(MS_VOICESERVICE_REGISTER))
+	{
+		Error(TranslateT("IAX needs Voice Service plugin to work!"));
+		return 1;
+	}
 
 	iaxc_set_event_callback(&static_iaxc_callback, this); 
 	
 	// TODO Handle network out port
 	iaxc_set_preferred_source_udp_port(-1);
-	if (iaxc_initialize(3))
-		throw "!!";
+	if (iaxc_initialize(NUM_LINES))
+	{
+		Error(TranslateT("Failed to initialize iaxc lib"));
+		return 1;
+	}
 
 	iaxc_set_formats(IAXC_FORMAT_SPEEX,
 					 IAXC_FORMAT_ULAW|IAXC_FORMAT_ALAW|IAXC_FORMAT_GSM|IAXC_FORMAT_SPEEX|IAXC_FORMAT_ILBC);
@@ -439,23 +543,144 @@ int  __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 	iaxc_set_silence_threshold(-99);
 
 	if (iaxc_start_processing_thread())
-		throw "!!";
+	{
+		Error(TranslateT("Failed to initialize iax threads"));
+		return 1;
+	}
+
+
+	hCallStateEvent = CreateProtoEvent(PE_VOICE_CALL_STATE);
+
+	VOICE_MODULE vm = {0};
+	vm.cbSize = sizeof(vm);
+	vm.name = m_szModuleName;
+	vm.flags = VOICE_CAPS_CALL_STRING | VOICE_CAPS_CAN_HOLD;
+	CallService(MS_VOICESERVICE_REGISTER, (WPARAM) &vm, 0);
 
 	return 0;
 }
 
 
-int  __cdecl IAXProto::OnOptionsInit(WPARAM wParam,LPARAM lParam)
+int __cdecl IAXProto::OnOptionsInit(WPARAM wParam, LPARAM lParam)
 {
 	return 0;
 }
 
 
-int  __cdecl IAXProto::OnPreShutdown(WPARAM wParam,LPARAM lParam)
+int __cdecl IAXProto::OnPreShutdown(WPARAM wParam, LPARAM lParam)
 {
+	CallService(MS_VOICESERVICE_UNREGISTER, (WPARAM) m_szModuleName, 0);
+
 	iaxc_stop_processing_thread();
 
 	iaxc_shutdown();
 
 	return 0;
 }
+
+
+void IAXProto::NotifyCall(int callNo, int state, HANDLE hContact, TCHAR *number)
+{
+	char tmp[16];
+
+	VOICE_CALL vc = {0};
+	vc.cbSize = sizeof(vc);
+	vc.szModule = m_szModuleName;
+	vc.id = itoa(callNo, tmp, 10);
+	vc.flags = VOICE_TCHAR;
+	vc.hContact = hContact;
+	vc.ptszNumber = number;
+	vc.state = state;
+
+	NotifyEventHooks(hCallStateEvent, (WPARAM) &vc, 0);
+}
+
+
+int __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
+{
+	HANDLE hContact = (HANDLE) wParam;
+	TCHAR *number = (TCHAR *) lParam;
+
+	if (number == NULL || number[0] == 0)
+		return 1;
+
+	if (iaxc_first_free_call() < 0)
+		return 2;
+
+	int callNo = iaxc_call_ex(TcharToUtf8(number), NULL, NULL, FALSE);
+	if (callNo < 0 || callNo >= NUM_LINES)
+		return 3;
+
+	NotifyCall(callNo, VOICE_STATE_CALLING, hContact, number);
+
+	return 0;
+}
+
+
+int __cdecl IAXProto::VoiceAnswerCall(WPARAM wParam, LPARAM lParam)
+{
+	char *id = (char *) wParam;
+	if (id == NULL || id[0] == 0)
+		return 1;
+
+	int callNo = atoi(id);
+	if (callNo < 0 || callNo >= NUM_LINES)
+		return 2;
+
+	if (iaxc_select_call(callNo) < 0)
+		return 3;
+
+	return 0;
+}
+
+
+int __cdecl IAXProto::VoiceDropCall(WPARAM wParam, LPARAM lParam)
+{
+	char *id = (char *) wParam;
+	if (id == NULL || id[0] == 0)
+		return 1;
+
+	int callNo = atoi(id);
+	if (callNo < 0 || callNo >= NUM_LINES)
+		return 2;
+
+	if (iaxc_get_call_state(callNo) & IAXC_CALL_STATE_RINGING)
+		iaxc_reject_call_number(callNo);
+	else
+		iaxc_dump_call_number(callNo);
+
+	return 0;
+}
+
+
+int __cdecl IAXProto::VoiceHoldCall(WPARAM wParam, LPARAM lParam)
+{
+	char *id = (char *) wParam;
+	if (id == NULL || id[0] == 0)
+		return 1;
+
+	int callNo = atoi(id);
+	if (callNo < 0 || callNo >= NUM_LINES)
+		return 2;
+
+	if (callNo != iaxc_selected_call())
+		return 3;
+
+	iaxc_select_call(-1);
+	NotifyCall(callNo, VOICE_STATE_ON_HOLD);
+	return 0;
+}
+
+
+int __cdecl IAXProto::VoiceCallStringValid(WPARAM wParam, LPARAM lParam)
+{
+	TCHAR *number = (TCHAR *) wParam;
+	
+	if (number == NULL || number[0] == 0 || lstrlen(number) >= IAXC_EVENT_BUFSIZ)
+		return 0;
+
+	return 1;
+}
+
+
+
