@@ -856,6 +856,11 @@ EXPORT void iaxc_send_text_call(int callNo, const char * text);
 EXPORT void iaxc_send_url(const char *url, int link); /* link == 1 ? AST_HTML_LINKURL : AST_HTML_URL */
 
 /*!
+	Returns the state of a call
+*/
+EXPORT int iaxc_get_call_state(int callNo);
+
+/*!
 	Suspends thread execution for an interval measured in milliseconds
 	\param ms The number of milliseconds to sleep
 */

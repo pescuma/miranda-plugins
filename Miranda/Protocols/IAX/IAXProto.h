@@ -30,6 +30,7 @@ class IAXProto : public PROTO_INTERFACE
 {
 private:
 	HANDLE hNetlibUser;
+	HANDLE hCallStateEvent;
 	int reg_id;
 
 	struct {
@@ -106,11 +107,15 @@ private:
 	HANDLE CreateProtoEvent(const char* szService);
 	int SendBroadcast(HANDLE hContact, int type, int result, HANDLE hProcess, LPARAM lParam);
 
-	int  __cdecl OnModulesLoaded(WPARAM wParam, LPARAM lParam);
-	int  __cdecl OnOptionsInit(WPARAM wParam,LPARAM lParam);
-	int  __cdecl OnPreShutdown(WPARAM wParam,LPARAM lParam);
+	int __cdecl OnModulesLoaded(WPARAM wParam, LPARAM lParam);
+	int __cdecl OnOptionsInit(WPARAM wParam,LPARAM lParam);
+	int __cdecl OnPreShutdown(WPARAM wParam,LPARAM lParam);
 
-	void ShowMessage(bool error, TCHAR *fmt, ...);
+	void Trace(TCHAR *fmt, ...);
+	void Info(TCHAR *fmt, ...);
+	void Error(TCHAR *fmt, ...);
+	void ShowMessage(int type, TCHAR *fmt, va_list args);
+
 	void Disconnect();
 	INT_PTR  __cdecl CreateAccMgrUI(WPARAM wParam, LPARAM lParam);
 
@@ -120,6 +125,15 @@ private:
 	int netstats_callback(iaxc_ev_netstats &netstats);
 	int url_callback(iaxc_ev_url &url);
 	int registration_callback(iaxc_ev_registration &reg);
+
+	// Voice services
+	void NotifyCall(int callNo, int state, HANDLE hContact = NULL, TCHAR *number = NULL);
+	int __cdecl VoiceGetCaps(WPARAM wParam,LPARAM lParam);
+	int __cdecl VoiceCall(WPARAM wParam,LPARAM lParam);
+	int __cdecl VoiceAnswerCall(WPARAM wParam,LPARAM lParam);
+	int __cdecl VoiceDropCall(WPARAM wParam,LPARAM lParam);
+	int __cdecl VoiceHoldCall(WPARAM wParam,LPARAM lParam);
+	int __cdecl VoiceCallStringValid(WPARAM wParam,LPARAM lParam);
 
 };
 

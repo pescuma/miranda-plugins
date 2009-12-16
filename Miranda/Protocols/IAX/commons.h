@@ -64,6 +64,8 @@ Boston, MA 02111-1307, USA.
 #include "../../plugins/utils/mir_icons.h"
 #include "../../plugins/utils/mir_log.h"
 #include "../../plugins/utils/utf8_helpers.h"
+#include "../../plugins/voiceservice/m_voice.h"
+#include "../../plugins/voiceservice/m_voiceservice.h"
 
 #include <iaxclient.h>
 
@@ -86,6 +88,26 @@ extern OBJLIST<IAXProto> instances;
 #define RELEASE(_X_) if (_X_ != NULL) { _X_->Release(); _X_ = NULL; }
 
 
+
+static TCHAR *lstrtrim(TCHAR *str)
+{
+	int len = lstrlen(str);
+
+	int i;
+	for(i = len - 1; i >= 0 && (str[i] == ' ' || str[i] == '\t'); --i) ;
+	if (i < len - 1)
+	{
+		++i;
+		str[i] = _T('\0');
+		len = i;
+	}
+
+	for(i = 0; i < len && (str[i] == ' ' || str[i] == '\t'); ++i) ;
+	if (i > 0)
+		memmove(str, &str[i], (len - i + 1) * sizeof(TCHAR));
+
+	return str;
+}
 
 
 #endif // __COMMONS_H__
