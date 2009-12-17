@@ -57,6 +57,12 @@ IAXProto::IAXProto(const char *aProtoName, const TCHAR *aUserName)
 	LoadOpts(accountManagerCtrls, MAX_REGS(accountManagerCtrls), m_szModuleName);
 
 	CreateProtoService(PS_CREATEACCMGRUI, &IAXProto::CreateAccMgrUI);
+
+	CreateProtoService(PS_VOICE_CALL, &IAXProto::VoiceCall);
+	CreateProtoService(PS_VOICE_ANSWERCALL, &IAXProto::VoiceAnswerCall);
+	CreateProtoService(PS_VOICE_DROPCALL, &IAXProto::VoiceDropCall);
+	CreateProtoService(PS_VOICE_HOLDCALL, &IAXProto::VoiceHoldCall);
+	CreateProtoService(PS_VOICE_CALL_STRING_VALID, &IAXProto::VoiceCallStringValid);
 }
 
 
@@ -245,8 +251,8 @@ void IAXProto::ShowMessage(int type, TCHAR *fmt, va_list args)
 
 	mir_vsntprintf(&buff[7], MAX_REGS(buff)-7, fmt, args);
 
-	OutputDebugString(buff);
-	OutputDebugString(_T("\n"));
+//	OutputDebugString(buff);
+//	OutputDebugString(_T("\n"));
 	CallService(MS_NETLIB_LOG, (WPARAM) hNetlibUser, (LPARAM) TcharToChar(buff).get());
 }
 
@@ -313,6 +319,14 @@ int IAXProto::text_callback(iaxc_ev_text &text)
 
 int IAXProto::state_callback(iaxc_ev_call_state &call)
 {
+	Trace(_T("callNo %d state 0x%x"), call.callNo, call.state);
+
+	if (call.state == IAXC_CALL_STATE_FREE)
+	{
+		NotifyCall(call.callNo, VOICE_STATE_ENDED);
+		return 0;
+	}
+
 	bool outgoing = ((call.state & IAXC_CALL_STATE_OUTGOING) != 0);
 
 	TCHAR buffer[256] = {0};
@@ -327,30 +341,24 @@ int IAXProto::state_callback(iaxc_ev_call_state &call)
 		number = buffer;
 	}
 
-	Trace(_T("callNo %d state %d"), call.callNo, call.state);
-
-	if (call.state & IAXC_CALL_STATE_FREE)
-	{
-		NotifyCall(call.callNo, VOICE_STATE_ENDED);
-	}
-	else if (call.state & IAXC_CALL_STATE_BUSY)
+	if (call.state & IAXC_CALL_STATE_BUSY)
 	{
 		NotifyCall(call.callNo, VOICE_STATE_BUSY, NULL, number);
 	}
 	else if (call.state & IAXC_CALL_STATE_RINGING)
 	{
-		if (outgoing)
-			NotifyCall(call.callNo, VOICE_STATE_CALLING, NULL, number);
+		NotifyCall(call.callNo, VOICE_STATE_RINGING, NULL, number);
+	}
+	else if (!(call.state & IAXC_CALL_STATE_COMPLETE))
+	{
+		NotifyCall(call.callNo, VOICE_STATE_CALLING, NULL, number);
+	}
+	else 
+	{
+		if (call.callNo == iaxc_selected_call())
+			NotifyCall(call.callNo, VOICE_STATE_TALKING, NULL, number);
 		else
-			NotifyCall(call.callNo, VOICE_STATE_RINGING, NULL, number);
-	}
-	else if (call.state & IAXC_CALL_STATE_SELECTED)
-	{
-		NotifyCall(call.callNo, VOICE_STATE_TALKING, NULL, number);
-	}
-	else
-	{
-		NotifyCall(call.callNo, VOICE_STATE_ON_HOLD, NULL, number);
+			NotifyCall(call.callNo, VOICE_STATE_ON_HOLD, NULL, number);
 	}
 
 	return 0;
@@ -469,14 +477,6 @@ static INT_PTR CALLBACK DlgProcAccMgrUI(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 			proto = (IAXProto *) lParam;
 			break;
 		}
-
-		case WM_NOTIFY:
-		{
-			if (((LPNMHDR)lParam)->code == (UINT)PSN_APPLY) 
-			{
-			}
-			break;
-		}
 	}
 
 	if (proto == NULL)
@@ -554,7 +554,8 @@ int __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 	VOICE_MODULE vm = {0};
 	vm.cbSize = sizeof(vm);
 	vm.name = m_szModuleName;
-	vm.flags = VOICE_CAPS_CALL_STRING | VOICE_CAPS_CAN_HOLD;
+	vm.description = m_tszUserName;
+	vm.flags = VOICE_CAPS_CALL_STRING;
 	CallService(MS_VOICESERVICE_REGISTER, (WPARAM) &vm, 0);
 
 	return 0;
@@ -581,6 +582,8 @@ int __cdecl IAXProto::OnPreShutdown(WPARAM wParam, LPARAM lParam)
 
 void IAXProto::NotifyCall(int callNo, int state, HANDLE hContact, TCHAR *number)
 {
+	Trace(_T("NotifyCall %d -> %d"), callNo, state);
+
 	char tmp[16];
 
 	VOICE_CALL vc = {0};
@@ -601,15 +604,30 @@ int __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 	HANDLE hContact = (HANDLE) wParam;
 	TCHAR *number = (TCHAR *) lParam;
 
-	if (number == NULL || number[0] == 0)
+	if (!VoiceCallStringValid((WPARAM) number, 0))
 		return 1;
 
-	if (iaxc_first_free_call() < 0)
-		return 2;
-
-	int callNo = iaxc_call_ex(TcharToUtf8(number), NULL, NULL, FALSE);
+	int callNo = iaxc_first_free_call();
 	if (callNo < 0 || callNo >= NUM_LINES)
+	{
+		Error(TranslateT("No more slots to make calls. You need to drop some calls."));
+		return 2;
+	}
+
+	iaxc_select_call(callNo);
+
+	char buff[512];
+	mir_snprintf(buff, MAX_REGS(buff), "%s:%s@%s/%s", 
+				TcharToUtf8(opts.username).get(), opts.password, 
+				TcharToUtf8(opts.host).get(), 
+				TcharToUtf8(number).get());
+
+	callNo = iaxc_call_ex(buff, NULL, NULL, FALSE);
+	if (callNo < 0 || callNo >= NUM_LINES)
+	{
+		Error(TranslateT("Error making call (callNo=%d)."), callNo);
 		return 3;
+	}
 
 	NotifyCall(callNo, VOICE_STATE_CALLING, hContact, number);
 
@@ -675,6 +693,9 @@ int __cdecl IAXProto::VoiceHoldCall(WPARAM wParam, LPARAM lParam)
 int __cdecl IAXProto::VoiceCallStringValid(WPARAM wParam, LPARAM lParam)
 {
 	TCHAR *number = (TCHAR *) wParam;
+
+	if (m_iStatus <= ID_STATUS_OFFLINE)
+		return 0;
 	
 	if (number == NULL || number[0] == 0 || lstrlen(number) >= IAXC_EVENT_BUFSIZ)
 		return 0;
