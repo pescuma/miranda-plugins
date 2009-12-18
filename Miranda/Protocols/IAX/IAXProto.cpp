@@ -685,7 +685,7 @@ int __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 				TcharToUtf8(opts.host).get(), 
 				TcharToUtf8(number).get());
 
-	callNo = iaxc_call_ex(buff, NULL, NULL, FALSE);
+	callNo = iaxc_call_ex(buff, "", "", FALSE);
 	if (callNo < 0 || callNo >= NUM_LINES)
 	{
 		Error(TranslateT("Error making call (callNo=%d)."), callNo);
