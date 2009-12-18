@@ -599,6 +599,67 @@ void IAXProto::NotifyCall(int callNo, int state, HANDLE hContact, TCHAR *number)
 }
 
 
+static int GetDevice(const iaxc_audio_device *devs, int nDevs, bool out)
+{
+	DBVARIANT dbv;
+	if (DBGetContactSettingString(NULL, "VoiceService", out ? "Output" : "Input", &dbv))
+		return -1;
+
+	int ret = -1;
+
+	for(int i = 0; i < nDevs; i++)
+	{
+		if (devs[i].capabilities & (out ? IAXC_AD_OUTPUT : IAXC_AD_INPUT) 
+			&& strcmp(dbv.pszVal, devs[i].name) == 0)
+		{
+			ret = devs[i].devID;
+			break;
+		}
+
+	}
+
+	DBFreeVariant(&dbv);
+	return ret;
+}
+
+
+void IAXProto::ConfigureDevices()
+{
+	iaxc_audio_device *devs;
+	int nDevs; 
+	int input;
+	int output; 
+	int ring;
+	iaxc_audio_devices_get(&devs, &nDevs, &input, &output, &ring);
+
+	int expectedOutput = GetDevice(devs, nDevs, true);
+	if (expectedOutput == -1)
+		expectedOutput = output;
+
+	int expectedInput = GetDevice(devs, nDevs, false);
+	if (expectedInput == -1)
+		expectedInput = input;
+
+	if (input != expectedInput || output != expectedOutput || ring != expectedOutput)
+		iaxc_audio_devices_set(expectedInput, expectedOutput, expectedOutput);
+
+
+	int expectedBoost = DBGetContactSettingByte(NULL, "VoiceService", "MicBoost", TRUE);
+	if (expectedBoost != iaxc_mic_boost_get())
+		iaxc_mic_boost_set(expectedBoost);
+
+
+	int filters = iaxc_get_filters();
+	int expectedFilters;
+	if (DBGetContactSettingByte(NULL, "VoiceService", "EchoCancelation", TRUE))
+		expectedFilters = filters | IAXC_FILTER_ECHO;
+	else
+		expectedFilters = filters & ~IAXC_FILTER_ECHO;
+	if (expectedFilters != filters)
+		iaxc_set_filters(expectedFilters);
+}
+
+
 int __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 {
 	HANDLE hContact = (HANDLE) wParam;
@@ -607,6 +668,8 @@ int __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 	if (!VoiceCallStringValid((WPARAM) number, 0))
 		return 1;
 
+	ConfigureDevices();
+
 	int callNo = iaxc_first_free_call();
 	if (callNo < 0 || callNo >= NUM_LINES)
 	{
@@ -614,7 +677,7 @@ int __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 		return 2;
 	}
 
-	iaxc_select_call(callNo);
+	iaxc_select_call(-1);
 
 	char buff[512];
 	mir_snprintf(buff, MAX_REGS(buff), "%s:%s@%s/%s", 
@@ -644,6 +707,8 @@ int __cdecl IAXProto::VoiceAnswerCall(WPARAM wParam, LPARAM lParam)
 	int callNo = atoi(id);
 	if (callNo < 0 || callNo >= NUM_LINES)
 		return 2;
+
+	ConfigureDevices();
 
 	if (iaxc_select_call(callNo) < 0)
 		return 3;
