@@ -126,6 +126,8 @@ private:
 	int url_callback(iaxc_ev_url &url);
 	int registration_callback(iaxc_ev_registration &reg);
 
+	void ConfigureDevices();
+
 	// Voice services
 	void NotifyCall(int callNo, int state, HANDLE hContact = NULL, TCHAR *number = NULL);
 	int __cdecl VoiceCall(WPARAM wParam,LPARAM lParam);
