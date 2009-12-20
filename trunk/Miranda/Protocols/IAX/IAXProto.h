@@ -134,6 +134,7 @@ private:
 	int __cdecl VoiceAnswerCall(WPARAM wParam,LPARAM lParam);
 	int __cdecl VoiceDropCall(WPARAM wParam,LPARAM lParam);
 	int __cdecl VoiceHoldCall(WPARAM wParam,LPARAM lParam);
+	int __cdecl VoiceSendDTMF(WPARAM wParam,LPARAM lParam);
 	int __cdecl VoiceCallStringValid(WPARAM wParam,LPARAM lParam);
 
 };
