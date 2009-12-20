@@ -62,6 +62,7 @@ IAXProto::IAXProto(const char *aProtoName, const TCHAR *aUserName)
 	CreateProtoService(PS_VOICE_ANSWERCALL, &IAXProto::VoiceAnswerCall);
 	CreateProtoService(PS_VOICE_DROPCALL, &IAXProto::VoiceDropCall);
 	CreateProtoService(PS_VOICE_HOLDCALL, &IAXProto::VoiceHoldCall);
+	CreateProtoService(PS_VOICE_SEND_DTMF, &IAXProto::VoiceSendDTMF);
 	CreateProtoService(PS_VOICE_CALL_STRING_VALID, &IAXProto::VoiceCallStringValid);
 }
 
@@ -751,6 +752,45 @@ int __cdecl IAXProto::VoiceHoldCall(WPARAM wParam, LPARAM lParam)
 
 	iaxc_select_call(-1);
 	NotifyCall(callNo, VOICE_STATE_ON_HOLD);
+	return 0;
+}
+
+
+static bool IsValidDTMF(TCHAR c)
+{
+	if (c >= _T('A') && c <= _T('D'))
+		return true;
+	if (c >= _T('0') && c <= _T('9'))
+		return true;
+	if (c == _T('#') || c == _T('*'))
+		return true;
+
+	return false;
+}
+
+
+int __cdecl IAXProto::VoiceSendDTMF(WPARAM wParam, LPARAM lParam)
+{
+	char *id = (char *) wParam;
+	TCHAR c = (TCHAR) lParam;
+	if (id == NULL || id[0] == 0 || c == 0)
+		return 1;
+
+	int callNo = atoi(id);
+	if (callNo < 0 || callNo >= NUM_LINES)
+		return 2;
+
+	if (callNo != iaxc_selected_call())
+		return 3;
+
+	if (c >= _T('a') && c <= _T('d'))
+		c += _T('A') - _T('a');
+
+	if (!IsValidDTMF(c))
+		return 4;
+
+	iaxc_send_dtmf((char) c);
+	
 	return 0;
 }
 
