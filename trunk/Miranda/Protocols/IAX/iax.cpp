@@ -32,9 +32,9 @@ PLUGININFOEX pluginInfo={
 #endif
 	PLUGIN_MAKE_VERSION(0,1,0,0),
 	"Provides support for Inter-Asterisk eXchange (IAX) protocol",
-	"Ricardo Pescuma Domenecci, sje",
+	"Ricardo Pescuma Domenecci",
 	"pescuma@miranda-im.org",
-	"© 2009 Ricardo Pescuma Domenecci, sje, IAXClient",
+	"© 2009 Ricardo Pescuma Domenecci",
 	"http://pescuma.org/miranda/iax",
 	UNICODE_AWARE,
 	0,		//doesn't replace anything built-in
@@ -94,6 +94,12 @@ extern "C" __declspec(dllexport) const MUUID* MirandaPluginInterfaces(void)
 
 static IAXProto *IAXProtoInit(const char* pszProtoName, const TCHAR* tszUserName)
 {
+	if (instances.getCount() != 0)
+	{
+		MessageBox(NULL, TranslateT("Only one instance is allowed.\nI will crash now."), _T("IAX"), MB_OK | MB_ICONERROR);
+		return NULL;
+	}
+
 	IAXProto *proto = new IAXProto(pszProtoName, tszUserName);
 	instances.insert(proto);
 	return proto;

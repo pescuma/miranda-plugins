@@ -8,6 +8,8 @@
 #define IDD_ACCMGRUI                    227
 #define IDC_USERNAME                    1000
 #define IDC_PASSWORD                    1001
+#define IDC_NAME                        1002
+#define IDC_NUMBER                      1003
 #define IDC_PORT                        1004
 #define IDC_HOST                        1043
 #define IDC_SAVEPASSWORD                1048
