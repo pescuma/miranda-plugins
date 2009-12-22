@@ -1,4 +1,4 @@
-rem @echo off
+@echo off
 
 rem Batch file to build and upload files
 rem 
@@ -63,7 +63,7 @@ cd ..
 mkdir utils
 cd utils
 del /Q *.*
-copy ..\..\..\..\..\..\plugins\utils\*.*
+copy ..\..\..\..\..\plugins\utils\*.*
 cd ..
 cd ..
 
@@ -75,10 +75,9 @@ cd ..
 
 "C:\Program Files\Filzip\Filzip.exe" -a -rp %name%.zip Plugins Docs  
 
-mkdir Plugins
 cd Plugins
 del /Q *.dll
-copy ..\..\..\..\bin\release\Plugins\%name%W.dll
+copy "..\..\..\..\bin\Release Unicode\Plugins\%name%W.dll"
 cd ..
 
 "C:\Program Files\Filzip\Filzip.exe" -a -rp %name%W.zip Plugins Docs
