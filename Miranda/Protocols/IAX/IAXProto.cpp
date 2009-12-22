@@ -23,6 +23,7 @@ Boston, MA 02111-1307, USA.
 
 
 static INT_PTR CALLBACK DlgProcAccMgrUI(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK DlgOptions(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static int static_iaxc_callback(iaxc_event e, void *param);
 
 
@@ -39,22 +40,41 @@ IAXProto::IAXProto(const char *aProtoName, const TCHAR *aUserName)
 	m_szProtoName = mir_strdup(aProtoName);
 	m_szModuleName = mir_strdup(aProtoName);
 
-	static OptPageControl ctrls[] = { 
+	static OptPageControl amCtrls[] = { 
 		{ NULL,	CONTROL_TEXT,		IDC_HOST,			"Host", NULL, 0, 0, 256 },
 		{ NULL,	CONTROL_INT,		IDC_PORT,			"Port", 4569, 0, 1 },
 		{ NULL,	CONTROL_TEXT,		IDC_USERNAME,		"Username", NULL, 0, 0, 16 },
-		{ NULL,	CONTROL_PASSWORD,	IDC_PASSWORD,		"Password", NULL, 0, 0, 16 },
+		{ NULL,	CONTROL_PASSWORD,	IDC_PASSWORD,		"Password", NULL, IDC_SAVEPASSWORD, 0, 16 },
 		{ NULL,	CONTROL_CHECKBOX,	IDC_SAVEPASSWORD,	"SavePassword", (BYTE) TRUE },
 	};
 
-	memmove(accountManagerCtrls, ctrls, sizeof(accountManagerCtrls));
+	memmove(accountManagerCtrls, amCtrls, sizeof(accountManagerCtrls));
 	accountManagerCtrls[0].var = &opts.host;
 	accountManagerCtrls[1].var = &opts.port;
 	accountManagerCtrls[2].var = &opts.username;
 	accountManagerCtrls[3].var = &opts.password;
 	accountManagerCtrls[4].var = &opts.savePassword;
 
-	LoadOpts(accountManagerCtrls, MAX_REGS(accountManagerCtrls), m_szModuleName);
+	static OptPageControl oCtrls[] = { 
+		{ NULL,	CONTROL_TEXT,		IDC_HOST,			"Host", NULL, 0, 0, 256 },
+		{ NULL,	CONTROL_INT,		IDC_PORT,			"Port", 4569, 0, 1 },
+		{ NULL,	CONTROL_TEXT,		IDC_USERNAME,		"Username", NULL, 0, 0, 16 },
+		{ NULL,	CONTROL_PASSWORD,	IDC_PASSWORD,		"Password", NULL, IDC_SAVEPASSWORD, 0, 16 },
+		{ NULL,	CONTROL_CHECKBOX,	IDC_SAVEPASSWORD,	"SavePassword", (BYTE) TRUE },
+		{ NULL,	CONTROL_TEXT,		IDC_NAME,			"CallerID_Name", NULL, 0, 0, 128 },
+		{ NULL,	CONTROL_TEXT,		IDC_NUMBER,			"CallerID_Number", NULL, 0, 0, 128 },
+	};
+
+	memmove(optionsCtrls, oCtrls, sizeof(optionsCtrls));
+	optionsCtrls[0].var = &opts.host;
+	optionsCtrls[1].var = &opts.port;
+	optionsCtrls[2].var = &opts.username;
+	optionsCtrls[3].var = &opts.password;
+	optionsCtrls[4].var = &opts.savePassword;
+	optionsCtrls[5].var = &opts.callerID.name;
+	optionsCtrls[6].var = &opts.callerID.number;
+
+	LoadOpts(optionsCtrls, MAX_REGS(optionsCtrls), m_szModuleName);
 
 	CreateProtoService(PS_CREATEACCMGRUI, &IAXProto::CreateAccMgrUI);
 
@@ -62,8 +82,10 @@ IAXProto::IAXProto(const char *aProtoName, const TCHAR *aUserName)
 	CreateProtoService(PS_VOICE_ANSWERCALL, &IAXProto::VoiceAnswerCall);
 	CreateProtoService(PS_VOICE_DROPCALL, &IAXProto::VoiceDropCall);
 	CreateProtoService(PS_VOICE_HOLDCALL, &IAXProto::VoiceHoldCall);
-	CreateProtoService(PS_VOICE_SEND_DTMF, &IAXProto::VoiceSendDTMF);
+	//CreateProtoService(PS_VOICE_SEND_DTMF, &IAXProto::VoiceSendDTMF);
 	CreateProtoService(PS_VOICE_CALL_STRING_VALID, &IAXProto::VoiceCallStringValid);
+
+	HookProtoEvent(ME_OPT_INITIALISE, &IAXProto::OnOptionsInit);
 }
 
 
@@ -186,6 +208,13 @@ HANDLE IAXProto::CreateProtoEvent(const char* szService)
 	mir_snprintf(str, sizeof(str), "%s%s", m_szModuleName, szService);
 	return ::CreateHookableEvent(str);
 }
+
+
+void IAXProto::HookProtoEvent(const char* szEvent, IAXEventFunc pFunc)
+{
+	::HookEventObj(szEvent, (MIRANDAHOOKOBJ)*(void**)&pFunc, this);
+}
+
 
 
 int IAXProto::SendBroadcast(HANDLE hContact, int type, int result, HANDLE hProcess, LPARAM lParam)
@@ -335,9 +364,33 @@ int IAXProto::state_callback(iaxc_ev_call_state &call)
 
 	if (!outgoing)
 	{
-		mir_sntprintf(buffer, MAX_REGS(buffer), _T("%s %s"), 
-						Utf8ToTchar(call.remote_name).get(), 
-						Utf8ToTchar(call.remote).get());
+		const char *otherName = call.remote_name;
+		const char *otherNumber = call.remote;
+
+		if (strcmp(otherName, "unknown") == 0)
+			otherName = NULL;
+		if (strcmp(otherNumber, "unknown") == 0)
+			otherNumber = NULL;
+
+		if (otherName == NULL && otherNumber == NULL)
+		{
+			lstrcpyn(buffer, TranslateT("<Unknown>"), MAX_REGS(buffer));
+		}
+		else if (otherName == NULL)
+		{
+			lstrcpyn(buffer, Utf8ToTchar(otherNumber), MAX_REGS(buffer));
+		}
+		else if (otherNumber == NULL)
+		{
+			lstrcpyn(buffer, Utf8ToTchar(otherName), MAX_REGS(buffer));
+		}
+		else
+		{
+			mir_sntprintf(buffer, MAX_REGS(buffer), TranslateT("%s <%s>"), 
+							Utf8ToTchar(otherName).get(), 
+							Utf8ToTchar(otherNumber).get());
+		}
+			
 		lstrtrim(buffer);
 		number = buffer;
 	}
@@ -465,29 +518,6 @@ static int static_iaxc_callback(iaxc_event e, void *param)
 }
 
 
-
-static INT_PTR CALLBACK DlgProcAccMgrUI(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	IAXProto *proto = (IAXProto *) GetWindowLongPtr(hwnd, GWLP_USERDATA);
-
-	switch(msg) 
-	{
-		case WM_INITDIALOG: 
-		{
-			SetWindowLongPtr(hwnd, GWLP_USERDATA, lParam);
-			proto = (IAXProto *) lParam;
-			break;
-		}
-	}
-
-	if (proto == NULL)
-		return FALSE;
-
-	return SaveOptsDlgProc(proto->accountManagerCtrls, MAX_REGS(proto->accountManagerCtrls), 
-							proto->m_szModuleName, hwnd, msg, wParam, lParam);
-}
-
-
 int __cdecl IAXProto::OnEvent( PROTOEVENTTYPE iEventType, WPARAM wParam, LPARAM lParam ) 
 {
 	switch(iEventType) 
@@ -517,7 +547,7 @@ int __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 		
 	NETLIBUSER nl_user = {0};
 	nl_user.cbSize = sizeof(nl_user);
-	nl_user.flags = NUF_INCOMING | NUF_OUTGOING | NUF_TCHAR;
+	nl_user.flags = /* NUF_INCOMING | NUF_OUTGOING | */ NUF_NOOPTIONS | NUF_TCHAR;
 	nl_user.szSettingsModule = m_szModuleName;
 	nl_user.ptszDescriptiveName = buffer;
 	hNetlibUser = (HANDLE) CallService(MS_NETLIB_REGISTERUSER, 0, (LPARAM)&nl_user);
@@ -565,6 +595,17 @@ int __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 int __cdecl IAXProto::OnOptionsInit(WPARAM wParam, LPARAM lParam)
 {
+	OPTIONSDIALOGPAGE odp = {0};
+	odp.cbSize = sizeof(odp);
+	odp.hInstance = hInst;
+	odp.ptszGroup = LPGENT("Network");
+	odp.ptszTitle = m_tszUserName;
+	odp.pfnDlgProc = DlgOptions;
+	odp.dwInitParam = (LPARAM) this;
+	odp.pszTemplate = MAKEINTRESOURCEA(IDD_OPTIONS);
+	odp.flags = ODPF_BOLDGROUPS | ODPF_TCHAR;
+	CallService(MS_OPT_ADDPAGE, wParam, (LPARAM)&odp);
+
 	return 0;
 }
 
@@ -686,7 +727,12 @@ int __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 				TcharToUtf8(opts.host).get(), 
 				TcharToUtf8(number).get());
 
-	callNo = iaxc_call_ex(buff, "", "", FALSE);
+	TCHAR *myName = opts.callerID.name;
+	TCHAR *myNumber = opts.callerID.number;
+	if (myName[0] == 0 && myNumber[0] == 0)
+		myName = opts.username;
+
+	callNo = iaxc_call_ex(buff, TcharToUtf8(myName), TcharToUtf8(myNumber), FALSE);
 	if (callNo < 0 || callNo >= NUM_LINES)
 	{
 		Error(TranslateT("Error making call (callNo=%d)."), callNo);
@@ -808,5 +854,52 @@ int __cdecl IAXProto::VoiceCallStringValid(WPARAM wParam, LPARAM lParam)
 	return 1;
 }
 
+
+
+
+
+
+static INT_PTR CALLBACK DlgProcAccMgrUI(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	IAXProto *proto = (IAXProto *) GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
+	switch(msg) 
+	{
+		case WM_INITDIALOG: 
+		{
+			SetWindowLongPtr(hwnd, GWLP_USERDATA, lParam);
+			proto = (IAXProto *) lParam;
+			break;
+		}
+	}
+
+	if (proto == NULL)
+		return FALSE;
+
+	return SaveOptsDlgProc(proto->accountManagerCtrls, MAX_REGS(proto->accountManagerCtrls), 
+							proto->m_szModuleName, hwnd, msg, wParam, lParam);
+}
+
+
+static INT_PTR CALLBACK DlgOptions(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	IAXProto *proto = (IAXProto *) GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
+	switch(msg) 
+	{
+		case WM_INITDIALOG: 
+		{
+			SetWindowLongPtr(hwnd, GWLP_USERDATA, lParam);
+			proto = (IAXProto *) lParam;
+			break;
+		}
+	}
+
+	if (proto == NULL)
+		return FALSE;
+
+	return SaveOptsDlgProc(proto->optionsCtrls, MAX_REGS(proto->optionsCtrls), 
+							proto->m_szModuleName, hwnd, msg, wParam, lParam);
+}
 
 

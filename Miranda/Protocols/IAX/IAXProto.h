@@ -24,7 +24,7 @@ Boston, MA 02111-1307, USA.
 class IAXProto;
 typedef INT_PTR (__cdecl IAXProto::*IAXServiceFunc)(WPARAM, LPARAM);
 typedef INT_PTR (__cdecl IAXProto::*IAXServiceFuncParam)(WPARAM, LPARAM, LPARAM);
-
+typedef int (__cdecl IAXProto::*IAXEventFunc)(WPARAM, LPARAM);
 
 class IAXProto : public PROTO_INTERFACE
 {
@@ -39,12 +39,18 @@ private:
 		TCHAR username[16];
 		char password[16];
 		BYTE savePassword;
+
+		struct {
+			TCHAR name[128];
+			TCHAR number[128];
+		} callerID;
 	} opts;
 
 public:
 	CRITICAL_SECTION cs;
 	std::vector<iaxc_event> events;
 	OptPageControl accountManagerCtrls[5];
+	OptPageControl optionsCtrls[7];
 
 	IAXProto(const char *aProtoName, const TCHAR *aUserName);
 	virtual ~IAXProto();
@@ -105,6 +111,7 @@ private:
 	void CreateProtoService(const char* szService, IAXServiceFunc serviceProc);
 	void CreateProtoService(const char* szService, IAXServiceFuncParam serviceProc, LPARAM lParam);
 	HANDLE CreateProtoEvent(const char* szService);
+	void HookProtoEvent(const char* szEvent, IAXEventFunc pFunc);
 	int SendBroadcast(HANDLE hContact, int type, int result, HANDLE hProcess, LPARAM lParam);
 
 	int __cdecl OnModulesLoaded(WPARAM wParam, LPARAM lParam);
@@ -136,7 +143,6 @@ private:
 	int __cdecl VoiceHoldCall(WPARAM wParam,LPARAM lParam);
 	int __cdecl VoiceSendDTMF(WPARAM wParam,LPARAM lParam);
 	int __cdecl VoiceCallStringValid(WPARAM wParam,LPARAM lParam);
-
 };
 
 
