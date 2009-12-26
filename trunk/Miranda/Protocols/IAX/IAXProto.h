@@ -136,7 +136,8 @@ private:
 	void ConfigureDevices();
 
 	// Voice services
-	void NotifyCall(int callNo, int state, HANDLE hContact = NULL, TCHAR *number = NULL);
+	void NotifyCall(int callNo, int state, HANDLE hContact = NULL, TCHAR *name = NULL, TCHAR *number = NULL);
+	int __cdecl VoiceCaps(WPARAM wParam,LPARAM lParam);
 	int __cdecl VoiceCall(WPARAM wParam,LPARAM lParam);
 	int __cdecl VoiceAnswerCall(WPARAM wParam,LPARAM lParam);
 	int __cdecl VoiceDropCall(WPARAM wParam,LPARAM lParam);
