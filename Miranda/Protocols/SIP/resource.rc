@@ -1,0 +1,121 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "resource.h"
+#include "winresrc.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ACCMGRUI DIALOGEX 0, 0, 186, 134
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "Server:",IDC_STATIC,0,0,53,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_HOST,54,0,92,12,ES_AUTOHSCROLL
+    CTEXT           ":",IDC_STATIC,147,0,8,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_PORT,155,0,30,12,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "User:",IDC_STATIC,0,16,53,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_USERNAME,54,16,131,12,ES_AUTOHSCROLL
+    LTEXT           "Password:",IDC_STATIC,0,31,53,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_PASSWORD,54,32,131,12,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "Save password",IDC_SAVEPASSWORD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,54,48,131,10
+END
+
+IDD_OPTIONS DIALOGEX 0, 0, 216, 152
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    GROUPBOX        "SIP",IDC_STATIC,3,4,209,76
+    LTEXT           "Server:",IDC_STATIC,14,17,53,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_HOST,68,17,92,12,ES_AUTOHSCROLL
+    CTEXT           ":",IDC_STATIC,162,17,8,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_PORT,170,17,30,12,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "User:",IDC_STATIC,14,33,53,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_USERNAME,68,33,131,12,ES_AUTOHSCROLL
+    LTEXT           "Password:",IDC_STATIC,14,48,53,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_PASSWORD,68,49,131,12,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "Save password",IDC_SAVEPASSWORD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,68,65,131,10
+    GROUPBOX        "Advanced",IDC_STATIC,3,84,209,33,NOT WS_VISIBLE
+    LTEXT           "STUN Server:",IDC_STATIC,14,98,53,12,SS_CENTERIMAGE | NOT WS_VISIBLE
+    EDITTEXT        IDC_STUN_HOST,68,98,92,12,ES_AUTOHSCROLL | NOT WS_VISIBLE
+    CTEXT           ":",IDC_STATIC,162,98,8,12,SS_CENTERIMAGE | NOT WS_VISIBLE
+    EDITTEXT        IDC_STUN_PORT,170,98,30,12,ES_AUTOHSCROLL | ES_NUMBER | NOT WS_VISIBLE
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (Canada) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENC)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_CAN
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""resource.h""\r\n"
+    "#include ""winresrc.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (Canada) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
