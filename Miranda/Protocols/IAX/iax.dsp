@@ -168,10 +168,6 @@ SOURCE=.\IAXProto.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\m_iax.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\plugins\utils\mir_icons.h
 # End Source File
 # Begin Source File
@@ -185,10 +181,6 @@ SOURCE=..\..\plugins\utils\mir_memory.h
 # Begin Source File
 
 SOURCE=..\..\plugins\utils\mir_options.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\options.h
 # End Source File
 # Begin Source File
 
@@ -225,10 +217,6 @@ SOURCE=..\..\plugins\utils\mir_log.cpp
 # Begin Source File
 
 SOURCE=..\..\plugins\utils\mir_options.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\options.cpp
 # End Source File
 # End Group
 # Begin Group "Docs"
