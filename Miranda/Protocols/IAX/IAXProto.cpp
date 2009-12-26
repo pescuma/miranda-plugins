@@ -78,12 +78,15 @@ IAXProto::IAXProto(const char *aProtoName, const TCHAR *aUserName)
 
 	CreateProtoService(PS_CREATEACCMGRUI, &IAXProto::CreateAccMgrUI);
 
+	CreateProtoService(PS_VOICE_CAPS, &IAXProto::VoiceCaps);
 	CreateProtoService(PS_VOICE_CALL, &IAXProto::VoiceCall);
 	CreateProtoService(PS_VOICE_ANSWERCALL, &IAXProto::VoiceAnswerCall);
 	CreateProtoService(PS_VOICE_DROPCALL, &IAXProto::VoiceDropCall);
 	CreateProtoService(PS_VOICE_HOLDCALL, &IAXProto::VoiceHoldCall);
-	//CreateProtoService(PS_VOICE_SEND_DTMF, &IAXProto::VoiceSendDTMF);
+	CreateProtoService(PS_VOICE_SEND_DTMF, &IAXProto::VoiceSendDTMF);
 	CreateProtoService(PS_VOICE_CALL_STRING_VALID, &IAXProto::VoiceCallStringValid);
+
+	hCallStateEvent = CreateProtoEvent(PE_VOICE_CALL_STATE);
 
 	HookProtoEvent(ME_OPT_INITIALISE, &IAXProto::OnOptionsInit);
 }
@@ -119,10 +122,10 @@ DWORD_PTR __cdecl IAXProto::GetCaps( int type, HANDLE hContact )
 			return PF4_NOCUSTOMAUTH;
 
 		case PFLAG_UNIQUEIDTEXT:
-			return NULL;
+			return (UINT_PTR) Translate("User");
 
 		case PFLAG_UNIQUEIDSETTING:
-			return NULL;
+			return (UINT_PTR) "Username";
 
 		case PFLAG_MAXLENOFMESSAGE:
 			return 100;
@@ -357,12 +360,12 @@ int IAXProto::state_callback(iaxc_ev_call_state &call)
 		return 0;
 	}
 
-	bool outgoing = ((call.state & IAXC_CALL_STATE_OUTGOING) != 0);
+	TCHAR name[256];
+	TCHAR number[256];
+	name[0] = 0;
+	number[0] = 0;
 
-	TCHAR buffer[256] = {0};
-	TCHAR *number = NULL;
-
-	if (!outgoing)
+	if ((call.state & IAXC_CALL_STATE_OUTGOING) == 0)
 	{
 		const char *otherName = call.remote_name;
 		const char *otherNumber = call.remote;
@@ -372,47 +375,36 @@ int IAXProto::state_callback(iaxc_ev_call_state &call)
 		if (strcmp(otherNumber, "unknown") == 0)
 			otherNumber = NULL;
 
-		if (otherName == NULL && otherNumber == NULL)
+		if (otherName != NULL)
 		{
-			lstrcpyn(buffer, TranslateT("<Unknown>"), MAX_REGS(buffer));
+			lstrcpyn(name, Utf8ToTchar(otherName), MAX_REGS(name));
+			lstrtrim(name);
 		}
-		else if (otherName == NULL)
+		if (otherNumber != NULL)
 		{
-			lstrcpyn(buffer, Utf8ToTchar(otherNumber), MAX_REGS(buffer));
+			lstrcpyn(number, Utf8ToTchar(otherNumber), MAX_REGS(number));
+			lstrtrim(number);
 		}
-		else if (otherNumber == NULL)
-		{
-			lstrcpyn(buffer, Utf8ToTchar(otherName), MAX_REGS(buffer));
-		}
-		else
-		{
-			mir_sntprintf(buffer, MAX_REGS(buffer), TranslateT("%s <%s>"), 
-							Utf8ToTchar(otherName).get(), 
-							Utf8ToTchar(otherNumber).get());
-		}
-			
-		lstrtrim(buffer);
-		number = buffer;
 	}
 
 	if (call.state & IAXC_CALL_STATE_BUSY)
 	{
-		NotifyCall(call.callNo, VOICE_STATE_BUSY, NULL, number);
+		NotifyCall(call.callNo, VOICE_STATE_BUSY, NULL, name, number);
 	}
 	else if (call.state & IAXC_CALL_STATE_RINGING)
 	{
-		NotifyCall(call.callNo, VOICE_STATE_RINGING, NULL, number);
+		NotifyCall(call.callNo, VOICE_STATE_RINGING, NULL, name, number);
 	}
 	else if (!(call.state & IAXC_CALL_STATE_COMPLETE))
 	{
-		NotifyCall(call.callNo, VOICE_STATE_CALLING, NULL, number);
+		NotifyCall(call.callNo, VOICE_STATE_CALLING, NULL, name, number);
 	}
 	else 
 	{
 		if (call.callNo == iaxc_selected_call())
-			NotifyCall(call.callNo, VOICE_STATE_TALKING, NULL, number);
+			NotifyCall(call.callNo, VOICE_STATE_TALKING, NULL, name, number);
 		else
-			NotifyCall(call.callNo, VOICE_STATE_ON_HOLD, NULL, number);
+			NotifyCall(call.callNo, VOICE_STATE_ON_HOLD, NULL, name, number);
 	}
 
 	return 0;
@@ -579,16 +571,6 @@ int __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 		return 1;
 	}
 
-
-	hCallStateEvent = CreateProtoEvent(PE_VOICE_CALL_STATE);
-
-	VOICE_MODULE vm = {0};
-	vm.cbSize = sizeof(vm);
-	vm.name = m_szModuleName;
-	vm.description = m_tszUserName;
-	vm.flags = VOICE_CAPS_CALL_STRING;
-	CallService(MS_VOICESERVICE_REGISTER, (WPARAM) &vm, 0);
-
 	return 0;
 }
 
@@ -612,8 +594,6 @@ int __cdecl IAXProto::OnOptionsInit(WPARAM wParam, LPARAM lParam)
 
 int __cdecl IAXProto::OnPreShutdown(WPARAM wParam, LPARAM lParam)
 {
-	CallService(MS_VOICESERVICE_UNREGISTER, (WPARAM) m_szModuleName, 0);
-
 	iaxc_stop_processing_thread();
 
 	iaxc_shutdown();
@@ -622,7 +602,7 @@ int __cdecl IAXProto::OnPreShutdown(WPARAM wParam, LPARAM lParam)
 }
 
 
-void IAXProto::NotifyCall(int callNo, int state, HANDLE hContact, TCHAR *number)
+void IAXProto::NotifyCall(int callNo, int state, HANDLE hContact, TCHAR *name, TCHAR *number)
 {
 	Trace(_T("NotifyCall %d -> %d"), callNo, state);
 
@@ -634,6 +614,7 @@ void IAXProto::NotifyCall(int callNo, int state, HANDLE hContact, TCHAR *number)
 	vc.id = itoa(callNo, tmp, 10);
 	vc.flags = VOICE_TCHAR;
 	vc.hContact = hContact;
+	vc.ptszName = name;
 	vc.ptszNumber = number;
 	vc.state = state;
 
@@ -702,6 +683,12 @@ void IAXProto::ConfigureDevices()
 }
 
 
+int __cdecl IAXProto::VoiceCaps(WPARAM wParam,LPARAM lParam)
+{
+	return VOICE_CAPS_VOICE | VOICE_CAPS_CALL_STRING;
+}
+
+
 int __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 {
 	HANDLE hContact = (HANDLE) wParam;
@@ -739,7 +726,7 @@ int __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 		return 3;
 	}
 
-	NotifyCall(callNo, VOICE_STATE_CALLING, hContact, number);
+	NotifyCall(callNo, VOICE_STATE_CALLING, hContact, NULL, number);
 
 	return 0;
 }

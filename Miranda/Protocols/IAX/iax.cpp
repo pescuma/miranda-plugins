@@ -53,11 +53,17 @@ UTF8_INTERFACE utfi;
 LIST_INTERFACE li;
 
 std::vector<HANDLE> hHooks;
-std::vector<HANDLE> hServices;
-OBJLIST<IAXProto> instances(1);
 
 int ModulesLoaded(WPARAM wParam, LPARAM lParam);
 int PreShutdown(WPARAM wParam, LPARAM lParam);
+
+
+static int sttCompareProtocols(const IAXProto *p1, const IAXProto *p2)
+{
+	return strcmp(p1->m_szModuleName, p2->m_szModuleName);
+}
+OBJLIST<IAXProto> instances(1, &sttCompareProtocols);
+
 
 
 
