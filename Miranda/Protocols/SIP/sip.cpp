@@ -209,6 +209,8 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	cfg.cb.on_call_media_state = &static_on_call_media_state;
 	cfg.cb.on_call_state = &static_on_call_state;
 	cfg.cb.on_reg_state = &static_on_reg_state;
+	cfg.stun_srv_cnt = 1;
+	cfg.stun_srv[0] = pj_str("stun01.sipphone.com");
 
 	pjsua_logging_config log_cfg;
 	pjsua_logging_config_default(&log_cfg);

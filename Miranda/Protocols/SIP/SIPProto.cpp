@@ -143,7 +143,7 @@ SIPProto::SIPProto(const char *aProtoName, const TCHAR *aUserName)
 		{ NULL,	CONTROL_TEXT,		IDC_USERNAME,		"Username", NULL, 0, 0, 16 },
 		{ NULL,	CONTROL_PASSWORD,	IDC_PASSWORD,		"Password", NULL, IDC_SAVEPASSWORD, 0, 16 },
 		{ NULL,	CONTROL_CHECKBOX,	IDC_SAVEPASSWORD,	"SavePassword", (BYTE) TRUE },
-		{ NULL,	CONTROL_TEXT,		IDC_STUN_HOST,		"StunHost", NULL, 0, 0, 256 },
+		{ NULL,	CONTROL_TEXT,		IDC_STUN_HOST,		"StunHost", _T("stun01.sipphone.com"), 0, 0, 256 },
 		{ NULL,	CONTROL_INT,		IDC_STUN_PORT,		"StunPort", 0, 0, 1 },
 	};
 
@@ -865,17 +865,58 @@ int __cdecl SIPProto::VoiceCaps(WPARAM wParam,LPARAM lParam)
 }
 
 
-void SIPProto::BuildURI(TCHAR *out, int outSize, const TCHAR *number)
+static void CleanupNumber(TCHAR *out, int outSize, const TCHAR *number)
+{
+	int pos = 0;
+	int len = lstrlen(number);
+	for(int i = 0; i < len && pos < outSize - 1; ++i)
+	{
+		TCHAR c = number[i];
+
+		if (i == 0 && c == _T('+'))
+			out[pos++] = c;
+		else if (c >= _T('0') && c <= _T('9'))
+			out[pos++] = c;
+	}
+	out[pos] = 0;
+}
+
+
+void SIPProto::BuildURI(TCHAR *out, int outSize, const TCHAR *number, bool isTel)
 {
 	bool hasSip = (_tcsnicmp(_T("sip:"), number, 4) == 0);
 	bool hasHost = (_tcschr(number, _T('@')) != NULL);
 
-	if (!hasSip && !hasHost)
-		mir_sntprintf(out, outSize, _T("sip:%s@%s"), number, opts.host);
-	else if (!hasSip)
-		mir_sntprintf(out, outSize, _T("sip:%s"), number);
+	if (isTel)
+	{
+		bool hasPhone = (_tcsstr(number, _T(";user=phone")) != NULL);
+
+		if (!hasSip && !hasHost)
+		{
+			TCHAR tmp[1024];
+			CleanupNumber(tmp, MAX_REGS(tmp), number);
+			mir_sntprintf(out, outSize, _T("sip:%s@%s"), tmp, opts.host);
+		}
+		else if (!hasSip)
+			mir_sntprintf(out, outSize, _T("sip:%s"), number);
+		else
+			mir_sntprintf(out, outSize, _T("%s"), number);
+
+		 if (!hasPhone)
+		 {
+			 int len = lstrlen(out);
+			 lstrcpyn(&out[len], _T(";user=phone"), outSize - len);
+		 }
+	}
 	else
-		mir_sntprintf(out, outSize, _T("%s"), number);
+	{
+		if (!hasSip && !hasHost)
+			mir_sntprintf(out, outSize, _T("sip:%s@%s"), number, opts.host);
+		else if (!hasSip)
+			mir_sntprintf(out, outSize, _T("sip:%s"), number);
+		else
+			mir_sntprintf(out, outSize, _T("%s"), number);
+	}
 }
 
 
@@ -891,7 +932,7 @@ int __cdecl SIPProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 		if (!VoiceCallStringValid((WPARAM) number, 0))
 			return 1;
 
-		BuildURI(uri, MAX_REGS(uri), number);
+		BuildURI(uri, MAX_REGS(uri), number, true);
 	}
 	else
 	{
@@ -907,7 +948,7 @@ int __cdecl SIPProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 		return -1;
 	}
 
-	NotifyCall(call_id, VOICE_STATE_CALLING, hContact, number);
+	NotifyCall(call_id, VOICE_STATE_CALLING, hContact, NULL, number);
 
 	return 0;
 }
@@ -1053,7 +1094,7 @@ int __cdecl SIPProto::VoiceCallStringValid(WPARAM wParam, LPARAM lParam)
 		return 0;
 
 	TCHAR tmp[1024];
-	BuildURI(tmp, MAX_REGS(tmp), number);
+	BuildURI(tmp, MAX_REGS(tmp), number, true);
 	return pjsua_verify_sip_url(TcharToUtf8(tmp)) == PJ_SUCCESS;
 }
 

@@ -133,7 +133,7 @@ private:
 	INT_PTR  __cdecl CreateAccMgrUI(WPARAM wParam, LPARAM lParam);
 
 	void ConfigureDevices();
-	void BuildURI(TCHAR *out, int outSize, const TCHAR *number);
+	void BuildURI(TCHAR *out, int outSize, const TCHAR *number, bool isTel);
 
 	// Voice services
 	void NotifyCall(pjsua_call_id call_id, int state, HANDLE hContact = NULL, TCHAR *name = NULL, TCHAR *number = NULL);
