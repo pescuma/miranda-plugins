@@ -32,6 +32,7 @@ private:
 	HANDLE hNetlibUser;
 	HANDLE hCallStateEvent;
 	int reg_id;
+	int voiceMessages;
 
 	struct {
 		TCHAR host[256];
@@ -114,9 +115,9 @@ private:
 	void HookProtoEvent(const char* szEvent, IAXEventFunc pFunc);
 	int SendBroadcast(HANDLE hContact, int type, int result, HANDLE hProcess, LPARAM lParam);
 
-	int __cdecl OnModulesLoaded(WPARAM wParam, LPARAM lParam);
-	int __cdecl OnOptionsInit(WPARAM wParam,LPARAM lParam);
-	int __cdecl OnPreShutdown(WPARAM wParam,LPARAM lParam);
+	INT_PTR __cdecl OnModulesLoaded(WPARAM wParam, LPARAM lParam);
+	INT_PTR __cdecl OnOptionsInit(WPARAM wParam,LPARAM lParam);
+	INT_PTR __cdecl OnPreShutdown(WPARAM wParam,LPARAM lParam);
 
 	void Trace(TCHAR *fmt, ...);
 	void Info(TCHAR *fmt, ...);
@@ -124,7 +125,8 @@ private:
 	void ShowMessage(int type, TCHAR *fmt, va_list args);
 
 	void Disconnect();
-	INT_PTR  __cdecl CreateAccMgrUI(WPARAM wParam, LPARAM lParam);
+	INT_PTR __cdecl CreateAccMgrUI(WPARAM wParam, LPARAM lParam);
+	INT_PTR __cdecl GetUnreadEmailCount(WPARAM wParam, LPARAM lParam);
 
 	int levels_callback(iaxc_ev_levels &levels);
 	int text_callback(iaxc_ev_text &text);
@@ -135,15 +137,16 @@ private:
 
 	void ConfigureDevices();
 
+
 	// Voice services
 	void NotifyCall(int callNo, int state, HANDLE hContact = NULL, TCHAR *name = NULL, TCHAR *number = NULL);
-	int __cdecl VoiceCaps(WPARAM wParam,LPARAM lParam);
-	int __cdecl VoiceCall(WPARAM wParam,LPARAM lParam);
-	int __cdecl VoiceAnswerCall(WPARAM wParam,LPARAM lParam);
-	int __cdecl VoiceDropCall(WPARAM wParam,LPARAM lParam);
-	int __cdecl VoiceHoldCall(WPARAM wParam,LPARAM lParam);
-	int __cdecl VoiceSendDTMF(WPARAM wParam,LPARAM lParam);
-	int __cdecl VoiceCallStringValid(WPARAM wParam,LPARAM lParam);
+	INT_PTR __cdecl VoiceCaps(WPARAM wParam,LPARAM lParam);
+	INT_PTR __cdecl VoiceCall(WPARAM wParam,LPARAM lParam);
+	INT_PTR __cdecl VoiceAnswerCall(WPARAM wParam,LPARAM lParam);
+	INT_PTR __cdecl VoiceDropCall(WPARAM wParam,LPARAM lParam);
+	INT_PTR __cdecl VoiceHoldCall(WPARAM wParam,LPARAM lParam);
+	INT_PTR __cdecl VoiceSendDTMF(WPARAM wParam,LPARAM lParam);
+	INT_PTR __cdecl VoiceCallStringValid(WPARAM wParam,LPARAM lParam);
 };
 
 
