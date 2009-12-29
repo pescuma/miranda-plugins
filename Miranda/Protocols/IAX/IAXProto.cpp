@@ -35,6 +35,7 @@ IAXProto::IAXProto(const char *aProtoName, const TCHAR *aUserName)
 	hNetlibUser = 0;
 	hCallStateEvent = 0;
 	m_iDesiredStatus = m_iStatus = ID_STATUS_OFFLINE;
+	voiceMessages = 0;
 
 	m_tszUserName = mir_tstrdup(aUserName);
 	m_szProtoName = mir_strdup(aProtoName);
@@ -77,6 +78,7 @@ IAXProto::IAXProto(const char *aProtoName, const TCHAR *aUserName)
 	LoadOpts(optionsCtrls, MAX_REGS(optionsCtrls), m_szModuleName);
 
 	CreateProtoService(PS_CREATEACCMGRUI, &IAXProto::CreateAccMgrUI);
+	CreateProtoService(PS_GETUNREADEMAILCOUNT, &IAXProto::GetUnreadEmailCount);
 
 	CreateProtoService(PS_VOICE_CAPS, &IAXProto::VoiceCaps);
 	CreateProtoService(PS_VOICE_CALL, &IAXProto::VoiceCall);
@@ -122,7 +124,7 @@ DWORD_PTR __cdecl IAXProto::GetCaps( int type, HANDLE hContact )
 			return PF4_NOCUSTOMAUTH;
 
 		case PFLAG_UNIQUEIDTEXT:
-			return (UINT_PTR) Translate("User");
+			return (UINT_PTR) Translate("Username");
 
 		case PFLAG_UNIQUEIDSETTING:
 			return (UINT_PTR) "Username";
@@ -135,7 +137,7 @@ DWORD_PTR __cdecl IAXProto::GetCaps( int type, HANDLE hContact )
 }
 
 
-int __cdecl IAXProto::SetStatus( int iNewStatus ) 
+INT_PTR __cdecl IAXProto::SetStatus( int iNewStatus ) 
 {
 	if (m_iStatus == iNewStatus) 
 		return 0;
@@ -157,7 +159,7 @@ int __cdecl IAXProto::SetStatus( int iNewStatus )
 		reg_id = iaxc_register(TcharToUtf8(opts.username), opts.password, TcharToUtf8(server_port));
 		if (reg_id <= 0)
 		{
-			Error(TranslateT("Error registering with IAX"));
+			Error(_T("Error registering with IAX"));
 			BroadcastStatus(ID_STATUS_OFFLINE);
 			return -1;
 		}
@@ -255,7 +257,7 @@ void IAXProto::Info(TCHAR *fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 
-	ShowMessage(MESSAGE_TYPE_INFO, fmt, args);
+	ShowMessage(MESSAGE_TYPE_INFO, TranslateTS(fmt), args);
 
 	va_end(args);
 }
@@ -266,7 +268,7 @@ void IAXProto::Error(TCHAR *fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 
-	ShowMessage(MESSAGE_TYPE_ERROR, fmt, args);
+	ShowMessage(MESSAGE_TYPE_ERROR, TranslateTS(fmt), args);
 
 	va_end(args);
 }
@@ -323,7 +325,7 @@ int IAXProto::text_callback(iaxc_ev_text &text)
 		}
 		case IAXC_TEXT_TYPE_NOTICE:
 		{
-			Info(TranslateT("Notice: %s"), Utf8ToTchar(text.message));
+			Info(_T("Notice: %s"), Utf8ToTchar(text.message));
 			return 1;
 		}
 		case IAXC_TEXT_TYPE_ERROR:
@@ -333,7 +335,7 @@ int IAXProto::text_callback(iaxc_ev_text &text)
 		}
 		case IAXC_TEXT_TYPE_FATALERROR:
 		{
-			Error(TranslateT("Fatal: %s"), Utf8ToTchar(text.message));
+			Error(_T("Fatal: %s"), Utf8ToTchar(text.message));
 			Disconnect();
 			return 1;
 		}
@@ -438,21 +440,29 @@ int IAXProto::registration_callback(iaxc_ev_registration &reg)
 		{
 			BroadcastStatus(m_iDesiredStatus > ID_STATUS_OFFLINE ? m_iDesiredStatus : ID_STATUS_ONLINE);
 
-			if (reg.msgcount > 0) 
-				Info(TranslateT("You have %d voicemail message(s)"), reg.msgcount);
+			int messages = max(0, reg.msgcount);
+
+			if (messages != voiceMessages)
+			{
+				if (messages > 0) 
+					Info(_T("You have %d voicemail message(s)"), reg.msgcount);
+
+				voiceMessages = messages;
+				SendBroadcast(NULL, ACKTYPE_EMAIL, ACKRESULT_STATUS, NULL, 0);
+			}
 
 			return 1;
 		}
 		case IAXC_REGISTRATION_REPLY_REJ:
 		{
-			Error(TranslateT("Registration rejected"));
+			Error(_T("Registration rejected"));
 			Disconnect();
 
 			return 1;
 		}
 		case IAXC_REGISTRATION_REPLY_TIMEOUT:
 		{
-			Error(TranslateT("Registration timeout"));
+			Error(_T("Registration timeout"));
 			Disconnect();
 
 			return 1;
@@ -486,12 +496,13 @@ static void CALLBACK ProcessIAXEvents(void *param)
 
 		EnterCriticalSection(&proto->cs);
 
-		for(std::vector<iaxc_event>::iterator it = proto->events.begin(); it != proto->events.end(); ++it)
-			proto->iaxc_callback(*it);
-		
+		std::vector<iaxc_event> events(proto->events);
 		proto->events.clear();
 
 		LeaveCriticalSection(&proto->cs);
+
+		for(unsigned int i = 0; i < events.size(); ++i)
+			proto->iaxc_callback(events[i]);
 	}
 }
 
@@ -510,7 +521,7 @@ static int static_iaxc_callback(iaxc_event e, void *param)
 }
 
 
-int __cdecl IAXProto::OnEvent( PROTOEVENTTYPE iEventType, WPARAM wParam, LPARAM lParam ) 
+INT_PTR __cdecl IAXProto::OnEvent( PROTOEVENTTYPE iEventType, WPARAM wParam, LPARAM lParam ) 
 {
 	switch(iEventType) 
 	{
@@ -532,7 +543,7 @@ int __cdecl IAXProto::OnEvent( PROTOEVENTTYPE iEventType, WPARAM wParam, LPARAM 
 }
 
 
-int __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
+INT_PTR __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 {
 	TCHAR buffer[MAX_PATH]; 
 	mir_sntprintf(buffer, MAX_REGS(buffer), TranslateT("%s plugin connections"), m_tszUserName);
@@ -546,7 +557,7 @@ int __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 	if (!ServiceExists(MS_VOICESERVICE_REGISTER))
 	{
-		Error(TranslateT("IAX needs Voice Service plugin to work!"));
+		Error(_T("IAX needs Voice Service plugin to work!"));
 		return 1;
 	}
 
@@ -556,7 +567,7 @@ int __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 	iaxc_set_preferred_source_udp_port(-1);
 	if (iaxc_initialize(NUM_LINES))
 	{
-		Error(TranslateT("Failed to initialize iaxc lib"));
+		Error(_T("Failed to initialize iaxc lib"));
 		return 1;
 	}
 
@@ -567,7 +578,7 @@ int __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 	if (iaxc_start_processing_thread())
 	{
-		Error(TranslateT("Failed to initialize iax threads"));
+		Error(_T("Failed to initialize iax threads"));
 		return 1;
 	}
 
@@ -575,7 +586,7 @@ int __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 }
 
 
-int __cdecl IAXProto::OnOptionsInit(WPARAM wParam, LPARAM lParam)
+INT_PTR __cdecl IAXProto::OnOptionsInit(WPARAM wParam, LPARAM lParam)
 {
 	OPTIONSDIALOGPAGE odp = {0};
 	odp.cbSize = sizeof(odp);
@@ -592,13 +603,22 @@ int __cdecl IAXProto::OnOptionsInit(WPARAM wParam, LPARAM lParam)
 }
 
 
-int __cdecl IAXProto::OnPreShutdown(WPARAM wParam, LPARAM lParam)
+INT_PTR __cdecl IAXProto::OnPreShutdown(WPARAM wParam, LPARAM lParam)
 {
 	iaxc_stop_processing_thread();
 
 	iaxc_shutdown();
 
 	return 0;
+}
+
+
+INT_PTR __cdecl IAXProto::GetUnreadEmailCount(WPARAM wParam, LPARAM lParam)
+{
+	if (m_iStatus <= ID_STATUS_OFFLINE)
+		return 0;
+
+	return voiceMessages;
 }
 
 
@@ -683,13 +703,13 @@ void IAXProto::ConfigureDevices()
 }
 
 
-int __cdecl IAXProto::VoiceCaps(WPARAM wParam,LPARAM lParam)
+INT_PTR __cdecl IAXProto::VoiceCaps(WPARAM wParam,LPARAM lParam)
 {
 	return VOICE_CAPS_VOICE | VOICE_CAPS_CALL_STRING;
 }
 
 
-int __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
+INT_PTR __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 {
 	HANDLE hContact = (HANDLE) wParam;
 	TCHAR *number = (TCHAR *) lParam;
@@ -702,7 +722,7 @@ int __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 	int callNo = iaxc_first_free_call();
 	if (callNo < 0 || callNo >= NUM_LINES)
 	{
-		Error(TranslateT("No more slots to make calls. You need to drop some calls."));
+		Info(_T("No more slots to make calls. You need to drop some calls."));
 		return 2;
 	}
 
@@ -722,7 +742,7 @@ int __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 	callNo = iaxc_call_ex(buff, TcharToUtf8(myName), TcharToUtf8(myNumber), FALSE);
 	if (callNo < 0 || callNo >= NUM_LINES)
 	{
-		Error(TranslateT("Error making call (callNo=%d)."), callNo);
+		Error(_T("Error making call (callNo=%d)."), callNo);
 		return 3;
 	}
 
@@ -732,7 +752,7 @@ int __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 }
 
 
-int __cdecl IAXProto::VoiceAnswerCall(WPARAM wParam, LPARAM lParam)
+INT_PTR __cdecl IAXProto::VoiceAnswerCall(WPARAM wParam, LPARAM lParam)
 {
 	char *id = (char *) wParam;
 	if (id == NULL || id[0] == 0)
@@ -751,7 +771,7 @@ int __cdecl IAXProto::VoiceAnswerCall(WPARAM wParam, LPARAM lParam)
 }
 
 
-int __cdecl IAXProto::VoiceDropCall(WPARAM wParam, LPARAM lParam)
+INT_PTR __cdecl IAXProto::VoiceDropCall(WPARAM wParam, LPARAM lParam)
 {
 	char *id = (char *) wParam;
 	if (id == NULL || id[0] == 0)
@@ -770,7 +790,7 @@ int __cdecl IAXProto::VoiceDropCall(WPARAM wParam, LPARAM lParam)
 }
 
 
-int __cdecl IAXProto::VoiceHoldCall(WPARAM wParam, LPARAM lParam)
+INT_PTR __cdecl IAXProto::VoiceHoldCall(WPARAM wParam, LPARAM lParam)
 {
 	char *id = (char *) wParam;
 	if (id == NULL || id[0] == 0)
@@ -802,7 +822,7 @@ static bool IsValidDTMF(TCHAR c)
 }
 
 
-int __cdecl IAXProto::VoiceSendDTMF(WPARAM wParam, LPARAM lParam)
+INT_PTR __cdecl IAXProto::VoiceSendDTMF(WPARAM wParam, LPARAM lParam)
 {
 	char *id = (char *) wParam;
 	TCHAR c = (TCHAR) lParam;
@@ -828,7 +848,7 @@ int __cdecl IAXProto::VoiceSendDTMF(WPARAM wParam, LPARAM lParam)
 }
 
 
-int __cdecl IAXProto::VoiceCallStringValid(WPARAM wParam, LPARAM lParam)
+INT_PTR __cdecl IAXProto::VoiceCallStringValid(WPARAM wParam, LPARAM lParam)
 {
 	TCHAR *number = (TCHAR *) wParam;
 
