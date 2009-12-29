@@ -22,40 +22,79 @@ Boston, MA 02111-1307, USA.
 
 
 class SIPProto;
+typedef void (__cdecl SIPProto::*SipThreadFunc)(void*);
 typedef INT_PTR (__cdecl SIPProto::*SIPServiceFunc)(WPARAM, LPARAM);
 typedef INT_PTR (__cdecl SIPProto::*SIPServiceFuncParam)(WPARAM, LPARAM, LPARAM);
 typedef int (__cdecl SIPProto::*SIPEventFunc)(WPARAM, LPARAM);
+
+struct SIPEvent
+{
+	enum {
+		reg_state,
+		incoming_call,
+		call_state,
+		call_media_state,
+		incoming_subscribe,
+		buddy_state,
+		pager,
+		typing
+
+	} type;
+
+	pjsua_call_id call_id;
+	pjsua_call_info call_info;
+	pjsua_buddy_id buddy_id;
+	char *from;
+	char *text;
+	char *mime;
+	bool isTyping;
+};
 
 class SIPProto : public PROTO_INTERFACE
 {
 private:
 	HANDLE hNetlibUser;
 	HANDLE hCallStateEvent;
-	//bool hasToDestroy;
+	bool hasToDestroy;
 	pjsua_transport_id transport_id;
 	pjsua_acc_id acc_id;
 
+public:
 	struct {
 		TCHAR host[256];
-		int port;
+		TCHAR realm[256];
 		TCHAR username[16];
 		char password[16];
 		BYTE savePassword;
-
 		struct {
 			TCHAR host[256];
-			TCHAR port;
+			int port;
+		} reg;
+		struct {
+			TCHAR host[256];
+			int port;
+		} dns;
+		struct {
+			TCHAR host[256];
+			int port;
 		} stun;
+		struct {
+			TCHAR host[256];
+			int port;
+		} proxy;
+		BYTE publish;
+		BYTE sendKeepAlive;
 	} opts;
 
-public:
+	CRITICAL_SECTION cs;
+	std::vector<SIPEvent> events;
 	OptPageControl accountManagerCtrls[5];
-	OptPageControl optionsCtrls[7];
+	OptPageControl optionsCtrls[15];
 
 	SIPProto(const char *aProtoName, const TCHAR *aUserName);
 	virtual ~SIPProto();
 
-	virtual	HANDLE   __cdecl AddToList( int flags, PROTOSEARCHRESULT* psr ) { return 0; }
+	virtual	HANDLE   __cdecl AddToList( int flags, PROTOSEARCHRESULT* psr );
 	virtual	HANDLE   __cdecl AddToListByEvent( int flags, int iContact, HANDLE hDbEvent ) { return 0; }
 
 	virtual	int      __cdecl Authorize( HANDLE hDbEvent ) { return 1; }
@@ -75,7 +114,7 @@ public:
 	virtual	HICON     __cdecl GetIcon( int iconIndex ) { return 0; }
 	virtual	int       __cdecl GetInfo( HANDLE hContact, int infoType ) { return 1; }
 
-	virtual	HANDLE    __cdecl SearchBasic( const char* id ) { return 0; }
+	virtual	HANDLE    __cdecl SearchBasic( const char* id );
 	virtual	HANDLE    __cdecl SearchByEmail( const char* email ) { return 0; }
 	virtual	HANDLE    __cdecl SearchByName( const char* nick, const char* firstName, const char* lastName ) { return 0; }
 	virtual	HWND      __cdecl SearchAdvanced( HWND owner ) { return 0; }
@@ -88,7 +127,7 @@ public:
 
 	virtual	int       __cdecl SendContacts( HANDLE hContact, int flags, int nContacts, HANDLE* hContactsList ) { return 1; }
 	virtual	HANDLE    __cdecl SendFile( HANDLE hContact, const PROTOCHAR* szDescription, PROTOCHAR** ppszFiles ) { return 0; }
-	virtual	int       __cdecl SendMsg( HANDLE hContact, int flags, const char* msg ) { return 1; }
+	virtual	int       __cdecl SendMsg( HANDLE hContact, int flags, const char* msg );
 	virtual	int       __cdecl SendUrl( HANDLE hContact, int flags, const char* url ) { return 1; }
 
 	virtual	int       __cdecl SetApparentMode( HANDLE hContact, int mode ) { return 1; }
@@ -100,26 +139,39 @@ public:
 	virtual	int       __cdecl SendAwayMsg( HANDLE hContact, HANDLE hProcess, const char* msg ) { return 1; }
 	virtual	int       __cdecl SetAwayMsg( int iStatus, const char* msg ) { return 1; }
 
-	virtual	int       __cdecl UserIsTyping( HANDLE hContact, int type ) { return 0; }
+	virtual	int       __cdecl UserIsTyping( HANDLE hContact, int type );
 
 	virtual	int       __cdecl OnEvent( PROTOEVENTTYPE iEventType, WPARAM wParam, LPARAM lParam );
 
 	void on_reg_state();
-	void on_incoming_call(pjsua_call_id call_id, pjsip_rx_data *rdata);
-	void on_call_state(pjsua_call_id call_id, pjsip_event *e);
+	void on_incoming_call(pjsua_call_id call_id);
+	void on_call_state(pjsua_call_id call_id, const pjsua_call_info &info);
+	bool on_call_media_state_sync(pjsua_call_id call_id, const pjsua_call_info &info);
 	void on_call_media_state(pjsua_call_id call_id);
+	bool on_incoming_subscribe_sync(pjsua_srv_pres *srv_pres, pjsua_buddy_id buddy_id,
+									const pj_str_t *from, pjsip_rx_data *rdata, 
+									pjsip_status_code *code, pj_str_t *reason, 
+									pjsua_msg_data *msg_data);
+	void on_incoming_subscribe(char *from, char *text);
+	void on_buddy_state(pjsua_buddy_id buddy_id);
+	void on_pager(char *from, char *text, char *mime_type);
+	void on_typing(char *from, bool isTyping);
+
+	bool IsMyContact(HANDLE hContact);
 
 private:
 	void BroadcastStatus(int newStatus);
-	void CreateProtoService(const char* szService, SIPServiceFunc serviceProc);
-	void CreateProtoService(const char* szService, SIPServiceFuncParam serviceProc, LPARAM lParam);
-	HANDLE CreateProtoEvent(const char* szService);
-	void HookProtoEvent(const char* szEvent, SIPEventFunc pFunc);
+	void CreateProtoService(const char *szService, SIPServiceFunc serviceProc);
+	void CreateProtoService(const char *szService, SIPServiceFuncParam serviceProc, LPARAM lParam);
+	HANDLE CreateProtoEvent(const char *szService);
+	void HookProtoEvent(const char *szEvent, SIPEventFunc pFunc);
+	void ForkThread(SipThreadFunc pFunc, void *param = NULL);
 	int SendBroadcast(HANDLE hContact, int type, int result, HANDLE hProcess, LPARAM lParam);
 
 	int __cdecl OnModulesLoaded(WPARAM wParam, LPARAM lParam);
-	int __cdecl OnOptionsInit(WPARAM wParam,LPARAM lParam);
-	int __cdecl OnPreShutdown(WPARAM wParam,LPARAM lParam);
+	int __cdecl OnOptionsInit(WPARAM wParam, LPARAM lParam);
+	int __cdecl OnPreShutdown(WPARAM wParam, LPARAM lParam);
+	int  __cdecl OnContactDeleted(WPARAM wParam, LPARAM lParam);
 
 	void Trace(TCHAR *fmt, ...);
 	void Info(TCHAR *fmt, ...);
@@ -134,16 +186,23 @@ private:
 
 	void ConfigureDevices();
 	void BuildURI(TCHAR *out, int outSize, const TCHAR *number, bool isTel);
+	void CleanupURI(TCHAR *out, int outSize, const TCHAR *url);
 
 	// Voice services
 	void NotifyCall(pjsua_call_id call_id, int state, HANDLE hContact = NULL, TCHAR *name = NULL, TCHAR *number = NULL);
-	int __cdecl VoiceCaps(WPARAM wParam,LPARAM lParam);
-	int __cdecl VoiceCall(WPARAM wParam,LPARAM lParam);
-	int __cdecl VoiceAnswerCall(WPARAM wParam,LPARAM lParam);
-	int __cdecl VoiceDropCall(WPARAM wParam,LPARAM lParam);
-	int __cdecl VoiceHoldCall(WPARAM wParam,LPARAM lParam);
-	int __cdecl VoiceSendDTMF(WPARAM wParam,LPARAM lParam);
-	int __cdecl VoiceCallStringValid(WPARAM wParam,LPARAM lParam);
+	int __cdecl VoiceCaps(WPARAM wParam, LPARAM lParam);
+	int __cdecl VoiceCall(WPARAM wParam, LPARAM lParam);
+	int __cdecl VoiceAnswerCall(WPARAM wParam, LPARAM lParam);
+	int __cdecl VoiceDropCall(WPARAM wParam, LPARAM lParam);
+	int __cdecl VoiceHoldCall(WPARAM wParam, LPARAM lParam);
+	int __cdecl VoiceSendDTMF(WPARAM wParam, LPARAM lParam);
+	int __cdecl VoiceCallStringValid(WPARAM wParam, LPARAM lParam);
+
+	// Buddy
+	void __cdecl SearchUserThread(void *param);
+	pjsua_buddy_id GetBuddy(HANDLE hContact);
+	HANDLE GetContact(pjsua_buddy_id buddy_id);
+	void Attach(HANDLE hContact, pjsua_buddy_id buddy_id);
 
 	// Static callbacks
 	static void CALLBACK DisconnectProto(void *param);
