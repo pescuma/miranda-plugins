@@ -100,12 +100,12 @@ extern "C" __declspec(dllexport) const MUUID* MirandaPluginInterfaces(void)
 
 static SIPProto *SIPProtoInit(const char* pszProtoName, const TCHAR* tszUserName)
 {
-/*	if (instances.getCount() != 0)
+	if (instances.getCount() != 0)
 	{
 		MessageBox(NULL, TranslateT("Only one instance is allowed.\nI will crash now."), _T("SIP"), MB_OK | MB_ICONERROR);
 		return NULL;
 	}
-*/
+
 	SIPProto *proto = new SIPProto(pszProtoName, tszUserName);
 	instances.insert(proto);
 	return proto;
@@ -131,60 +131,6 @@ static void ShowError(TCHAR *msg, pj_status_t status)
 }
 
 
-static void static_on_reg_state(pjsua_acc_id acc_id)
-{
-	SIPProto *proto = (SIPProto *) pjsua_acc_get_user_data(acc_id);
-	if (proto == NULL)
-		return;
-
-	proto->on_reg_state();
-}
-
-static void static_on_incoming_call(pjsua_acc_id acc_id, pjsua_call_id call_id, pjsip_rx_data *rdata)
-{
-	SIPProto *proto = (SIPProto *) pjsua_acc_get_user_data(acc_id);
-	if (proto == NULL)
-		return;
-
-	proto->on_incoming_call(call_id, rdata);
-}
-
-static void static_on_call_state(pjsua_call_id call_id, pjsip_event *e)
-{
-	pjsua_call_info info;
-	pj_status_t status = pjsua_call_get_info(call_id, &info);
-	if (status != PJ_SUCCESS)
-		return;
-
-	SIPProto *proto = (SIPProto *) pjsua_acc_get_user_data(info.acc_id);
-	if (proto == NULL)
-		return;
-
-	proto->on_call_state(call_id, e);
-}
-
-static void static_on_call_media_state(pjsua_call_id call_id)
-{
-	pjsua_call_info info;
-	pj_status_t status = pjsua_call_get_info(call_id, &info);
-	if (status != PJ_SUCCESS)
-		return;
-
-	SIPProto *proto = (SIPProto *) pjsua_acc_get_user_data(info.acc_id);
-	if (proto == NULL)
-		return;
-
-	proto->on_call_media_state(call_id);
-}
-
-static void static_on_log(int level, const char *data, int len)
-{
-	char tmp[1024];
-	mir_snprintf(tmp, MAX_REGS(tmp), "Level %d : %*s", level, len, data);
-	OutputDebugStringA(tmp);
-}
-
-
 extern "C" int __declspec(dllexport) Load(PLUGINLINK *link) 
 {
 	pluginLink = link;
@@ -195,7 +141,8 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	mir_getMMI(&mmi);
 	mir_getUTFI(&utfi);
 	mir_getLI(&li);
-	
+
+/*
 	pj_status_t status = pjsua_create();
 	if (status != PJ_SUCCESS) 
 	{
@@ -232,6 +179,7 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 		pjsua_destroy();
 		return -3;
 	}
+*/
 
 	hHooks.push_back( HookEvent(ME_SYSTEM_MODULESLOADED, ModulesLoaded) );
 	hHooks.push_back( HookEvent(ME_SYSTEM_PRESHUTDOWN, PreShutdown) );
@@ -250,7 +198,7 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 
 extern "C" int __declspec(dllexport) Unload(void) 
 {
-	pjsua_destroy();
+//	pjsua_destroy();
 
 	return 0;
 }
