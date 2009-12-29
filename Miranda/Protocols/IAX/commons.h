@@ -84,6 +84,8 @@ extern OBJLIST<IAXProto> instances;
 #define MAX_REGS(_A_) ( sizeof(_A_) / sizeof(_A_[0]) )
 #define MIR_FREE(_X_) if (_X_ != NULL) { mir_free(_X_); _X_ = NULL; }
 
+#define PS_GETUNREADEMAILCOUNT "/GetUnreadEmailCount"
+
 
 
 static TCHAR *lstrtrim(TCHAR *str)
