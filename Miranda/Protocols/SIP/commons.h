@@ -72,6 +72,7 @@ Boston, MA 02111-1307, USA.
 #include "../../plugins/utils/mir_options.h"
 #include "../../plugins/utils/mir_icons.h"
 #include "../../plugins/utils/mir_log.h"
+#include "../../plugins/utils/mir_dbutils.h"
 #include "../../plugins/utils/utf8_helpers.h"
 #include "../../plugins/utils/scope.h"
 #include "../../plugins/voiceservice/m_voice.h"
@@ -129,6 +130,67 @@ static BOOL IsEmptyW(const WCHAR *str)
 # define IsEmpty IsEmptyW
 #else
 # define IsEmpty IsEmptyA
+#endif
+
+static char * FirstNotEmptyA(char *str1, char *str2)
+{
+	if (!IsEmptyA(str1))
+		return str1;
+	return str2;
+}
+
+static char * FirstNotEmptyA(char *str1, char *str2, char *str3)
+{
+	if (!IsEmptyA(str1))
+		return str1;
+	if (!IsEmptyA(str2))
+		return str2;
+	return str3;
+}
+
+static char * FirstNotEmptyA(char *str1, char *str2, char *str3, char *str4)
+{
+	if (!IsEmptyA(str1))
+		return str1;
+	if (!IsEmptyA(str2))
+		return str2;
+	if (!IsEmptyA(str3))
+		return str3;
+	return str4;
+}
+
+
+static WCHAR * FirstNotEmptyW(WCHAR *str1, WCHAR *str2)
+{
+	if (!IsEmptyW(str1))
+		return str1;
+	return str2;
+}
+
+static WCHAR * FirstNotEmptyW(WCHAR *str1, WCHAR *str2, WCHAR *str3)
+{
+	if (!IsEmptyW(str1))
+		return str1;
+	if (!IsEmptyW(str2))
+		return str2;
+	return str3;
+}
+
+static WCHAR * FirstNotEmptyW(WCHAR *str1, WCHAR *str2, WCHAR *str3, WCHAR *str4)
+{
+	if (!IsEmptyW(str1))
+		return str1;
+	if (!IsEmptyW(str2))
+		return str2;
+	if (!IsEmptyW(str3))
+		return str3;
+	return str4;
+}
+
+#ifdef UNICODE
+# define FirstNotEmpty FirstNotEmptyW
+#else
+# define FirstNotEmpty FirstNotEmptyA
 #endif
 
 
