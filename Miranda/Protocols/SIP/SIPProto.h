@@ -27,6 +27,13 @@ typedef INT_PTR (__cdecl SIPProto::*SIPServiceFunc)(WPARAM, LPARAM);
 typedef INT_PTR (__cdecl SIPProto::*SIPServiceFuncParam)(WPARAM, LPARAM, LPARAM);
 typedef int (__cdecl SIPProto::*SIPEventFunc)(WPARAM, LPARAM);
 
+struct MessageData
+{
+	HANDLE hContact;
+	LONG messageID;
+	pjsip_status_code status;
+};
+
 struct SIPEvent
 {
 	enum {
@@ -37,6 +44,7 @@ struct SIPEvent
 		incoming_subscribe,
 		buddy_state,
 		pager,
+		pager_status,
 		typing
 
 	} type;
@@ -48,6 +56,7 @@ struct SIPEvent
 	char *text;
 	char *mime;
 	bool isTyping;
+	MessageData *messageData;
 };
 
 class SIPProto : public PROTO_INTERFACE
@@ -58,18 +67,18 @@ private:
 	bool hasToDestroy;
 	pjsua_transport_id transport_id;
 	pjsua_acc_id acc_id;
+	LONG messageID;
 
 public:
 	struct {
-		TCHAR host[256];
-		TCHAR realm[256];
 		TCHAR username[16];
+		TCHAR domain[256];
 		char password[16];
 		BYTE savePassword;
 		struct {
 			TCHAR host[256];
 			int port;
-		} reg;
+		} registrar;
 		struct {
 			TCHAR host[256];
 			int port;
@@ -88,8 +97,8 @@ public:
 
 	CRITICAL_SECTION cs;
 	std::vector<SIPEvent> events;
-	OptPageControl accountManagerCtrls[5];
-	OptPageControl optionsCtrls[15];
+	OptPageControl accountManagerCtrls[4];
+	OptPageControl optionsCtrls[14];
 
 	SIPProto(const char *aProtoName, const TCHAR *aUserName);
 	virtual ~SIPProto();
@@ -122,7 +131,7 @@ public:
 
 	virtual	int       __cdecl RecvContacts( HANDLE hContact, PROTORECVEVENT* ) { return 1; }
 	virtual	int       __cdecl RecvFile( HANDLE hContact, PROTOFILEEVENT* ) { return 1; }
-	virtual	int       __cdecl RecvMsg( HANDLE hContact, PROTORECVEVENT* ) { return 1; }
+	virtual	int       __cdecl RecvMsg( HANDLE hContact, PROTORECVEVENT* );
 	virtual	int       __cdecl RecvUrl( HANDLE hContact, PROTORECVEVENT* ) { return 1; }
 
 	virtual	int       __cdecl SendContacts( HANDLE hContact, int flags, int nContacts, HANDLE* hContactsList ) { return 1; }
@@ -155,6 +164,7 @@ public:
 	void on_incoming_subscribe(char *from, char *text);
 	void on_buddy_state(pjsua_buddy_id buddy_id);
 	void on_pager(char *from, char *text, char *mime_type);
+	void on_pager_status(HANDLE hContact, LONG messageID, pjsip_status_code status, char *text);
 	void on_typing(char *from, bool isTyping);
 
 	bool IsMyContact(HANDLE hContact);
@@ -185,7 +195,8 @@ private:
 	INT_PTR  __cdecl CreateAccMgrUI(WPARAM wParam, LPARAM lParam);
 
 	void ConfigureDevices();
-	void BuildURI(TCHAR *out, int outSize, const TCHAR *number, bool isTel);
+	void BuildTelURI(TCHAR *out, int outSize, const TCHAR *number);
+	void BuildURI(TCHAR *out, int outSize, const TCHAR *user, const TCHAR *host = NULL, int port = 0, bool isTel = false);
 	void CleanupURI(TCHAR *out, int outSize, const TCHAR *url);
 
 	// Voice services
@@ -199,10 +210,12 @@ private:
 	int __cdecl VoiceCallStringValid(WPARAM wParam, LPARAM lParam);
 
 	// Buddy
+	void AddContactsToBuddyList();
 	void __cdecl SearchUserThread(void *param);
 	pjsua_buddy_id GetBuddy(HANDLE hContact);
 	HANDLE GetContact(pjsua_buddy_id buddy_id);
 	void Attach(HANDLE hContact, pjsua_buddy_id buddy_id);
+	void __cdecl FakeMsgAck(void *param);
 
 	// Static callbacks
 	static void CALLBACK DisconnectProto(void *param);
