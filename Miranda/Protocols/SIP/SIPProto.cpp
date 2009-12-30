@@ -118,7 +118,7 @@ static char * mir_pjstrdup(const pj_str_t *from)
 }
 
 
-static int FistGtZero(int n1, int n2)
+static int FirstGtZero(int n1, int n2)
 {
 	if (n1 > 0)
 		return n1;
@@ -157,58 +157,57 @@ SIPProto::SIPProto(const char *aProtoName, const TCHAR *aUserName)
 	hNetlibUser = 0;
 	hCallStateEvent = 0;
 	m_iDesiredStatus = m_iStatus = ID_STATUS_OFFLINE;
+	messageID = 0;
 
 	m_tszUserName = mir_tstrdup(aUserName);
 	m_szProtoName = mir_strdup(aProtoName);
 	m_szModuleName = mir_strdup(aProtoName);
 
 	static OptPageControl amCtrls[] = { 
-		{ NULL,	CONTROL_TEXT,		IDC_HOST,			"Host", NULL, 0, 0, 256 },
-		{ NULL,	CONTROL_INT,		IDC_PORT,			"RegPort", 5060, 0, 1 },
-		{ NULL,	CONTROL_TEXT,		IDC_USERNAME,		"Username", NULL, 0, 0, 16 },
+		{ NULL,	CONTROL_TEXT,		IDC_REG_HOST,		"RegHost", NULL, 0, 0, 256 },
+		{ NULL,	CONTROL_INT,		IDC_REG_PORT,		"RegPort", 5060, 0, 0 },
 		{ NULL,	CONTROL_PASSWORD,	IDC_PASSWORD,		"Password", NULL, IDC_SAVEPASSWORD, 0, 16 },
 		{ NULL,	CONTROL_CHECKBOX,	IDC_SAVEPASSWORD,	"SavePassword", (BYTE) TRUE },
 	};
 
 	memmove(accountManagerCtrls, amCtrls, sizeof(accountManagerCtrls));
-	accountManagerCtrls[0].var = &opts.host;
-	accountManagerCtrls[1].var = &opts.reg.port;
-	accountManagerCtrls[2].var = &opts.username;
-	accountManagerCtrls[3].var = &opts.password;
-	accountManagerCtrls[4].var = &opts.savePassword;
+	accountManagerCtrls[0].var = &opts.registrar.host;
+	accountManagerCtrls[1].var = &opts.registrar.port;
+	accountManagerCtrls[2].var = &opts.password;
+	accountManagerCtrls[3].var = &opts.savePassword;
 
 	static OptPageControl oCtrls[] = { 
-		{ NULL,	CONTROL_TEXT,		IDC_HOST,			"Host", NULL, 0, 0, 256 },
 		{ NULL,	CONTROL_TEXT,		IDC_USERNAME,		"Username", NULL, 0, 0, 16 },
+		{ NULL,	CONTROL_TEXT,		IDC_DOMAIN,			"Domain", NULL, 0, 0, 256 },
 		{ NULL,	CONTROL_PASSWORD,	IDC_PASSWORD,		"Password", NULL, IDC_SAVEPASSWORD, 0, 16 },
 		{ NULL,	CONTROL_CHECKBOX,	IDC_SAVEPASSWORD,	"SavePassword", (BYTE) TRUE },
 		{ NULL,	CONTROL_TEXT,		IDC_REG_HOST,		"RegHost", NULL, 0, 0, 256 },
 		{ NULL,	CONTROL_INT,		IDC_REG_PORT,		"RegPort", 5060, 0, 0 },
-		{ NULL,	CONTROL_TEXT,		IDC_REALM,			"Realm", NULL, 0, 0, 256 },
+		{ NULL,	CONTROL_TEXT,		IDC_PROXY_HOST,		"ProxyHost", NULL, 0, 0, 256 },
+		{ NULL,	CONTROL_INT,		IDC_PROXY_PORT,		"ProxyPort", 5060, 0, 0 },
 		{ NULL,	CONTROL_TEXT,		IDC_DNS_HOST,		"DNSHost", NULL, 0, 0, 256 },
 		{ NULL,	CONTROL_INT,		IDC_DNS_PORT,		"DNSPort", 53, 0, 0 },
 		{ NULL,	CONTROL_TEXT,		IDC_STUN_HOST,		"STUNHost", (DWORD) _T("stun01.sipphone.com"), 0, 0, 256 },
 		{ NULL,	CONTROL_INT,		IDC_STUN_PORT,		"STUNPort", PJ_STUN_PORT, 0, 0 },
-		{ NULL,	CONTROL_TEXT,		IDC_PROXY_HOST,		"ProxyHost", NULL, 0, 0, 256 },
-		{ NULL,	CONTROL_INT,		IDC_PROXY_PORT,		"ProxyPort", 5060, 0, 0 },
 		{ NULL,	CONTROL_CHECKBOX,	IDC_PUBLISH,		"Publish", (BYTE) FALSE },
+		{ NULL,	CONTROL_CHECKBOX,	IDC_KEEPALIVE,		"SendKeepAlive", (BYTE) TRUE },
 	};
 
 	memmove(optionsCtrls, oCtrls, sizeof(optionsCtrls));
-	optionsCtrls[0].var = &opts.host;
-	optionsCtrls[1].var = &opts.username;
+	optionsCtrls[0].var = &opts.username;
+	optionsCtrls[1].var = &opts.domain;
 	optionsCtrls[2].var = &opts.password;
 	optionsCtrls[3].var = &opts.savePassword;
-	optionsCtrls[4].var = &opts.reg.host;
-	optionsCtrls[5].var = &opts.reg.port;
-	optionsCtrls[6].var = &opts.realm;
-	optionsCtrls[7].var = &opts.dns.host;
-	optionsCtrls[8].var = &opts.dns.port;
-	optionsCtrls[9].var = &opts.stun.host;
-	optionsCtrls[10].var = &opts.stun.port;
-	optionsCtrls[11].var = &opts.proxy.host;
-	optionsCtrls[12].var = &opts.proxy.port;
-	optionsCtrls[13].var = &opts.publish;
+	optionsCtrls[4].var = &opts.registrar.host;
+	optionsCtrls[5].var = &opts.registrar.port;
+	optionsCtrls[6].var = &opts.proxy.host;
+	optionsCtrls[7].var = &opts.proxy.port;
+	optionsCtrls[8].var = &opts.dns.host;
+	optionsCtrls[9].var = &opts.dns.port;
+	optionsCtrls[10].var = &opts.stun.host;
+	optionsCtrls[11].var = &opts.stun.port;
+	optionsCtrls[12].var = &opts.publish;
+	optionsCtrls[13].var = &opts.sendKeepAlive;
 
 	LoadOpts(optionsCtrls, MAX_REGS(optionsCtrls), m_szModuleName);
 
@@ -341,6 +340,10 @@ static void CALLBACK ProcessEvents(void *param)
 				case SIPEvent::pager:
 					proto->on_pager(ev.from, ev.text, ev.mime);
 					break;
+				case SIPEvent::pager_status:
+					proto->on_pager_status(ev.messageData->hContact, ev.messageData->messageID, 
+											ev.messageData->status, ev.text);
+					break;
 				case SIPEvent::typing:
 					proto->on_typing(ev.from, ev.isTyping);
 					break;
@@ -348,6 +351,7 @@ static void CALLBACK ProcessEvents(void *param)
 			mir_free(ev.from);
 			mir_free(ev.text);
 			mir_free(ev.mime);
+			delete ev.messageData;
 		}
 	}
 }
@@ -516,24 +520,6 @@ static void static_on_buddy_state(pjsua_buddy_id buddy_id)
 }
 
 
-static SIPProto * FindProto(const TCHAR *uri)
-{
-	for(int i = 0; i < instances.getCount(); ++i)
-	{
-		SIPProto *proto = &instances[i];
-
-		TCHAR tmp[1024];
-		mir_sntprintf(tmp, MAX_REGS(tmp), _T("sip:%s@%s"), 
-					  CleanupSip(proto->opts.username), proto->opts.host);
-
-		if (lstrcmpi(uri, tmp) == 0)
-			return proto;
-	}
-
-	return NULL;
-}
-
-
 // Incoming IM message (i.e. MESSAGE request)!
 static void static_on_pager(pjsua_call_id call_id, const pj_str_t *from, 
 							const pj_str_t *to, const pj_str_t *contact,
@@ -550,6 +536,29 @@ static void static_on_pager(pjsua_call_id call_id, const pj_str_t *from,
 	ev.from = mir_pjstrdup(from);
 	ev.text = mir_pjstrdup(text);
 	ev.mime = mir_pjstrdup(mime_type);
+
+	EnterCriticalSection(&proto->cs);
+	proto->events.push_back(ev);
+	LeaveCriticalSection(&proto->cs);
+	
+	CallFunctionAsync(&ProcessEvents, NULL);
+}
+
+
+void static_on_pager_status(pjsua_call_id call_id, const pj_str_t *to, const pj_str_t *body,
+							 void *user_data, pjsip_status_code status, const pj_str_t *reason,
+							 pjsip_tx_data *tdata, pjsip_rx_data *rdata, pjsua_acc_id acc_id)
+{
+	SIPProto *proto = (SIPProto *) pjsua_acc_get_user_data(acc_id);
+	if (proto == NULL)
+		return;
+
+	SIPEvent ev;
+	memset(&ev, 0, sizeof(ev));
+	ev.type = SIPEvent::pager_status;
+	ev.messageData = (MessageData *) user_data;
+	ev.messageData->status = status;
+	ev.text = mir_pjstrdup(reason);
 
 	EnterCriticalSection(&proto->cs);
 	proto->events.push_back(ev);
@@ -620,6 +629,7 @@ int SIPProto::Connect()
 		cfg.cb.on_incoming_subscribe = &static_on_incoming_subscribe;
 		cfg.cb.on_buddy_state = &static_on_buddy_state;
 		cfg.cb.on_pager2 = &static_on_pager;
+		cfg.cb.on_pager_status2 = &static_on_pager_status;
 		cfg.cb.on_typing2 = &static_on_typing;
 
 
@@ -628,7 +638,7 @@ int SIPProto::Connect()
 			TCHAR tmp[1024];
 			mir_sntprintf(tmp, MAX_REGS(tmp), _T("%s:%d"), 
 				CleanupSip(opts.stun.host), 
-				FistGtZero(opts.stun.port, PJ_STUN_PORT));
+				FirstGtZero(opts.stun.port, PJ_STUN_PORT));
 			stun = TcharToUtf8(tmp).detach();
 
 			cfg.stun_srv_cnt = 1;
@@ -640,7 +650,7 @@ int SIPProto::Connect()
 			TCHAR tmp[1024];
 			mir_sntprintf(tmp, MAX_REGS(tmp), _T("%s:%d"), 
 				CleanupSip(opts.dns.host), 
-				FistGtZero(opts.dns.port, 53));
+				FirstGtZero(opts.dns.port, 53));
 			dns = TcharToUtf8(tmp).detach();
 
 			cfg.nameserver_count = 1;
@@ -683,29 +693,34 @@ int SIPProto::Connect()
 	}
 
 	{
+		scoped_mir_free<char> registrar;
 		scoped_mir_free<char> proxy;
 		TCHAR tmp[1024];
 
 		pjsua_acc_config cfg;
 		pjsua_acc_config_default(&cfg);
 		cfg.user_data = this;
-		//cfg.transport_id = transport_id;
+		cfg.transport_id = transport_id;
 
-		mir_sntprintf(tmp, MAX_REGS(tmp), _T("sip:%s@%s"), CleanupSip(opts.username), opts.host);
+		BuildURI(tmp, MAX_REGS(tmp), opts.username, opts.domain);
 		TcharToUtf8 id(tmp);
 		cfg.id = pj_str(id);
 
-		mir_sntprintf(tmp, MAX_REGS(tmp), _T("sip:%s:%d"), 
-						CleanupSip(FirstNotEmpty(opts.reg.host, opts.host)), 
-						FistGtZero(opts.reg.port, 5060));
-		TcharToUtf8 reg_uri(tmp);
-		cfg.reg_uri = pj_str(reg_uri);
+		if (!IsEmpty(opts.registrar.host))
+		{
+			BuildURI(tmp, MAX_REGS(tmp), NULL, 
+					 CleanupSip(opts.registrar.host), 
+					 FirstGtZero(opts.registrar.port, 5060));
+			registrar = TcharToUtf8(tmp).detach();
+
+			cfg.reg_uri = pj_str(registrar);
+		}
 
 		if (!IsEmpty(opts.proxy.host))
 		{
-			mir_sntprintf(tmp, MAX_REGS(tmp), _T("sip:%s:%d"), 
-				CleanupSip(opts.proxy.host), 
-				FistGtZero(opts.proxy.port, 5060));
+			BuildURI(tmp, MAX_REGS(tmp), NULL, 
+					 CleanupSip(opts.proxy.host), 
+					 FirstGtZero(opts.proxy.port, 5060));
 			proxy = TcharToUtf8(tmp).detach();
 
 			cfg.proxy_cnt = 1;
@@ -714,10 +729,13 @@ int SIPProto::Connect()
 
 		cfg.publish_enabled = (opts.publish ? PJ_TRUE : PJ_FALSE);
 
+		if (!opts.sendKeepAlive)
+			cfg.ka_interval = 0;
+
 		cfg.cred_count = 1;
 
-		TcharToUtf8 host(CleanupSip(FirstNotEmpty(opts.realm, opts.host)));
-		cfg.cred_info[0].realm = pj_str(host);
+		TcharToUtf8 realm(CleanupSip(opts.domain));
+		cfg.cred_info[0].realm = pj_str(realm);
 		cfg.cred_info[0].scheme = pj_str("digest");
 		TcharToUtf8 username(opts.username);
 		cfg.cred_info[0].username = pj_str(username);
@@ -733,7 +751,12 @@ int SIPProto::Connect()
 		}
 	}
 
-	// Add contacts to buddy list
+	return 0;
+}
+
+
+void SIPProto::AddContactsToBuddyList()
+{
 	for(HANDLE hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDFIRST, 0, 0);
 		hContact != NULL; 
 		hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDNEXT, (WPARAM) hContact, 0)) 
@@ -769,8 +792,6 @@ int SIPProto::Connect()
 
 		pjsua_buddy_subscribe_pres(buddy_id, PJ_TRUE);
 	}
-
-	return 0;
 }
 
 
@@ -1136,9 +1157,16 @@ void SIPProto::on_reg_state()
 
 	if (info.status == PJSIP_SC_OK)
 	{
+		int oldStatus = m_iStatus;
+
 		int status = (m_iDesiredStatus > ID_STATUS_OFFLINE ? m_iDesiredStatus : ID_STATUS_ONLINE);
 		SendPresence(status);
 		BroadcastStatus(status);
+
+		if (oldStatus <= ID_STATUS_OFFLINE)
+		{
+			AddContactsToBuddyList();
+		}
 	}
 	else
 	{
@@ -1168,33 +1196,32 @@ void SIPProto::on_incoming_call(pjsua_call_id call_id)
 		return;
 	}
 
-	TCHAR number[1024];
-	lstrcpyn(number, SipToTchar(info.remote_contact), MAX_REGS(number));
-	RemoveLtGt(number);
-
-	TCHAR name[256];
-	name[0] = 0;
-	SipToTchar remote_info(info.remote_info);
-	if (remote_info[0] == _T('"'))
+	pjsua_buddy_id buddy_id = pjsua_buddy_find(&info.remote_info);
+	if (buddy_id != PJSUA_INVALID_ID)
 	{
-		TCHAR *other = _tcsstr(&remote_info[1], _T("\" <"));
-		if (other != NULL)
-		{
-			lstrcpyn(name, &remote_info[1], min(MAX_REGS(name), other - remote_info));
-			if (IsEmpty(number))
-			{
-				lstrcpyn(number, other+2, MAX_REGS(number));
-				RemoveLtGt(number);
-			}
-		}
+		HANDLE hContact = GetContact(buddy_id);
+		
+		NotifyCall(call_id, VOICE_STATE_RINGING, hContact);
 	}
-
-	if (IsEmpty(name) && IsEmpty(number))
-		lstrcpyn(number, remote_info, MAX_REGS(number));
 	else
-		CleanupURI(number, MAX_REGS(number), number);
+	{
+		SipToTchar remote_info(info.remote_info);
 
-	NotifyCall(call_id, VOICE_STATE_RINGING, NULL, name, number);
+		TCHAR number[1024];
+		number[0] = 0;
+		CleanupURI(number, MAX_REGS(number), remote_info);
+
+		TCHAR name[256];
+		name[0] = 0;
+		if (remote_info[0] == _T('"'))
+		{
+			TCHAR *other = _tcsstr(&remote_info[1], _T("\" <"));
+			if (other != NULL)
+				lstrcpyn(name, &remote_info[1], min(MAX_REGS(name), other - remote_info));
+		}
+
+		NotifyCall(call_id, VOICE_STATE_RINGING, NULL, name, number);
+	}
 }
 
 
@@ -1316,7 +1343,7 @@ void SIPProto::ConfigureDevices()
 
 int __cdecl SIPProto::VoiceCaps(WPARAM wParam,LPARAM lParam)
 {
-	return VOICE_CAPS_VOICE | VOICE_CAPS_CALL_STRING;
+	return VOICE_CAPS_VOICE | VOICE_CAPS_CALL_CONTACT | VOICE_CAPS_CALL_STRING;
 }
 
 
@@ -1339,49 +1366,79 @@ static void CleanupNumber(TCHAR *out, int outSize, const TCHAR *number)
 
 void SIPProto::CleanupURI(TCHAR *out, int outSize, const TCHAR *url)
 {
-	lstrcpyn(out, CleanupSip(url), outSize);
+	if (url[0] == _T('"'))
+	{
+		const TCHAR *other = _tcsstr(&url[1], _T("\" <"));
+		if (other != NULL)
+			url = other + 2;
+	}
+
+	lstrcpyn(out, url, outSize);
 
 	TCHAR *phone = _tcsstr(out, _T(";user=phone"));
 	if (phone != NULL)
 		*phone = 0;
 
+	RemoveLtGt(out);
+
+	phone = _tcsstr(out, _T(";user=phone"));
+	if (phone != NULL)
+		*phone = 0;
+
+	if (_tcsnicmp(_T("sip:"), out, 4) == 0)
+		lstrcpyn(out, &out[4], outSize);
+
 	TCHAR *host = _tcschr(out, _T('@'));
-	if (host != NULL && _tcsicmp(opts.host, host+1) == 0)
+	if (host != NULL && _tcsicmp(opts.domain, host+1) == 0)
 		*host = 0;
 }
 
 
-void SIPProto::BuildURI(TCHAR *out, int outSize, const TCHAR *number, bool isTel)
+void SIPProto::BuildTelURI(TCHAR *out, int outSize, const TCHAR *number)
 {
-	bool hasSip = (_tcsnicmp(_T("sip:"), number, 4) == 0);
-	bool hasHost = (_tcschr(number, _T('@')) != NULL);
+	BuildURI(out, outSize, number, NULL, 0, true);
+}
+
+
+void SIPProto::BuildURI(TCHAR *out, int outSize, const TCHAR *user, const TCHAR *aHost, int port, bool isTel)
+{
+	if (user == NULL)
+	{
+		TCHAR *host = FirstNotEmpty((TCHAR *) aHost, opts.domain);
+
+		if (port > 0)
+			mir_sntprintf(out, outSize, _T("<sip:%s:%d>"), host, port);
+		else
+			mir_sntprintf(out, outSize, _T("<sip:%s>"), host);
+
+		return;
+	}
+
+	TCHAR tmp[1024];
+	CleanupURI(tmp, MAX_REGS(tmp), user);
+
+	TCHAR *host = _tcschr(tmp, _T('@'));
+	if (host != NULL)
+	{
+		*host = 0;
+		host++;
+	}
+
+	if (host != NULL && aHost != NULL && lstrcmp(host, aHost) != 0)
+		Error(_T("Two conflicting hosts: %s / %s , ignoring one in argument"), host, aHost);
+
+	host = FirstNotEmpty(host, (TCHAR *) aHost, opts.domain);
+
+	if (port > 0)
+		mir_sntprintf(out, outSize, _T("<sip:%s@%s:%d>"), tmp, host, port);
+	else
+		mir_sntprintf(out, outSize, _T("<sip:%s@%s>"), tmp, host);
 
 	if (isTel)
-	{
-		bool hasPhone = (_tcsstr(number, _T(";user=phone")) != NULL);
-
-		if (!hasSip && !hasHost)
-		{
-			TCHAR tmp[1024];
-			CleanupNumber(tmp, MAX_REGS(tmp), number);
-			mir_sntprintf(out, outSize, _T("sip:%s@%s"), tmp, opts.host);
-		}
-		else
-			mir_sntprintf(out, outSize, _T("sip:%s"), CleanupSip(number));
-
-		 if (!hasPhone)
-		 {
-			 int len = lstrlen(out);
-			 lstrcpyn(&out[len], _T(";user=phone"), outSize - len);
-		 }
-	}
-	else
-	{
-		if (!hasSip && !hasHost)
-			mir_sntprintf(out, outSize, _T("sip:%s@%s"), number, opts.host);
-		else
-			mir_sntprintf(out, outSize, _T("sip:%s"), CleanupSip(number));
-	}
+	 {
+		 int len = lstrlen(out);
+		 lstrcpyn(&out[len], _T(";user=phone"), outSize - len);
+	 }
 }
 
 
@@ -1392,17 +1449,23 @@ int __cdecl SIPProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 
 	TCHAR uri[1024];
 
-	if (number != NULL)
+	if (!IsEmpty(number))
 	{
 		if (!VoiceCallStringValid((WPARAM) number, 0))
 			return 1;
 
-		BuildURI(uri, MAX_REGS(uri), number, true);
+		BuildTelURI(uri, MAX_REGS(uri), number);
 	}
 	else
 	{
-		// TODO
-		return 2;
+		DBTString buddy(hContact, m_szModuleName, "URI");
+		if (buddy == NULL)
+		{
+			Error(_T("Contact %d has no URI!"), hContact);
+			return -1;
+		}
+
+		lstrcpyn(uri, buddy, MAX_REGS(uri));
 	}
 
 	pjsua_call_id call_id;
@@ -1559,7 +1622,7 @@ int __cdecl SIPProto::VoiceCallStringValid(WPARAM wParam, LPARAM lParam)
 		return 0;
 
 	TCHAR tmp[1024];
-	BuildURI(tmp, MAX_REGS(tmp), number, true);
+	BuildTelURI(tmp, MAX_REGS(tmp), number);
 	return pjsua_verify_sip_url(TcharToUtf8(tmp)) == PJ_SUCCESS;
 }
 
@@ -1573,7 +1636,7 @@ HANDLE __cdecl SIPProto::SearchBasic(const char *id)
 		return 0;
 
 	TCHAR tmp[1024];
-	BuildURI(tmp, MAX_REGS(tmp), CharToTchar(id), false);
+	BuildURI(tmp, MAX_REGS(tmp), CharToTchar(id));
 
 	TCHAR *uri = mir_tstrdup(tmp); 
 	ForkThread(&SIPProto::SearchUserThread, uri);
@@ -1629,7 +1692,7 @@ HANDLE __cdecl SIPProto::AddToList(int flags, PROTOSEARCHRESULT *psr)
 		return NULL;
 
 	TCHAR uri[1024];
-	BuildURI(uri, MAX_REGS(uri), CharToTchar(psr->nick), false);
+	BuildURI(uri, MAX_REGS(uri), CharToTchar(psr->nick));
 	TcharToUtf8 sip_uri(uri);
 
 	HANDLE hContact;
@@ -1794,6 +1857,13 @@ void SIPProto::on_pager(char *from, char *text, char *mime_type)
 }
 
 
+int __cdecl SIPProto::RecvMsg(HANDLE hContact, PROTORECVEVENT *pre)
+{
+	CCSDATA ccs = { hContact, PSR_MESSAGE, 0, (LPARAM) pre };
+	return CallService(MS_PROTO_RECVMSG, 0, (LPARAM) &ccs);
+}
+
+
 int __cdecl SIPProto::SendMsg(HANDLE hContact, int flags, const char *msg)
 {
 	if (m_iStatus <= ID_STATUS_OFFLINE)
@@ -1832,14 +1902,37 @@ int __cdecl SIPProto::SendMsg(HANDLE hContact, int flags, const char *msg)
 
 	// TODO Send to call
 
-	status = pjsua_im_send(acc_id, &info.uri, NULL, &pj_str(text), NULL, NULL);
+	MessageData *md = new MessageData();
+	md->messageID = InterlockedIncrement(&messageID);
+	md->hContact = hContact;
+
+	status = pjsua_im_send(acc_id, &info.uri, NULL, &pj_str(text), NULL, md);
 	if (status != PJ_SUCCESS)
 	{
 		Error(status, _T("Error sending message"));
-		return 0;
+		ForkThread(&SIPProto::FakeMsgAck, md);
 	}
 
-	return 0;
+	return md->messageID;
+}
+
+
+void __cdecl SIPProto::FakeMsgAck(void *param)
+{
+	MessageData *md = (MessageData *) param;
+
+	Sleep(150);
+	on_pager_status(md->hContact, md->messageID, PJSIP_SC_BAD_REQUEST, Translate("Error sending message"));
+
+	delete md;
+}
+
+
+void SIPProto::on_pager_status(HANDLE hContact, LONG messageID, pjsip_status_code status, char *text)
+{
+	SendBroadcast(hContact, ACKTYPE_MESSAGE, 
+				  status != PJSIP_SC_OK ? ACKRESULT_FAILED : ACKRESULT_SUCCESS,
+				  (HANDLE) messageID, (LPARAM) text);
 }
 
 
@@ -1952,6 +2045,64 @@ static INT_PTR CALLBACK DlgProcAccMgrUI(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 		{
 			SetWindowLongPtr(hwnd, GWLP_USERDATA, lParam);
 			proto = (SIPProto *) lParam;
+
+			INT_PTR ret = SaveOptsDlgProc(proto->accountManagerCtrls, MAX_REGS(proto->accountManagerCtrls), 
+							proto->m_szModuleName, hwnd, msg, wParam, lParam);
+
+			TCHAR username[1024];
+			if (lstrcmp(proto->opts.domain, proto->opts.registrar.host) == 0)
+				lstrcpyn(username, proto->opts.username, MAX_REGS(username));
+			else
+				mir_sntprintf(username, MAX_REGS(username), _T("%s@%s"), 
+								proto->opts.username, proto->opts.domain);
+
+			SetDlgItemText(hwnd, IDC_USERNAME, username);
+			SendDlgItemMessage(hwnd, IDC_USERNAME, EM_LIMITTEXT, 1024, 0);
+
+			return ret;
+		}
+		case WM_COMMAND:
+		{
+			if (LOWORD(wParam) == IDC_USERNAME)
+			{
+				if (HIWORD(wParam) != EN_CHANGE || (HWND)lParam != GetFocus())
+					return 0;
+
+				SendMessage(GetParent(hwnd), PSM_CHANGED, 0, 0);
+
+				return 0;
+			}
+
+			break;
+		}
+		case WM_NOTIFY:
+		{
+			LPNMHDR lpnmhdr = (LPNMHDR)lParam;
+
+			if (lpnmhdr->idFrom == 0 && lpnmhdr->code == PSN_APPLY)
+			{
+				INT_PTR ret = SaveOptsDlgProc(proto->accountManagerCtrls, MAX_REGS(proto->accountManagerCtrls), 
+							proto->m_szModuleName, hwnd, msg, wParam, lParam);
+
+				TCHAR username[1024];
+				GetDlgItemText(hwnd, IDC_USERNAME, username, MAX_REGS(username));
+				TCHAR *host = _tcschr(username, _T('@'));
+				if (host != NULL)
+				{
+					*host = 0;
+					host++;
+				}
+
+				lstrcpyn(proto->opts.username, username, MAX_REGS(proto->opts.username));
+				DBWriteContactSettingTString(NULL, proto->m_szModuleName, "Username", proto->opts.username);
+
+				lstrcpyn(proto->opts.domain, FirstNotEmpty(host, proto->opts.registrar.host), 
+						 MAX_REGS(proto->opts.domain));
+				DBWriteContactSettingTString(NULL, proto->m_szModuleName, "Domain", proto->opts.domain);
+
+				return ret;
+			}
+
 			break;
 		}
 	}
