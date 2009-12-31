@@ -57,6 +57,7 @@ struct SIPEvent
 	char *mime;
 	bool isTyping;
 	MessageData *messageData;
+	pjsua_srv_pres *srv_pres;
 };
 
 class SIPProto : public PROTO_INTERFACE
@@ -104,12 +105,12 @@ public:
 	virtual ~SIPProto();
 
 	virtual	HANDLE   __cdecl AddToList( int flags, PROTOSEARCHRESULT* psr );
-	virtual	HANDLE   __cdecl AddToListByEvent( int flags, int iContact, HANDLE hDbEvent ) { return 0; }
+	virtual	HANDLE   __cdecl AddToListByEvent( int flags, int iContact, HANDLE hDbEvent );
 
-	virtual	int      __cdecl Authorize( HANDLE hDbEvent ) { return 1; }
-	virtual	int      __cdecl AuthDeny( HANDLE hDbEvent, const char* szReason ) { return 1; }
-	virtual	int      __cdecl AuthRecv( HANDLE hContact, PROTORECVEVENT* ) { return 1; }
-	virtual	int      __cdecl AuthRequest( HANDLE hContact, const char* szMessage ) { return 1; }
+	virtual	int      __cdecl Authorize( HANDLE hDbEvent );
+	virtual	int      __cdecl AuthDeny( HANDLE hDbEvent, const char* szReason );
+	virtual	int      __cdecl AuthRecv( HANDLE hContact, PROTORECVEVENT* );
+	virtual	int      __cdecl AuthRequest( HANDLE hContact, const char* szMessage );
 
 	virtual	HANDLE   __cdecl ChangeInfo( int iInfoType, void* pInfoData ) { return 0; }
 
@@ -161,7 +162,7 @@ public:
 									const pj_str_t *from, pjsip_rx_data *rdata, 
 									pjsip_status_code *code, pj_str_t *reason, 
 									pjsua_msg_data *msg_data);
-	void on_incoming_subscribe(char *from, char *text);
+	void on_incoming_subscribe(char *from, char *text, pjsua_srv_pres *srv_pres);
 	void on_buddy_state(pjsua_buddy_id buddy_id);
 	void on_pager(char *from, char *text, char *mime_type);
 	void on_pager_status(HANDLE hContact, LONG messageID, pjsip_status_code status, char *text);
@@ -210,10 +211,13 @@ private:
 	int __cdecl VoiceCallStringValid(WPARAM wParam, LPARAM lParam);
 
 	// Buddy
+	HANDLE AddToList(int flags, const TCHAR *uri);
 	void AddContactsToBuddyList();
 	void __cdecl SearchUserThread(void *param);
+	HANDLE CreateContact(const TCHAR *uri, bool temporary);
 	pjsua_buddy_id GetBuddy(HANDLE hContact);
 	HANDLE GetContact(pjsua_buddy_id buddy_id);
+	HANDLE GetContact(const TCHAR *uri, bool addIfNeeded = false, bool temporary = false);
 	void Attach(HANDLE hContact, pjsua_buddy_id buddy_id);
 	void __cdecl FakeMsgAck(void *param);
 

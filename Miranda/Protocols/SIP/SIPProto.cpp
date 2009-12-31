@@ -19,10 +19,14 @@ Boston, MA 02111-1307, USA.
 
 #include "commons.h"
 
+#define AUTH_STATE_AUTHORIZED 1
+#define AUTH_STATE_DENIED 2
 
 static INT_PTR CALLBACK DlgProcAccMgrUI(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK DlgOptions(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+
+#define TcharToSip TcharToUtf8
 
 class SipToTchar
 {
@@ -274,8 +278,7 @@ DWORD_PTR __cdecl SIPProto::GetCaps( int type, HANDLE hContact )
 			return PF1_MODEMSG | PF1_IM | PF1_AUTHREQ | PF1_BASICSEARCH | PF1_ADDSEARCHRES;
 
 		case PFLAGNUM_2:
-			return PF2_ONLINE | PF2_SHORTAWAY | PF2_LONGAWAY | PF2_LIGHTDND | PF2_HEAVYDND 
-					 | PF2_FREECHAT | PF2_OUTTOLUNCH | PF2_ONTHEPHONE | PF2_INVISIBLE | PF2_IDLE;
+			return PF2_ONLINE | PF2_SHORTAWAY | PF2_LIGHTDND | PF2_INVISIBLE;
 
 		case PFLAGNUM_3:
 			return PF2_ONLINE | PF2_SHORTAWAY | PF2_LONGAWAY | PF2_LIGHTDND | PF2_HEAVYDND 
@@ -332,7 +335,7 @@ static void CALLBACK ProcessEvents(void *param)
 					proto->on_call_media_state(ev.call_id);
 					break;
 				case SIPEvent::incoming_subscribe:
-					proto->on_incoming_subscribe(ev.from, ev.text);
+					proto->on_incoming_subscribe(ev.from, ev.text, ev.srv_pres);
 					break;
 				case SIPEvent::buddy_state:
 					proto->on_buddy_state(ev.buddy_id);
@@ -472,6 +475,7 @@ static void static_on_incoming_subscribe(pjsua_acc_id acc_id, pjsua_srv_pres *sr
 	ev.buddy_id = buddy_id;
 	ev.from = mir_pjstrdup(from);
 	ev.text = mir_pjstrdup(reason);
+	ev.srv_pres = srv_pres;
 
 	EnterCriticalSection(&proto->cs);
 	proto->events.push_back(ev);
@@ -592,6 +596,11 @@ static void static_on_typing(pjsua_call_id call_id, const pj_str_t *from,
 }
 
 
+static void static_on_mwi_info(pjsua_acc_id acc_id, pjsua_mwi_info *mwi_info)
+{
+}
+
+
 static void static_on_log(int level, const char *data, int len)
 {
 	char tmp[1024];
@@ -631,6 +640,7 @@ int SIPProto::Connect()
 		cfg.cb.on_pager2 = &static_on_pager;
 		cfg.cb.on_pager_status2 = &static_on_pager_status;
 		cfg.cb.on_typing2 = &static_on_typing;
+		cfg.cb.on_mwi_info = &static_on_mwi_info;
 
 
 		if (!IsEmpty(opts.stun.host))
@@ -639,7 +649,7 @@ int SIPProto::Connect()
 			mir_sntprintf(tmp, MAX_REGS(tmp), _T("%s:%d"), 
 				CleanupSip(opts.stun.host), 
 				FirstGtZero(opts.stun.port, PJ_STUN_PORT));
-			stun = TcharToUtf8(tmp).detach();
+			stun = TcharToSip(tmp).detach();
 
 			cfg.stun_srv_cnt = 1;
 			cfg.stun_srv[0] = pj_str(stun);
@@ -651,7 +661,7 @@ int SIPProto::Connect()
 			mir_sntprintf(tmp, MAX_REGS(tmp), _T("%s:%d"), 
 				CleanupSip(opts.dns.host), 
 				FirstGtZero(opts.dns.port, 53));
-			dns = TcharToUtf8(tmp).detach();
+			dns = TcharToSip(tmp).detach();
 
 			cfg.nameserver_count = 1;
 			cfg.nameserver[0] = pj_str(dns);
@@ -703,7 +713,7 @@ int SIPProto::Connect()
 		cfg.transport_id = transport_id;
 
 		BuildURI(tmp, MAX_REGS(tmp), opts.username, opts.domain);
-		TcharToUtf8 id(tmp);
+		TcharToSip id(tmp);
 		cfg.id = pj_str(id);
 
 		if (!IsEmpty(opts.registrar.host))
@@ -711,7 +721,7 @@ int SIPProto::Connect()
 			BuildURI(tmp, MAX_REGS(tmp), NULL, 
 					 CleanupSip(opts.registrar.host), 
 					 FirstGtZero(opts.registrar.port, 5060));
-			registrar = TcharToUtf8(tmp).detach();
+			registrar = TcharToSip(tmp).detach();
 
 			cfg.reg_uri = pj_str(registrar);
 		}
@@ -721,7 +731,7 @@ int SIPProto::Connect()
 			BuildURI(tmp, MAX_REGS(tmp), NULL, 
 					 CleanupSip(opts.proxy.host), 
 					 FirstGtZero(opts.proxy.port, 5060));
-			proxy = TcharToUtf8(tmp).detach();
+			proxy = TcharToSip(tmp).detach();
 
 			cfg.proxy_cnt = 1;
 			cfg.proxy[0] = pj_str(proxy);
@@ -734,10 +744,10 @@ int SIPProto::Connect()
 
 		cfg.cred_count = 1;
 
-		TcharToUtf8 realm(CleanupSip(opts.domain));
+		TcharToSip realm(CleanupSip(opts.domain));
 		cfg.cred_info[0].realm = pj_str(realm);
 		cfg.cred_info[0].scheme = pj_str("digest");
-		TcharToUtf8 username(opts.username);
+		TcharToSip username(opts.username);
 		cfg.cred_info[0].username = pj_str(username);
 		cfg.cred_info[0].data_type = PJSIP_CRED_DATA_PLAIN_PASSWD; // TODO
 		cfg.cred_info[0].data = pj_str(opts.password);
@@ -771,7 +781,7 @@ void SIPProto::AddContactsToBuddyList()
 			continue;
 		}
 
-		TcharToUtf8 sip_uri(uri);
+		TcharToSip sip_uri(uri);
 
 		pjsua_buddy_config buddy_cfg;
 		pjsua_buddy_config_default(&buddy_cfg);
@@ -790,7 +800,8 @@ void SIPProto::AddContactsToBuddyList()
 
 		Attach(hContact, buddy_id);
 
-		pjsua_buddy_subscribe_pres(buddy_id, PJ_TRUE);
+		if (DBGetContactSettingByte(hContact, m_szModuleName, "WantAuth", 0))
+			pjsua_buddy_subscribe_pres(buddy_id, PJ_TRUE);
 	}
 }
 
@@ -989,6 +1000,17 @@ void SIPProto::Disconnect()
 		hasToDestroy = false;
 	}
 
+	for(HANDLE hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDFIRST, 0, 0);
+		hContact != NULL; 
+		hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDNEXT, (WPARAM) hContact, 0)) 
+	{
+		if (!IsMyContact(hContact))
+			continue;
+
+		DBWriteContactSettingWord(hContact, m_szModuleName, "Status", ID_STATUS_OFFLINE);
+		DBDeleteContactSetting(hContact, "CList", "StatusMsg");
+	}
+
 	BroadcastStatus(ID_STATUS_OFFLINE);
 }
 
@@ -1101,35 +1123,16 @@ bool SIPProto::SendPresence(int proto_status)
 	{
 		case ID_STATUS_AWAY:
 			elem.activity = PJRPID_ACTIVITY_AWAY;
-			elem.note = pj_str("Away");
-			break;
-		case ID_STATUS_NA:
-			elem.activity = PJRPID_ACTIVITY_AWAY;
-			elem.note = pj_str("Not avaible");
-			break;
-		case ID_STATUS_DND:
-			elem.activity = PJRPID_ACTIVITY_BUSY;
-			elem.note = pj_str("Do not disturb");
 			break;
 		case ID_STATUS_OCCUPIED:
 			elem.activity = PJRPID_ACTIVITY_BUSY;
-			elem.note = pj_str("Occupied");
-			break;
-		case ID_STATUS_FREECHAT:
-			elem.activity = PJRPID_ACTIVITY_UNKNOWN;
-			elem.note = pj_str("Free for chat");
-			break;
-		case ID_STATUS_ONTHEPHONE:
-			elem.activity = PJRPID_ACTIVITY_BUSY;
-			elem.note = pj_str("On the phone");
-			break;
-		case ID_STATUS_OUTTOLUNCH:
-			elem.activity = PJRPID_ACTIVITY_AWAY;
-			elem.note = pj_str("Out to lunch");
 			break;
 		default:
+			elem.activity = PJRPID_ACTIVITY_UNKNOWN;
 			break;
 	}
+
+	elem.note = pj_str(""); // TODO
 
 	pj_bool_t online = (proto_status == ID_STATUS_INVISIBLE ? PJ_FALSE : PJ_TRUE);
 
@@ -1429,16 +1432,16 @@ void SIPProto::BuildURI(TCHAR *out, int outSize, const TCHAR *user, const TCHAR 
 
 	host = FirstNotEmpty(host, (TCHAR *) aHost, opts.domain);
 
-	if (port > 0)
+	
+
+	if (isTel && port > 0)
+		mir_sntprintf(out, outSize, _T("<sip:%s@%s:%d;user=phone>"), tmp, host, port);
+	else if (isTel)
+		mir_sntprintf(out, outSize, _T("<sip:%s@%s;user=phone>"), tmp, host);
+	else if (port > 0)
 		mir_sntprintf(out, outSize, _T("<sip:%s@%s:%d>"), tmp, host, port);
 	else
 		mir_sntprintf(out, outSize, _T("<sip:%s@%s>"), tmp, host);
-
-	if (isTel)
-	 {
-		 int len = lstrlen(out);
-		 lstrcpyn(&out[len], _T(";user=phone"), outSize - len);
-	 }
 }
 
 
@@ -1454,7 +1457,12 @@ int __cdecl SIPProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 		if (!VoiceCallStringValid((WPARAM) number, 0))
 			return 1;
 
-		BuildTelURI(uri, MAX_REGS(uri), number);
+		if (_tcsncmp(_T("sip:"), number, 4) == 0)
+		{
+			mir_sntprintf(uri, MAX_REGS(uri), _T("<%s>"), number);
+		}
+		else
+			BuildTelURI(uri, MAX_REGS(uri), number);
 	}
 	else
 	{
@@ -1469,7 +1477,7 @@ int __cdecl SIPProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 	}
 
 	pjsua_call_id call_id;
-	pj_status_t status = pjsua_call_make_call(acc_id, &pj_str(TcharToUtf8(uri)), 0, NULL, NULL, &call_id);
+	pj_status_t status = pjsua_call_make_call(acc_id, &pj_str(TcharToSip(uri)), 0, NULL, NULL, &call_id);
 	if (status != PJ_SUCCESS) 
 	{
 		Error(status, _T("Error making call"));
@@ -1605,7 +1613,7 @@ int __cdecl SIPProto::VoiceSendDTMF(WPARAM wParam, LPARAM lParam)
 	TCHAR tmp[2];
 	tmp[0] = c;
 	tmp[1] = 0;
-	pjsua_call_dial_dtmf(call_id, &pj_str(TcharToUtf8(tmp)));
+	pjsua_call_dial_dtmf(call_id, &pj_str(TcharToSip(tmp)));
 
 	return 0;
 }
@@ -1623,7 +1631,7 @@ int __cdecl SIPProto::VoiceCallStringValid(WPARAM wParam, LPARAM lParam)
 
 	TCHAR tmp[1024];
 	BuildTelURI(tmp, MAX_REGS(tmp), number);
-	return pjsua_verify_sip_url(TcharToUtf8(tmp)) == PJ_SUCCESS;
+	return pjsua_verify_sip_url(TcharToSip(tmp)) == PJ_SUCCESS;
 }
 
 
@@ -1658,7 +1666,7 @@ void __cdecl SIPProto::SearchUserThread(void *param)
         return;
     }
 
-	TcharToUtf8 sip_uri(uri);
+	TcharToSip sip_uri(uri);
 	if (pjsua_verify_sip_url(sip_uri) != PJ_SUCCESS)
 	{
 		Error(_T("Not a valid SIP URL: %s"), uri);
@@ -1686,51 +1694,47 @@ void __cdecl SIPProto::SearchUserThread(void *param)
 }
 
 
-HANDLE __cdecl SIPProto::AddToList(int flags, PROTOSEARCHRESULT *psr)
+HANDLE SIPProto::CreateContact(const TCHAR *uri, bool temporary)
+{
+	pjsua_buddy_config buddy_cfg;
+	pjsua_buddy_config_default(&buddy_cfg);
+
+	TcharToSip sip_uri(uri);
+	buddy_cfg.uri = pj_str(sip_uri);
+	buddy_cfg.subscribe = PJ_FALSE;
+
+	pjsua_buddy_id buddy_id;
+	pj_status_t status = pjsua_buddy_add(&buddy_cfg, &buddy_id);
+	if (status != PJ_SUCCESS) 
+	{
+		Error(status, _T("Error adding buddy '%s'"), uri);
+		return NULL;
+	}
+
+	HANDLE hContact = (HANDLE) CallService(MS_DB_CONTACT_ADD, 0, 0);
+	CallService(MS_PROTO_ADDTOCONTACT, (WPARAM) hContact, (LPARAM) m_szModuleName);
+
+	DBWriteContactSettingTString(hContact, m_szModuleName, "URI", uri);
+
+	TCHAR nick[1024];
+	CleanupURI(nick, MAX_REGS(nick), uri);
+	DBWriteContactSettingTString(hContact, m_szModuleName, "Nick", nick);
+
+	if (temporary)
+		DBWriteContactSettingByte(hContact, "CList", "NotOnList", 1);
+	
+	Attach(hContact, buddy_id);
+
+	return hContact;
+}
+
+
+HANDLE SIPProto::AddToList(int flags, const TCHAR *uri)
 {
 	if (m_iStatus <= ID_STATUS_OFFLINE)
 		return NULL;
 
-	TCHAR uri[1024];
-	BuildURI(uri, MAX_REGS(uri), CharToTchar(psr->nick));
-	TcharToUtf8 sip_uri(uri);
-
-	HANDLE hContact;
-	pjsua_buddy_id buddy_id = pjsua_buddy_find(&pj_str(sip_uri));
-	if (buddy_id != PJSUA_INVALID_ID)
-	{
-		// Already on list
-		hContact = GetContact(buddy_id);
-	}
-	else
-	{
-		// Add to list
-		pjsua_buddy_config buddy_cfg;
-		pjsua_buddy_config_default(&buddy_cfg);
-
-		buddy_cfg.uri = pj_str(sip_uri);
-		buddy_cfg.subscribe = PJ_FALSE;
-
-		pj_status_t status = pjsua_buddy_add(&buddy_cfg, &buddy_id);
-		if (status != PJ_SUCCESS) 
-		{
-			Error(status, _T("Error adding buddy '%s'"), uri);
-			return NULL;
-		}
-
-		hContact = (HANDLE) CallService(MS_DB_CONTACT_ADD, 0, 0);
-		CallService(MS_PROTO_ADDTOCONTACT, (WPARAM) hContact, (LPARAM) m_szModuleName);
-
-		DBWriteContactSettingTString(hContact, m_szModuleName, "URI", uri);
-
-		TCHAR name[1024];
-		CleanupURI(name, MAX_REGS(name), uri);
-		DBWriteContactSettingTString(hContact, m_szModuleName, "Nick", name);
-		
-		Attach(hContact, buddy_id);
-
-		pjsua_buddy_subscribe_pres(buddy_id, PJ_TRUE);
-	}
+	HANDLE hContact = GetContact(uri, true, flags & PALF_TEMPORARY);
 	
 	if (flags & PALF_TEMPORARY)
 	{
@@ -1747,22 +1751,24 @@ HANDLE __cdecl SIPProto::AddToList(int flags, PROTOSEARCHRESULT *psr)
 }
 
 
-// Handler for incoming presence subscription request
-bool SIPProto::on_incoming_subscribe_sync(pjsua_srv_pres *srv_pres,
-										  pjsua_buddy_id buddy_id,
-										  const pj_str_t *from,
-										  pjsip_rx_data *rdata,
-										  pjsip_status_code *code,
-										  pj_str_t *reason,
-										  pjsua_msg_data *msg_data)
+HANDLE __cdecl SIPProto::AddToList(int flags, PROTOSEARCHRESULT *psr)
 {
-    // Just accept the request (the default behavior)
-	return true;
+	TCHAR uri[1024];
+	BuildURI(uri, MAX_REGS(uri), CharToTchar(psr->nick));
+	return AddToList(flags, uri);
 }
 
 
-void SIPProto::on_incoming_subscribe(char *from, char *text)
+int __cdecl SIPProto::AuthRequest(HANDLE hContact, const char* szMessage)
 {
+	pjsua_buddy_id buddy_id = GetBuddy(hContact);
+	if (buddy_id == PJSUA_INVALID_ID)
+		return 1;
+
+	DBWriteContactSettingByte(hContact, m_szModuleName, "WantAuth", 1);
+
+	pjsua_buddy_subscribe_pres(buddy_id, PJ_TRUE);
+	return 0;
 }
 
 
@@ -1801,12 +1807,48 @@ void SIPProto::on_buddy_state(pjsua_buddy_id buddy_id)
 	{
 		case PJSUA_BUDDY_STATUS_ONLINE:
 		{
-			DBWriteContactSettingWord(hContact, m_szModuleName, "Status", ID_STATUS_ONLINE);
+			if (info.rpid.type == PJRPID_ELEMENT_TYPE_PERSON && info.rpid.id.ptr != NULL)
+			{
+				SipToTchar note(info.rpid.note);
+				TCHAR *defaultNote = _T("");
+
+				switch(info.rpid.activity)
+				{
+					case PJRPID_ACTIVITY_UNKNOWN:
+					{
+						DBWriteContactSettingWord(hContact, m_szModuleName, "Status", ID_STATUS_ONLINE);
+						break;
+					}
+					case PJRPID_ACTIVITY_AWAY:
+					{
+						DBWriteContactSettingWord(hContact, m_szModuleName, "Status", ID_STATUS_AWAY);
+						defaultNote = _T("Away");
+						break;
+					}
+					case PJRPID_ACTIVITY_BUSY:
+					{
+						DBWriteContactSettingWord(hContact, m_szModuleName, "Status", ID_STATUS_OCCUPIED);
+						defaultNote = _T("Busy");
+						break;
+					}
+				}
+
+				if (IsEmpty(note) || lstrcmpi(note, defaultNote) == 0)
+					DBDeleteContactSetting(hContact, "CList", "StatusMsg");
+				else
+					DBWriteContactSettingTString(hContact, "CList", "StatusMsg", note);
+			}
+			else
+			{
+				DBWriteContactSettingWord(hContact, m_szModuleName, "Status", ID_STATUS_ONLINE);
+				DBDeleteContactSetting(hContact, "CList", "StatusMsg");
+			}
 			break;
 		}
 		case PJSUA_BUDDY_STATUS_OFFLINE:
 		{
 			DBWriteContactSettingWord(hContact, m_szModuleName, "Status", ID_STATUS_OFFLINE);
+			DBDeleteContactSetting(hContact, "CList", "StatusMsg");
 			break;
 		}
 		default:
@@ -1884,7 +1926,7 @@ int __cdecl SIPProto::SendMsg(HANDLE hContact, int flags, const char *msg)
 	scoped_mir_free<char> text;
 	if (flags & PREF_UNICODE) 
 	{
-		const char* p = strchr(msg, '\0');
+		const char *p = strchr(msg, '\0');
 		if (p != msg) 
 		{
 			while (*(++p) == '\0') {}
@@ -1980,6 +2022,210 @@ int __cdecl SIPProto::UserIsTyping(HANDLE hContact, int type)
 }
 
 
+// Handler for incoming presence subscription request
+bool SIPProto::on_incoming_subscribe_sync(pjsua_srv_pres *srv_pres,
+										  pjsua_buddy_id buddy_id,
+										  const pj_str_t *from,
+										  pjsip_rx_data *rdata,
+										  pjsip_status_code *code,
+										  pj_str_t *pj_reason,
+										  pjsua_msg_data *msg_data)
+{
+	if (buddy_id == PJSUA_INVALID_ID)
+	{
+		*code = PJSIP_SC_ACCEPTED;
+		return true;
+	}
+
+	int authState = DBGetContactSettingByte(GetContact(buddy_id), m_szModuleName, "AuthState", 0);
+	switch(authState)
+	{
+		case AUTH_STATE_AUTHORIZED:
+			*code = PJSIP_SC_OK;
+			return false;
+		case AUTH_STATE_DENIED:
+			*code = PJSIP_SC_NOT_FOUND;
+			return false;
+		default:
+			*code = PJSIP_SC_ACCEPTED;
+			return true;
+	}
+}
+
+
+void SIPProto::on_incoming_subscribe(char *from, char *reason, pjsua_srv_pres *srv_pres)
+{
+	SipToTchar uri(pj_str(from));
+
+	HANDLE hContact = GetContact(uri, true, true);
+	if (hContact == NULL)
+		return;
+
+	TCHAR nick[1024];
+	CleanupURI(nick, MAX_REGS(nick), uri);
+
+	TcharToChar nicka(nick);
+
+	CCSDATA ccs = {0};
+	PROTORECVEVENT pre = {0};
+
+	pre.timestamp = (DWORD) time(NULL);
+	pre.lParam = sizeof(DWORD) * 2 + strlen(nicka) + strlen(from) 
+				+ sizeof(pjsua_srv_pres *) + 6;
+
+	ccs.szProtoService = PSR_AUTH;
+	ccs.hContact = hContact;
+	ccs.lParam = (LPARAM)&pre;
+
+	PBYTE pCurBlob = (PBYTE)alloca(pre.lParam);
+	pre.szMessage = (char*)pCurBlob;
+
+	*(PDWORD)pCurBlob = 0; pCurBlob+=sizeof(DWORD);
+	*(PDWORD)pCurBlob = (DWORD)hContact; pCurBlob+=sizeof(DWORD);
+	strcpy((char*)pCurBlob, nicka); pCurBlob += strlen(nicka)+1;
+	*pCurBlob = '\0'; pCurBlob++;	   //firstName
+	*pCurBlob = '\0'; pCurBlob++;	   //lastName
+	*pCurBlob = '\0'; pCurBlob++;	   //email
+	*pCurBlob = '\0'; pCurBlob++;	   //reason
+	strcpy((char*)pCurBlob, from); pCurBlob += strlen(from)+1;  //from
+	*(pjsua_srv_pres **)pCurBlob = srv_pres;
+
+	CallService(MS_PROTO_CHAINRECV, 0, (LPARAM) &ccs);
+}
+
+
+int __cdecl SIPProto::AuthRecv(HANDLE hContact, PROTORECVEVENT *pre)
+{
+	DBEVENTINFO dbei = {0};
+
+	dbei.cbSize = sizeof(dbei);
+	dbei.szModule = m_szModuleName;
+	dbei.timestamp = pre->timestamp;
+	dbei.flags = pre->flags & (PREF_CREATEREAD ? DBEF_READ : 0);
+	dbei.eventType = EVENTTYPE_AUTHREQUEST;
+
+	// Just copy the Blob from PSR_AUTH event
+	dbei.cbBlob = pre->lParam;
+	dbei.pBlob = (PBYTE)pre->szMessage;
+	CallService(MS_DB_EVENT_ADD, 0,(LPARAM)&dbei);
+
+	return 0;
+}
+
+
+HANDLE __cdecl SIPProto::AddToListByEvent(int flags, int iContact, HANDLE hDbEvent) 
+{
+	DBEVENTINFO dbei = {0};
+	dbei.cbSize = sizeof(dbei);
+	dbei.cbBlob = CallService(MS_DB_EVENT_GETBLOBSIZE, (WPARAM) hDbEvent, 0);
+
+	if ((int) dbei.cbBlob == -1)
+		return NULL;
+
+	dbei.pBlob = (PBYTE) alloca(dbei.cbBlob);
+	if (CallService(MS_DB_EVENT_GET, (WPARAM)hDbEvent, (LPARAM)&dbei))
+		return NULL;
+
+	if (dbei.eventType != EVENTTYPE_AUTHREQUEST)
+		return NULL;
+
+	if (strcmp(dbei.szModule, m_szModuleName) != 0)
+		return NULL;
+
+	char *nick = (char*)(dbei.pBlob + sizeof(DWORD)*2);
+	char *firstName = nick + strlen(nick) + 1;
+	char *lastName = firstName + strlen(firstName) + 1;
+	char *email = lastName + strlen(lastName) + 1;
+	char *reason = email + strlen(email) + 1;
+	char *from = reason + strlen(reason) + 1;
+	pjsua_srv_pres *srv_pres = (pjsua_srv_pres *) (from + strlen(from) + 1);
+
+	return AddToList(flags, SipToTchar(pj_str(from))); 
+}
+
+
+int __cdecl SIPProto::Authorize(HANDLE hDbEvent)
+{
+	DBEVENTINFO dbei = {0};
+	dbei.cbSize = sizeof(dbei);
+	dbei.cbBlob = CallService(MS_DB_EVENT_GETBLOBSIZE, (WPARAM) hDbEvent, 0);
+
+	if ((int) dbei.cbBlob == -1)
+		return 1;
+
+	dbei.pBlob = (PBYTE) alloca(dbei.cbBlob);
+	if (CallService(MS_DB_EVENT_GET, (WPARAM)hDbEvent, (LPARAM)&dbei))
+		return 1;
+
+	if (dbei.eventType != EVENTTYPE_AUTHREQUEST)
+		return 1;
+
+	if (strcmp(dbei.szModule, m_szModuleName) != 0)
+		return 1;
+
+	char *nick = (char*)(dbei.pBlob + sizeof(DWORD)*2);
+	char *firstName = nick + strlen(nick) + 1;
+	char *lastName = firstName + strlen(firstName) + 1;
+	char *email = lastName + strlen(lastName) + 1;
+	char *reason = email + strlen(email) + 1;
+	char *from = reason + strlen(reason) + 1;
+	pjsua_srv_pres *srv_pres = (pjsua_srv_pres *) (from + strlen(from) + 1);
+
+	HANDLE hContact = GetContact(SipToTchar(pj_str(from)));
+	if (hContact != NULL)
+		DBWriteContactSettingByte(hContact, m_szModuleName, "AuthState", AUTH_STATE_AUTHORIZED);
+
+	pjsua_pres_notify(acc_id, srv_pres, PJSIP_EVSUB_STATE_ACCEPTED, NULL, NULL, true, NULL);
+
+	return 0;
+}
+
+
+int __cdecl SIPProto::AuthDeny(HANDLE hDbEvent, const char *szReason)
+{
+	DBEVENTINFO dbei = {0};
+	dbei.cbSize = sizeof(dbei);
+	dbei.cbBlob = CallService(MS_DB_EVENT_GETBLOBSIZE, (WPARAM) hDbEvent, 0);
+
+	if ((int) dbei.cbBlob == -1)
+		return 1;
+
+	dbei.pBlob = (PBYTE) alloca(dbei.cbBlob);
+	if (CallService(MS_DB_EVENT_GET, (WPARAM)hDbEvent, (LPARAM)&dbei))
+		return 1;
+
+	if (dbei.eventType != EVENTTYPE_AUTHREQUEST)
+		return 1;
+
+	if (strcmp(dbei.szModule, m_szModuleName) != 0)
+		return 1;
+
+	char *nick = (char*)(dbei.pBlob + sizeof(DWORD)*2);
+	char *firstName = nick + strlen(nick) + 1;
+	char *lastName = firstName + strlen(firstName) + 1;
+	char *email = lastName + strlen(lastName) + 1;
+	char *from = email + strlen(email) + 1;
+	pjsua_srv_pres *srv_pres = (pjsua_srv_pres *) (from + strlen(from) + 1);
+
+	HANDLE hContact = GetContact(SipToTchar(pj_str(from)), true, false);
+	if (hContact == NULL)
+		return 1;
+
+	if (DBGetContactSettingByte(hContact, "CList", "NotOnList", 0))
+	{
+		DBWriteContactSettingByte(hContact, "CList", "Hidden", 1);
+		DBDeleteContactSetting(hContact, "CList", "NotOnList");
+	}
+
+	DBWriteContactSettingByte(hContact, m_szModuleName, "AuthState", AUTH_STATE_DENIED);
+
+	pjsua_pres_notify(acc_id, srv_pres, PJSIP_EVSUB_STATE_TERMINATED, NULL, 
+					  &pj_str(TcharToSip(CharToTchar(szReason))), false, NULL);
+
+	return 0;
+}
+
+
 pjsua_buddy_id SIPProto::GetBuddy(HANDLE hContact)
 {
 	pjsua_buddy_id id =(pjsua_buddy_id) DBGetContactSettingDword(hContact, m_szModuleName, "ID", PJSUA_INVALID_ID);
@@ -1999,6 +2245,20 @@ HANDLE SIPProto::GetContact(pjsua_buddy_id buddy_id)
 		Error(_T("Buddy has no hContact: %d"), buddy_id);
 	
 	return hContact;
+}
+
+
+HANDLE SIPProto::GetContact(const TCHAR *uri, bool addIfNeeded, bool temporary)
+{
+	pjsua_buddy_id buddy_id = pjsua_buddy_find(&pj_str(TcharToSip(uri)));
+
+	if (buddy_id != PJSUA_INVALID_ID)
+		return GetContact(buddy_id);
+
+	if (addIfNeeded)
+		return CreateContact(uri, temporary);
+	
+	return NULL;
 }
 
 
@@ -2025,7 +2285,7 @@ int __cdecl SIPProto::OnContactDeleted(WPARAM wParam, LPARAM lParam)
 	if (buddy_id == PJSUA_INVALID_ID)
 		return 0;
 
-	pjsua_buddy_subscribe_pres(buddy_id, PJ_FALSE);
+	//pjsua_buddy_subscribe_pres(buddy_id, PJ_FALSE);
 	pjsua_buddy_del(buddy_id);
 
 	return 0;
