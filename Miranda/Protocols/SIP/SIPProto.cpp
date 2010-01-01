@@ -162,6 +162,9 @@ SIPProto::SIPProto(const char *aProtoName, const TCHAR *aUserName)
 	hCallStateEvent = 0;
 	m_iDesiredStatus = m_iStatus = ID_STATUS_OFFLINE;
 	messageID = 0;
+	awayMessageID = 0;
+
+	memset(awayMessages, 0, sizeof(awayMessages));
 
 	m_tszUserName = mir_tstrdup(aUserName);
 	m_szProtoName = mir_strdup(aProtoName);
@@ -224,6 +227,7 @@ SIPProto::SIPProto(const char *aProtoName, const TCHAR *aUserName)
 		
 		DBDeleteContactSetting(hContact, m_szModuleName, "Status");
 		DBDeleteContactSetting(hContact, m_szModuleName, "ID");
+		DBDeleteContactSetting(hContact, "CList", "StatusMsg");
 	}
 
 	char setting[256];
@@ -243,6 +247,8 @@ SIPProto::SIPProto(const char *aProtoName, const TCHAR *aUserName)
 	CreateProtoService(PS_VOICE_HOLDCALL, &SIPProto::VoiceHoldCall);
 	CreateProtoService(PS_VOICE_SEND_DTMF, &SIPProto::VoiceSendDTMF);
 	CreateProtoService(PS_VOICE_CALL_STRING_VALID, &SIPProto::VoiceCallStringValid);
+
+	CreateProtoService(PS_GETMYAWAYMSG, &SIPProto::GetMyAwayMsg);
 
 	hCallStateEvent = CreateProtoEvent(PE_VOICE_CALL_STATE);
 
@@ -806,15 +812,34 @@ void SIPProto::AddContactsToBuddyList()
 }
 
 
-int __cdecl SIPProto::SetStatus( int iNewStatus ) 
+int SIPProto::ConvertStatus(int status)
 {
-	if (m_iStatus == iNewStatus) 
+	switch(status)
+	{
+		case ID_STATUS_ONLINE: return ID_STATUS_ONLINE;
+		case ID_STATUS_AWAY: return ID_STATUS_AWAY;
+		case ID_STATUS_DND: return ID_STATUS_OCCUPIED;
+		case ID_STATUS_NA: return ID_STATUS_AWAY;
+		case ID_STATUS_OCCUPIED: return ID_STATUS_OCCUPIED;
+		case ID_STATUS_FREECHAT: return ID_STATUS_ONLINE;
+		case ID_STATUS_INVISIBLE: return ID_STATUS_INVISIBLE;
+		case ID_STATUS_ONTHEPHONE: return ID_STATUS_AWAY;
+		case ID_STATUS_OUTTOLUNCH: return ID_STATUS_AWAY;
+		default: return ID_STATUS_OFFLINE;
+	}
+}
+
+
+int __cdecl SIPProto::SetStatus(int iNewStatus) 
+{
+	if (m_iDesiredStatus == iNewStatus) 
 		return 0;
 	m_iDesiredStatus = iNewStatus;
 
 	if (m_iDesiredStatus == ID_STATUS_OFFLINE)
 	{
-		Disconnect();
+		if (m_iStatus != ID_STATUS_OFFLINE)
+			Disconnect();
 	}
 	else if (m_iStatus == ID_STATUS_OFFLINE)
 	{
@@ -822,8 +847,8 @@ int __cdecl SIPProto::SetStatus( int iNewStatus )
 	}
 	else if (m_iStatus > ID_STATUS_OFFLINE)
 	{
-		SendPresence(m_iDesiredStatus);
-		BroadcastStatus(m_iDesiredStatus);
+		BroadcastStatus(ConvertStatus(m_iDesiredStatus));
+		SendPresence();
 	}
 
 	return 0; 
@@ -1102,13 +1127,13 @@ void SIPProto::NotifyCall(pjsua_call_id call_id, int state, HANDLE hContact, TCH
 }
 
 
-bool SIPProto::SendPresence(int proto_status)
+bool SIPProto::SendPresence(int aStatus)
 {
 	pjsua_acc_info info;
-	pj_status_t status = pjsua_acc_get_info(acc_id, &info);
-	if (status != PJ_SUCCESS)
+	pj_status_t st = pjsua_acc_get_info(acc_id, &info);
+	if (st != PJ_SUCCESS)
 	{
-		Error(status, _T("Error obtaining call info"));
+		Error(st, _T("Error obtaining call info"));
 		return false;
 	}
 
@@ -1119,7 +1144,9 @@ bool SIPProto::SendPresence(int proto_status)
 	pj_bzero(&elem, sizeof(elem));
 	elem.type = PJRPID_ELEMENT_TYPE_PERSON;
 
-	switch(proto_status)
+	int status = FirstGtZero(aStatus, m_iStatus);
+
+	switch(status)
 	{
 		case ID_STATUS_AWAY:
 			elem.activity = PJRPID_ACTIVITY_AWAY;
@@ -1132,9 +1159,10 @@ bool SIPProto::SendPresence(int proto_status)
 			break;
 	}
 
-	elem.note = pj_str(""); // TODO
+	TcharToSip sip_msg(GetAwayMsg(FirstGtZero(aStatus, m_iDesiredStatus)));
+	elem.note = pj_str(sip_msg);
 
-	pj_bool_t online = (proto_status == ID_STATUS_INVISIBLE ? PJ_FALSE : PJ_TRUE);
+	pj_bool_t online = (status == ID_STATUS_INVISIBLE ? PJ_FALSE : PJ_TRUE);
 
 	if (online == info.online_status && pj_strcmp(&info.online_status_text, &elem.note) == 0)
 		return false;
@@ -1162,9 +1190,8 @@ void SIPProto::on_reg_state()
 	{
 		int oldStatus = m_iStatus;
 
-		int status = (m_iDesiredStatus > ID_STATUS_OFFLINE ? m_iDesiredStatus : ID_STATUS_ONLINE);
-		SendPresence(status);
-		BroadcastStatus(status);
+		BroadcastStatus(ConvertStatus(m_iDesiredStatus));
+		SendPresence();
 
 		if (oldStatus <= ID_STATUS_OFFLINE)
 		{
@@ -1801,8 +1828,6 @@ void SIPProto::on_buddy_state(pjsua_buddy_id buddy_id)
 		return;
 	}
 
-	// TODO info.rpid
-
 	switch(info.status)
 	{
 		case PJSUA_BUDDY_STATUS_ONLINE:
@@ -1865,22 +1890,16 @@ void SIPProto::on_pager(char *from, char *text, char *mime_type)
 	if (strlen(text) < 1)
 		return;
 
-	pjsua_buddy_id buddy_id = pjsua_buddy_find(&pj_str(from));
-	if (buddy_id == PJSUA_INVALID_ID)
-	{
-		// TODO
-		return;
-	}
-
-	HANDLE hContact = GetContact(buddy_id);
-	if (hContact == NULL)
-		return;
-
 	if (strcmp("text/plain", mime_type) != 0)
 	{
-		Error(_T("Unknown mime type: %s"), Utf8ToTchar(mime_type));
+		Error(_T("Unknown mime type in message from %s: %s"), 
+			SipToTchar(pj_str(from)).get(), SipToTchar(pj_str(mime_type)).get());
 		return;
 	}
+
+	HANDLE hContact = GetContact(SipToTchar(pj_str(from)), true, true);
+	if (hContact == NULL)
+		return;
 
 	CallService(MS_PROTO_CONTACTISTYPING, (WPARAM) hContact, 0);
 
@@ -2289,6 +2308,83 @@ int __cdecl SIPProto::OnContactDeleted(WPARAM wParam, LPARAM lParam)
 	pjsua_buddy_del(buddy_id);
 
 	return 0;
+}
+
+
+// Away message /////////////////////////////////////////////////////////////////////////
+
+struct AwayMsgInfo
+{
+	LONG id;
+	HANDLE hContact;
+};
+
+void __cdecl SIPProto::GetAwayMsgThread(void* arg)
+{
+	Sleep(150);
+
+	AwayMsgInfo *inf = (AwayMsgInfo *) arg;
+
+	DBTString msg(inf->hContact, "CList", "StatusMsg");
+	if (msg != NULL)
+		SendBroadcast(inf->hContact, ACKTYPE_AWAYMSG, ACKRESULT_SUCCESS, (HANDLE)inf->id, (LPARAM) TcharToChar(msg).get());
+	else 
+		SendBroadcast(inf->hContact, ACKTYPE_AWAYMSG, ACKRESULT_SUCCESS, (HANDLE)inf->id, (LPARAM) "");
+
+	mir_free(inf);
+}
+
+HANDLE __cdecl SIPProto::GetAwayMsg(HANDLE hContact)
+{
+	AwayMsgInfo *inf = (AwayMsgInfo*) mir_alloc(sizeof(AwayMsgInfo));
+	inf->hContact = hContact;
+	inf->id = InterlockedIncrement(&awayMessageID);
+
+	ForkThread(&SIPProto::GetAwayMsgThread, inf);
+	return (HANDLE) inf->id;
+}
+
+
+int __cdecl SIPProto::SetAwayMsg(int status, const char *msga)
+{
+	int pos = status - ID_STATUS_ONLINE;
+	if (pos < 0 || pos >= MAX_REGS(awayMessages))
+		return 1;
+
+	CharToTchar msg(msga);
+	if (lstrcmp(FirstNotEmpty((TCHAR *)msg.get(), _T("")), FirstNotEmpty(awayMessages[pos], _T(""))) == 0)
+		return 0;
+
+	mir_free(awayMessages[pos]);
+	awayMessages[pos] = msg.detach();
+
+	if (ConvertStatus(status) == m_iStatus)
+		SendPresence();
+
+	return 0;
+}
+
+
+INT_PTR __cdecl SIPProto::GetMyAwayMsg(WPARAM wParam, LPARAM lParam)
+{
+	TCHAR *msg = GetAwayMsg(wParam ? wParam : m_iStatus);
+	return (lParam & SGMA_UNICODE) ? (INT_PTR) mir_t2u(msg)
+									: (INT_PTR) mir_t2a(msg);
+}
+
+
+TCHAR *SIPProto::GetAwayMsg(int status)
+{
+	if (status == ID_STATUS_INVISIBLE)
+		return _T("");
+
+	int pos = status - ID_STATUS_ONLINE;
+	if (pos < 0 || pos >= MAX_REGS(awayMessages))
+		return _T("");
+	else if (awayMessages[pos] == NULL)
+		return _T("");
+	else
+		return awayMessages[pos];
 }
 
 
