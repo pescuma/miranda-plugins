@@ -121,7 +121,7 @@ DWORD_PTR __cdecl IAXProto::GetCaps( int type, HANDLE hContact )
 			return 0;
 
 		case PFLAGNUM_4:
-			return PF4_NOCUSTOMAUTH;
+			return 0;
 
 		case PFLAG_UNIQUEIDTEXT:
 			return (UINT_PTR) Translate("Username");
