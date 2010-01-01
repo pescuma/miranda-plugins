@@ -69,6 +69,8 @@ private:
 	pjsua_transport_id transport_id;
 	pjsua_acc_id acc_id;
 	LONG messageID;
+	LONG awayMessageID;
+	TCHAR *awayMessages[ID_STATUS_OUTTOLUNCH - ID_STATUS_ONLINE + 1];
 
 public:
 	struct {
@@ -144,10 +146,10 @@ public:
 
 	virtual	int       __cdecl SetStatus( int iNewStatus );
 
-	virtual	HANDLE    __cdecl GetAwayMsg( HANDLE hContact ) { return 0; }
+	virtual	HANDLE    __cdecl GetAwayMsg( HANDLE hContact );
 	virtual	int       __cdecl RecvAwayMsg( HANDLE hContact, int mode, PROTORECVEVENT* evt ) { return 1; }
 	virtual	int       __cdecl SendAwayMsg( HANDLE hContact, HANDLE hProcess, const char* msg ) { return 1; }
-	virtual	int       __cdecl SetAwayMsg( int iStatus, const char* msg ) { return 1; }
+	virtual	int       __cdecl SetAwayMsg( int iStatus, const char* msg );
 
 	virtual	int       __cdecl UserIsTyping( HANDLE hContact, int type );
 
@@ -171,6 +173,7 @@ public:
 	bool IsMyContact(HANDLE hContact);
 
 private:
+	int ConvertStatus(int status);
 	void BroadcastStatus(int newStatus);
 	void CreateProtoService(const char *szService, SIPServiceFunc serviceProc);
 	void CreateProtoService(const char *szService, SIPServiceFuncParam serviceProc, LPARAM lParam);
@@ -190,7 +193,7 @@ private:
 	void Error(pj_status_t status, TCHAR *fmt, ...);
 	void ShowMessage(int type, TCHAR *fmt, va_list args);
 
-	bool SendPresence(int status);
+	bool SendPresence(int status = 0);
 	int Connect();
 	void Disconnect();
 	INT_PTR  __cdecl CreateAccMgrUI(WPARAM wParam, LPARAM lParam);
@@ -220,6 +223,11 @@ private:
 	HANDLE GetContact(const TCHAR *uri, bool addIfNeeded = false, bool temporary = false);
 	void Attach(HANDLE hContact, pjsua_buddy_id buddy_id);
 	void __cdecl FakeMsgAck(void *param);
+
+	// Away messages
+	void __cdecl GetAwayMsgThread(void* arg);
+	TCHAR *GetAwayMsg(int status);
+	INT_PTR __cdecl GetMyAwayMsg(WPARAM wParam, LPARAM lParam);
 
 	// Static callbacks
 	static void CALLBACK DisconnectProto(void *param);

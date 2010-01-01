@@ -34,7 +34,7 @@ Boston, MA 02111-1307, USA.
 #include <list>
 
 // Miranda headers
-#define MIRANDA_VER 0x0900
+#define MIRANDA_VER 0x0800
 #include <win2k.h>
 #include <newpluginapi.h>
 #include <m_system.h>
