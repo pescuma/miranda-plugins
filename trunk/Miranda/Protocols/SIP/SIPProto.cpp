@@ -98,12 +98,7 @@ public:
 		return tchar;
 	}
 
-	TCHAR operator[](int pos) const
-	{
-		return tchar[pos];
-	}
-
-	TCHAR & operator[](int pos)
+	const TCHAR & operator[](int pos) const
 	{
 		return tchar[pos];
 	}
@@ -111,6 +106,14 @@ public:
 private:
 	TCHAR *tchar;
 };
+
+
+static pj_str_t pj_str(const char *str)
+{
+	pj_str_t ret;
+	pj_cstr(&ret, str);
+	return ret;
+}
 
 
 static char * mir_pjstrdup(const pj_str_t *from)
@@ -637,6 +640,7 @@ int SIPProto::Connect()
 
 		pjsua_config cfg;
 		pjsua_config_default(&cfg);
+		cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
 		cfg.cb.on_incoming_call = &static_on_incoming_call;
 		cfg.cb.on_call_media_state = &static_on_call_media_state;
 		cfg.cb.on_call_state = &static_on_call_state;
@@ -717,6 +721,7 @@ int SIPProto::Connect()
 		pjsua_acc_config_default(&cfg);
 		cfg.user_data = this;
 		cfg.transport_id = transport_id;
+		cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
 
 		BuildURI(tmp, MAX_REGS(tmp), opts.username, opts.domain);
 		TcharToSip id(tmp);
@@ -1245,7 +1250,7 @@ void SIPProto::on_incoming_call(pjsua_call_id call_id)
 		name[0] = 0;
 		if (remote_info[0] == _T('"'))
 		{
-			TCHAR *other = _tcsstr(&remote_info[1], _T("\" <"));
+			const TCHAR *other = _tcsstr(&remote_info[1], _T("\" <"));
 			if (other != NULL)
 				lstrcpyn(name, &remote_info[1], min(MAX_REGS(name), other - remote_info));
 		}
