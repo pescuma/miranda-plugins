@@ -1,0 +1,223 @@
+require 'rake'
+require 'fileutils'
+require 'rake/clean'
+require 'google_code'
+
+PROJECT="sip"
+
+SRC_DIR=File.expand_path("..")
+DOCS_DIR=File.expand_path("../Docs")
+VERSION_FILE="#{DOCS_DIR}/#{PROJECT}_version.txt"
+
+TYPES=[ 'ansi', 'unicode' ]
+
+SETUP_VC='C:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat'
+VC="devenv"
+
+version=nil
+
+def cp_relative(file, base, target)
+    file = File.expand_path(file)
+    base = File.expand_path(base)
+    raise "Wrong file/base : #{file} / #base" unless file.slice(0, base.length) == base
+    
+    relative = file.slice(base.length, file.length - base.length)
+    target = File.expand_path(File.join(target, relative))
+    target_dir = File.dirname(target)
+    
+    makedirs target_dir unless File.exists?(target_dir)
+    cp file, target
+end
+
+
+task :get_version do
+  File.open(VERSION_FILE, "r") do |file|
+    while (line = file.gets)
+      version = (line.match(/\d+\.\d+\.\d+\.\d+/) || [])[0]
+      break if version
+    end
+  end
+  raise "Could not read version file" unless VERSION
+  puts "Building version #{version} of #{PROJECT}"
+end
+
+
+# Build ##############################################################################
+
+SOLUTION="#{PROJECT}.sln"
+CONFIG=[ "Release", "Unicode Release" ]
+BUILD_RESULT_DIR=[ "../Release", "../Unicode_Release" ]
+DLL=[ "../../../bin/Release/Plugins/#{PROJECT}.dll", "../../../bin/Release Unicode/Plugins/#{PROJECT}W.dll" ]
+PDB=[ "#{BUILD_RESULT_DIR[0]}/#{PROJECT}.pdb", "#{BUILD_RESULT_DIR[1]}/#{PROJECT}W.pdb" ]
+
+(0..1).each do |i|
+  type = TYPES[i]
+  
+  build = "build_#{type}".to_s
+
+  desc "Build #{type} project"
+  task build do
+    chdir(SRC_DIR) do
+      sh "#{VC} #{SOLUTION} /Build \"#{CONFIG[i]}\""  do |ok, status|
+        ok or fail "Failed to compile #{type} dll (#{status.exitstatus})"
+      end
+    end
+  end
+  task :build => build
+  
+  CLEAN.include(File.join(BUILD_RESULT_DIR[i], '/**/*'))
+  CLOBBER.include(DLL[i])
+end
+
+
+# Source zip #########################################################################
+
+SRC_FILES = FileList[ \
+  "#{SRC_DIR}/*.cpp", \
+  "#{SRC_DIR}/*.h", \
+  "#{SRC_DIR}/*.rc", \
+  "#{SRC_DIR}/*.sln", \
+  "#{SRC_DIR}/*.vcproj", \
+  "#{SRC_DIR}/*.dsp", \
+  "#{SRC_DIR}/*.dsw", \
+  "#{SRC_DIR}/lib/**/*.h", \
+  "#{SRC_DIR}/sdk/**/*.h" \
+]
+SRC_ZIP="#{PROJECT}_src"
+SRC_ZIP_FOLDER='zip_src'
+
+task :clean_package_src do
+  rmtree SRC_ZIP_FOLDER
+end
+task :clean => :clean_package_src
+
+desc "Create source package"
+task :package_src => :get_version do
+  rmtree SRC_ZIP_FOLDER
+  mkdir SRC_ZIP_FOLDER
+  
+  SRC_FILES.each do |file|
+    cp_relative(file, SRC_DIR, SRC_ZIP_FOLDER)
+  end
+  
+  zip = "#{SRC_ZIP}.#{version}.zip"
+  rm zip, :force => true
+  chdir(SRC_ZIP_FOLDER) do
+    sh "../zip -r -q ../#{zip} *"
+  end
+  
+  rmtree SRC_ZIP_FOLDER
+end
+task :package => :package_src
+
+CLOBBER.include("#{SRC_ZIP}.*.zip")
+
+
+
+# Dll zips ###########################################################################
+
+ZIP_FOLDERS=['zip_ansi', 'zip_unicode']
+ZIPS=[ "#{PROJECT}", "#{PROJECT}W" ]
+
+(0..1).each do |i|
+  type = TYPES[i]
+  
+  clean = "clean_package_#{type}".to_s
+  package = "package_#{type}".to_s
+
+  task clean do
+    rmtree ZIP_FOLDERS[i]
+	rmtree ZIP_FOLDERS[i] + '_pdb'
+  end
+  task :clean => clean
+  
+  desc "Create #{type} package"
+  task package => [ clean, :get_version, "build_#{type}".to_s ] do
+    rmtree ZIP_FOLDERS[i]
+    mkdir ZIP_FOLDERS[i]
+    
+    target_dir = File.join(ZIP_FOLDERS[i], 'Docs')
+    docs = FileList["#{DOCS_DIR}/*"]
+    docs.exclude(VERSION_FILE)
+    docs.each do |file|
+      cp_relative(file, DOCS_DIR, target_dir)
+    end
+    
+    target_dir = File.join(ZIP_FOLDERS[i], 'Plugins')
+    makedirs target_dir
+    cp DLL[i], target_dir
+    
+    zip = "#{ZIPS[i]}.#{version}.zip"
+    rm zip, :force => true
+    chdir(ZIP_FOLDERS[i]) do
+      sh "../zip -r -q ../#{zip} *"
+    end
+    rmtree ZIP_FOLDERS[i]
+	
+	rmtree ZIP_FOLDERS[i] + '_pdb'
+	target_dir = ZIP_FOLDERS[i] + '_pdb/Plugins'
+	makedirs target_dir
+	cp PDB[i], target_dir
+	chdir(ZIP_FOLDERS[i] + '_pdb') do
+      sh "../zip -r -q ../#{ZIPS[i]}.pdb.#{version}.zip *"
+	end
+	rmtree ZIP_FOLDERS[i] + '_pdb'
+  end
+  task :package => package
+  
+  CLOBBER.include("#{ZIPS[i]}.pdb.*.zip")
+  CLOBBER.include("#{ZIPS[i]}.*.zip")
+end
+
+
+# Rebuild ############################################################################
+
+desc "Rebuild all #{PROJECT} versions"
+task :rebuild => [ :clobber, :build ]
+
+desc "Build all #{PROJECT} versions"
+task :build
+
+
+# Upload #############################################################################
+
+desc "Rebuild and upload files"
+task :upload => [ :rebuild, :pack ]
+
+
+def empty?(str)
+  return true unless str
+  return str.strip.length > 0
+end
+
+desc "Upload to googlecode"
+task :upload_googlecode => [ :build, :pack ] do
+  project = nil
+  username = nil
+  password = nil
+  
+  if File.exists?("googlecode.passwd")
+    File.open("googlecode.passwd", "r") do |file|
+      project,username,password = file.gets.split(':')
+    end
+  end
+  
+  if empty?(project)
+    puts "Project name: "
+    project = gets.chomp
+  end
+  if empty?(username)
+    puts "Username: "
+    username = gets.chomp
+  end
+  if empty?(password)
+    puts "Password: "
+    password = gets.chomp
+  end
+  
+  raise "Invalid googlecode data" if empty?(project) || empty?(username) || empty?(password)
+  
+  puts project + ' ' + username + ' ' + password
+
+end
+task :upload => :upload_googlecode
