@@ -2,5 +2,9 @@ IAX protocol
 
 Changelog:
 
+. 0.1.1.0
+  * Small fixes
+  * Compatibility with new voice service
+
 . 0.1.0.0
   + Initial version

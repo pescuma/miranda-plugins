@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"IAX protocol (Ansi)",
 #endif
-	PLUGIN_MAKE_VERSION(0,1,0,0),
+	PLUGIN_MAKE_VERSION(0,1,1,0),
 	"Provides support for Inter-Asterisk eXchange (IAX) protocol",
 	"Ricardo Pescuma Domenecci",
 	"pescuma@miranda-im.org",
