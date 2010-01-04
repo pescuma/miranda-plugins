@@ -241,7 +241,7 @@ int IAXProto::SendBroadcast(HANDLE hContact, int type, int result, HANDLE hProce
 #define MESSAGE_TYPE_ERROR 2
 
 
-void IAXProto::Trace(TCHAR *fmt, ...)
+void IAXProto::Trace(const TCHAR *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -252,7 +252,7 @@ void IAXProto::Trace(TCHAR *fmt, ...)
 }
 
 
-void IAXProto::Info(TCHAR *fmt, ...)
+void IAXProto::Info(const TCHAR *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -263,7 +263,7 @@ void IAXProto::Info(TCHAR *fmt, ...)
 }
 
 
-void IAXProto::Error(TCHAR *fmt, ...)
+void IAXProto::Error(const TCHAR *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -274,7 +274,7 @@ void IAXProto::Error(TCHAR *fmt, ...)
 }
 
 
-void IAXProto::ShowMessage(int type, TCHAR *fmt, va_list args) 
+void IAXProto::ShowMessage(int type, const TCHAR *fmt, va_list args) 
 {
 	TCHAR buff[1024];
 	if (type == MESSAGE_TYPE_TRACE)

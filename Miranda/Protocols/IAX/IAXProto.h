@@ -119,10 +119,10 @@ private:
 	INT_PTR __cdecl OnOptionsInit(WPARAM wParam,LPARAM lParam);
 	INT_PTR __cdecl OnPreShutdown(WPARAM wParam,LPARAM lParam);
 
-	void Trace(TCHAR *fmt, ...);
-	void Info(TCHAR *fmt, ...);
-	void Error(TCHAR *fmt, ...);
-	void ShowMessage(int type, TCHAR *fmt, va_list args);
+	void Trace(const TCHAR *fmt, ...);
+	void Info(const TCHAR *fmt, ...);
+	void Error(const TCHAR *fmt, ...);
+	void ShowMessage(int type, const TCHAR *fmt, va_list args);
 
 	void Disconnect();
 	INT_PTR __cdecl CreateAccMgrUI(WPARAM wParam, LPARAM lParam);

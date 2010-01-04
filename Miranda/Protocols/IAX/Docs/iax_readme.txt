@@ -19,6 +19,4 @@ Todo:
 - Ask for new password at first login if "Save password" is not checked
 
 
-The first versions will be compiled as debug and contain the dependency plugin to help setup. Before releasing in FL I'll change that.
-
 To report bugs/make suggestions, go to the forum thread: http://forums.miranda-im.org/showthread.php?p=195413
