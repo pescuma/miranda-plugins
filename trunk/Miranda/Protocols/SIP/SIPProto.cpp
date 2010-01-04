@@ -640,7 +640,7 @@ int SIPProto::Connect()
 
 		pjsua_config cfg;
 		pjsua_config_default(&cfg);
-		cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
+		//cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
 		cfg.cb.on_incoming_call = &static_on_incoming_call;
 		cfg.cb.on_call_media_state = &static_on_call_media_state;
 		cfg.cb.on_call_state = &static_on_call_state;
@@ -721,7 +721,7 @@ int SIPProto::Connect()
 		pjsua_acc_config_default(&cfg);
 		cfg.user_data = this;
 		cfg.transport_id = transport_id;
-		cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
+		//cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
 
 		BuildURI(tmp, MAX_REGS(tmp), opts.username, opts.domain);
 		TcharToSip id(tmp);

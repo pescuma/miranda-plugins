@@ -1,4 +1,4 @@
-SIP protocol
+SIP Protocol
 ------------
 
 CAUTION: THIS IS A ALPHA STAGE PLUGIN. IT CAN DO VERY BAD THINGS. USE AT YOUR OWN RISK.
@@ -12,9 +12,11 @@ WARNING: You can create only one instance of the protocol. If you create the sec
 
 Known bugs:
 - When you login, you will only show online the contacts that already are online (contacts that came online after that will stay offline)
+- Password is sent as plain text
 
 
 Todo:
+- Add ssl
 - More than one instance
 - Protocol icons
 - Use netlib to send/receive packages?
@@ -22,4 +24,4 @@ Todo:
 - Compile with VC6
 
 
-To report bugs/make suggestions, go to the forum thread: http://forums.miranda-im.org/showthread.php?p=
+To report bugs/make suggestions, go to the forum thread: http://forums.miranda-im.org/showthread.php?t=23655
