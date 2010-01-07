@@ -1,4 +1,4 @@
-/* $Id: ice_strans.h 2966 2009-10-25 09:02:07Z bennylp $ */
+/* $Id: ice_strans.h 3028 2009-12-08 13:11:25Z bennylp $ */
 /* 
  * Copyright (C) 2008-2009 Teluu Inc. (http://www.teluu.com)
  * Copyright (C) 2003-2008 Benny Prijono <benny@prijono.org>
@@ -620,6 +620,17 @@ PJ_DECL(pj_status_t) pj_ice_strans_get_ufrag_pwd(pj_ice_strans *ice_st,
 						 pj_str_t *rem_ufrag,
 						 pj_str_t *rem_pwd);
 
+
+/**
+ * Get the number of local candidates for the specified component ID.
+ *
+ * @param ice_st	The ICE stream transport.
+ * @param comp_id	Component ID.
+ *
+ * @return		The number of candidates.
+ */
+PJ_DECL(unsigned) pj_ice_strans_get_cands_count(pj_ice_strans *ice_st,
+					        unsigned comp_id);
 
 /**
  * Enumerate the local candidates for the specified component.
