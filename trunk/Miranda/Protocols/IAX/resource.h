@@ -5,6 +5,7 @@
 #define IDD_OPTIONS                     119
 #define IDD_OPTIONS_OLD                 120
 #define IDD_EMOTICON_SELECTION          126
+#define IDI_PROTO                       128
 #define IDD_ACCMGRUI                    227
 #define IDC_USERNAME                    1000
 #define IDC_PASSWORD                    1001
@@ -32,7 +33,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        128
+#define _APS_NEXT_RESOURCE_VALUE        129
 #define _APS_NEXT_COMMAND_VALUE         40005
 #define _APS_NEXT_CONTROL_VALUE         1087
 #define _APS_NEXT_SYMED_VALUE           101
