@@ -73,7 +73,7 @@ public:
 
 	virtual	DWORD_PTR __cdecl GetCaps( int type, HANDLE hContact = NULL );
 
-	virtual	HICON     __cdecl GetIcon( int iconIndex ) { return 0; }
+	virtual	HICON     __cdecl GetIcon( int iconIndex );
 	virtual	int       __cdecl GetInfo( HANDLE hContact, int infoType ) { return 1; }
 
 	virtual	HANDLE    __cdecl SearchBasic( const char* id ) { return 0; }

@@ -126,6 +126,7 @@ ZIP_FOLDERS=['zip_ansi', 'zip_unicode']
 ZIPS=[ "#{PROJECT}", "#{PROJECT}W" ]
 
 VOICE_SERVICE=[ "../../../bin/Release/Plugins/voiceservice.dll", "../../../bin/Release/Plugins/voiceserviceW.dll" ]
+HISTORY_EVENTS=[ "../../../bin/Release/Plugins/aa_historyevents.dll", "../../../bin/Release Unicode/Plugins/aa_historyeventsW.dll" ]
 
 (0..1).each do |i|
   type = TYPES[i]
@@ -159,6 +160,7 @@ VOICE_SERVICE=[ "../../../bin/Release/Plugins/voiceservice.dll", "../../../bin/R
     makedirs target_dir
     cp DLL[i], target_dir
     cp VOICE_SERVICE[i], target_dir
+    cp HISTORY_EVENTS[i], target_dir
     
     rm zip, :force => true
     chdir(ZIP_FOLDERS[i]) do

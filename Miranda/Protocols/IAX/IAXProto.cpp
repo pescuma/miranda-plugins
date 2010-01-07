@@ -90,6 +90,14 @@ IAXProto::IAXProto(const char *aProtoName, const TCHAR *aUserName)
 
 	hCallStateEvent = CreateProtoEvent(PE_VOICE_CALL_STATE);
 
+	char icon[512];
+	mir_snprintf(icon, MAX_REGS(icon), "%s_main", m_szModuleName);
+
+	TCHAR section[100];
+	mir_sntprintf(section, MAX_REGS(section), _T("%s/%s"), LPGENT("Protocols"), m_tszUserName);
+
+	IcoLib_Register(icon, section, LPGENT("Protocol icon"), IDI_PROTO);
+
 	HookProtoEvent(ME_OPT_INITIALISE, &IAXProto::OnOptionsInit);
 }
 
@@ -134,6 +142,20 @@ DWORD_PTR __cdecl IAXProto::GetCaps( int type, HANDLE hContact )
 	}
 
 	return 0;
+}
+
+
+HICON __cdecl IAXProto::GetIcon(int iconIndex)
+{
+	if (LOWORD(iconIndex) == PLI_PROTOCOL)
+	{
+		char icon[512];
+		mir_snprintf(icon, MAX_REGS(icon), "%s_main", m_szModuleName);
+
+		return IcoLib_LoadIcon(icon, TRUE);
+	}
+
+	return NULL;
 }
 
 
