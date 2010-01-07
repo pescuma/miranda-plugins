@@ -1509,7 +1509,8 @@ int __cdecl SIPProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 	}
 
 	pjsua_call_id call_id;
-	pj_status_t status = pjsua_call_make_call(acc_id, &pj_str(TcharToSip(uri)), 0, NULL, NULL, &call_id);
+	pj_str_t ret;
+	pj_status_t status = pjsua_call_make_call(acc_id, pj_cstr(&ret, TcharToSip(uri)), 0, NULL, NULL, &call_id);
 	if (status != PJ_SUCCESS) 
 	{
 		Error(status, _T("Error making call"));
@@ -1645,7 +1646,8 @@ int __cdecl SIPProto::VoiceSendDTMF(WPARAM wParam, LPARAM lParam)
 	TCHAR tmp[2];
 	tmp[0] = c;
 	tmp[1] = 0;
-	pjsua_call_dial_dtmf(call_id, &pj_str(TcharToSip(tmp)));
+	pj_str_t ret;
+	pjsua_call_dial_dtmf(call_id, pj_cstr(&ret, TcharToSip(tmp)));
 
 	return 0;
 }
@@ -1706,7 +1708,8 @@ void __cdecl SIPProto::SearchUserThread(void *param)
 		return;
 	}
 
-	if (pjsua_buddy_find(&pj_str(sip_uri)) != PJSUA_INVALID_ID)
+	pj_str_t ret;
+	if (pjsua_buddy_find(pj_cstr(&ret, sip_uri)) != PJSUA_INVALID_ID)
 	{
 		Info(_T("Contact already in your contact list"));
 		SendBroadcast(NULL, ACKTYPE_SEARCH, ACKRESULT_SUCCESS, param, 0);
@@ -1972,7 +1975,8 @@ int __cdecl SIPProto::SendMsg(HANDLE hContact, int flags, const char *msg)
 	md->messageID = InterlockedIncrement(&messageID);
 	md->hContact = hContact;
 
-	status = pjsua_im_send(acc_id, &info.uri, NULL, &pj_str(text), NULL, md);
+	pj_str_t ret;
+	status = pjsua_im_send(acc_id, &info.uri, NULL, pj_cstr(&ret, text), NULL, md);
 	if (status != PJ_SUCCESS)
 	{
 		Error(status, _T("Error sending message"));
@@ -2004,7 +2008,8 @@ void SIPProto::on_pager_status(HANDLE hContact, LONG messageID, pjsip_status_cod
 
 void SIPProto::on_typing(char *from, bool isTyping)
 {
-	pjsua_buddy_id buddy_id = pjsua_buddy_find(&pj_str(from));
+	pj_str_t ret;
+	pjsua_buddy_id buddy_id = pjsua_buddy_find(pj_cstr(&ret, from));
 	if (buddy_id == PJSUA_INVALID_ID)
 		return;
 
@@ -2243,8 +2248,9 @@ int __cdecl SIPProto::AuthDeny(HANDLE hDbEvent, const char *szReason)
 
 	DBWriteContactSettingByte(hContact, m_szModuleName, "AuthState", AUTH_STATE_DENIED);
 
+	pj_str_t ret;
 	pjsua_pres_notify(acc_id, srv_pres, PJSIP_EVSUB_STATE_TERMINATED, NULL, 
-					  &pj_str(TcharToSip(CharToTchar(szReason))), false, NULL);
+					  pj_cstr(&ret, TcharToSip(CharToTchar(szReason))), false, NULL);
 
 	return 0;
 }
@@ -2274,7 +2280,8 @@ HANDLE SIPProto::GetContact(pjsua_buddy_id buddy_id)
 
 HANDLE SIPProto::GetContact(const TCHAR *uri, bool addIfNeeded, bool temporary)
 {
-	pjsua_buddy_id buddy_id = pjsua_buddy_find(&pj_str(TcharToSip(uri)));
+	pj_str_t ret;
+	pjsua_buddy_id buddy_id = pjsua_buddy_find(pj_cstr(&ret, TcharToSip(uri)));
 
 	if (buddy_id != PJSUA_INVALID_ID)
 		return GetContact(buddy_id);

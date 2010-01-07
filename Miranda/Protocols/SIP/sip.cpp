@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"SIP protocol (Ansi)",
 #endif
-	PLUGIN_MAKE_VERSION(0,1,0,0),
+	PLUGIN_MAKE_VERSION(0,1,1,0),
 	"Provides support for SIP protocol",
 	"Ricardo Pescuma Domenecci",
 	"pescuma@miranda-im.org",
