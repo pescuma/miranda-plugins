@@ -425,6 +425,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\m_sip.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\plugins\utils\mir_icons.h"
 				>
 			</File>
@@ -445,7 +449,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SIPClient.h"
+				>
+			</File>
+			<File
 				RelativePath="SIPProto.h"
+				>
+			</File>
+			<File
+				RelativePath=".\strutils.h"
 				>
 			</File>
 		</Filter>
@@ -653,6 +665,10 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\SIPClient.cpp"
+				>
 			</File>
 			<File
 				RelativePath="SIPProto.cpp"

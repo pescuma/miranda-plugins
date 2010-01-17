@@ -26,140 +26,12 @@ static INT_PTR CALLBACK DlgProcAccMgrUI(HWND hwndDlg, UINT msg, WPARAM wParam, L
 static INT_PTR CALLBACK DlgOptions(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
-#define TcharToSip TcharToUtf8
-
-class SipToTchar
-{
-public:
-	SipToTchar(const pj_str_t &str) : tchar(NULL)
-	{
-		if (str.ptr == NULL)
-			return;
-
-		int size = MultiByteToWideChar(CP_UTF8, 0, str.ptr, str.slen, NULL, 0);
-		if (size < 0)
-			throw _T("Could not convert string to WCHAR");
-		size++;
-
-		WCHAR *tmp = (WCHAR *) mir_alloc(size * sizeof(WCHAR));
-		if (tmp == NULL)
-			throw _T("mir_alloc returned NULL");
-
-		MultiByteToWideChar(CP_UTF8, 0, str.ptr, str.slen, tmp, size);
-		tmp[size-1] = 0;
-
-#ifdef UNICODE
-
-		tchar = tmp;
-
-#else
-
-		size = WideCharToMultiByte(CP_ACP, 0, tmp, -1, NULL, 0, NULL, NULL);
-		if (size <= 0)
-		{
-			mir_free(tmp);
-			throw _T("Could not convert string to ACP");
-		}
-
-		tchar = (TCHAR *) mir_alloc(size * sizeof(char));
-		if (tchar == NULL)
-		{
-			mir_free(tmp);
-			throw _T("mir_alloc returned NULL");
-		}
-
-		WideCharToMultiByte(CP_ACP, 0, tmp, -1, tchar, size, NULL, NULL);
-
-		mir_free(tmp);
-
-#endif
-	}
-
-	~SipToTchar()
-	{
-		if (tchar != NULL)
-			mir_free(tchar);
-	}
-
-	TCHAR *detach()
-	{
-		TCHAR *ret = tchar;
-		tchar = NULL;
-		return ret;
-	}
-
-	TCHAR * get() const
-	{
-		return tchar;
-	}
-
-	operator TCHAR *() const
-	{
-		return tchar;
-	}
-
-	const TCHAR & operator[](int pos) const
-	{
-		return tchar[pos];
-	}
-
-private:
-	TCHAR *tchar;
-};
-
-
-static pj_str_t pj_str(const char *str)
-{
-	pj_str_t ret;
-	pj_cstr(&ret, str);
-	return ret;
-}
-
-
-static char * mir_pjstrdup(const pj_str_t *from)
-{
-	char *ret = (char *) mir_alloc(from->slen + 1);
-	strncpy(ret, from->ptr, from->slen);
-	ret[from->slen] = 0;
-	return ret;
-}
-
-
-static int FirstGtZero(int n1, int n2)
-{
-	if (n1 > 0)
-		return n1;
-	return n2;
-}
-
-
-static TCHAR *CleanupSip(TCHAR *str)
-{
-	if (_tcsnicmp(_T("sip:"), str, 4) == 0)
-		return &str[4];
-	else
-		return str;
-}
-
-
-static const TCHAR *CleanupSip(const TCHAR *str)
-{
-	if (_tcsnicmp(_T("sip:"), str, 4) == 0)
-		return &str[4];
-	else
-		return str;
-}
-
-
-
-
-
 SIPProto::SIPProto(const char *aProtoName, const TCHAR *aUserName)
 {
-	InitializeCriticalSection(&cs);
-
 	hasToDestroy = false;
-	transport_id = -1;
+	udp_transport_id = -1;
+	tcp_transport_id = -1;
+	tls_transport_id = -1;
 	acc_id = -1;
 	hNetlibUser = 0;
 	hCallStateEvent = 0;
@@ -168,6 +40,18 @@ SIPProto::SIPProto(const char *aProtoName, const TCHAR *aUserName)
 	awayMessageID = 0;
 
 	memset(awayMessages, 0, sizeof(awayMessages));
+
+	{
+		pj_status_t status = pjsua_create();
+		if (status != PJ_SUCCESS) 
+		{
+			Error(status, _T("Error creating pjsua"));
+			throw "Error creating pjsua";
+		}
+		hasToDestroy = true;
+	}
+
+	InitializeCriticalSection(&cs);
 
 	m_tszUserName = mir_tstrdup(aUserName);
 	m_szProtoName = mir_strdup(aProtoName);
@@ -625,22 +509,14 @@ int SIPProto::Connect()
 	BroadcastStatus(ID_STATUS_CONNECTING);
 
 	{
-		pj_status_t status = pjsua_create();
-		if (status != PJ_SUCCESS) 
-		{
-			Error(status, _T("Error creating pjsua"));
-			return -1;
-		}
-		hasToDestroy = true;
-	}
-
-	{
 		scoped_mir_free<char> stun;
 		scoped_mir_free<char> dns;
 
 		pjsua_config cfg;
 		pjsua_config_default(&cfg);
-		//cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
+#ifndef DEBUG
+		cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
+#endif
 		cfg.cb.on_incoming_call = &static_on_incoming_call;
 		cfg.cb.on_call_media_state = &static_on_call_media_state;
 		cfg.cb.on_call_state = &static_on_call_state;
@@ -681,7 +557,11 @@ int SIPProto::Connect()
 		pjsua_logging_config_default(&log_cfg);
 		log_cfg.cb = &static_on_log;
 
-		pj_status_t status = pjsua_init(&cfg, &log_cfg, NULL);
+		pjsua_media_config media_cfg;
+		pjsua_media_config_default(&media_cfg);
+		media_cfg.enable_ice = PJ_TRUE;
+
+		pj_status_t status = pjsua_init(&cfg, &log_cfg, &media_cfg);
 		if (status != PJ_SUCCESS)
 		{
 			Error(status, _T("Error initializing pjsua"));
@@ -693,13 +573,21 @@ int SIPProto::Connect()
 	{
 		pjsua_transport_config cfg;
 		pjsua_transport_config_default(&cfg);
-		pj_status_t status = pjsua_transport_create(PJSIP_TRANSPORT_UDP, &cfg, &transport_id);
+		pj_status_t status = pjsua_transport_create(PJSIP_TRANSPORT_UDP, &cfg, &udp_transport_id);
 		if (status != PJ_SUCCESS)
 		{
-			Error(status, _T("Error creating transport"));
+			Error(status, _T("Error creating UDP transport"));
 			Disconnect();
 			return 2;
 		}
+		
+		status = pjsua_transport_create(PJSIP_TRANSPORT_TCP, &cfg, &tcp_transport_id);
+		if (status != PJ_SUCCESS)
+			Error(status, _T("Error creating TCP transport"));
+
+		status = pjsua_transport_create(PJSIP_TRANSPORT_TLS, &cfg, &udp_transport_id);
+		if (status != PJ_SUCCESS)
+			Error(status, _T("Error creating TLS transport"));
 	}
 
 	{
@@ -720,8 +608,9 @@ int SIPProto::Connect()
 		pjsua_acc_config cfg;
 		pjsua_acc_config_default(&cfg);
 		cfg.user_data = this;
-		cfg.transport_id = transport_id;
-		//cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
+#ifndef DEBUG
+		cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
+#endif
 
 		BuildURI(tmp, MAX_REGS(tmp), opts.username, opts.domain);
 		TcharToSip id(tmp);
@@ -1018,17 +907,16 @@ void SIPProto::Disconnect()
 		acc_id = -1;
 	}
 
-	if (transport_id >= 0)
-	{
-		pjsua_transport_close(transport_id, PJ_FALSE);
-		transport_id = -1;
+#define CLOSE_TRANSPORT(_T_)					\
+	if (_T_ >= 0)								\
+	{											\
+		pjsua_transport_close(_T_, PJ_FALSE);	\
+		_T_ = -1;								\
 	}
 
-	if (hasToDestroy)
-	{
-		pjsua_destroy();
-		hasToDestroy = false;
-	}
+	CLOSE_TRANSPORT(udp_transport_id)
+	CLOSE_TRANSPORT(tcp_transport_id)
+	CLOSE_TRANSPORT(tls_transport_id)
 
 	for(HANDLE hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDFIRST, 0, 0);
 		hContact != NULL; 
@@ -1108,6 +996,13 @@ int __cdecl SIPProto::OnOptionsInit(WPARAM wParam, LPARAM lParam)
 
 int __cdecl SIPProto::OnPreShutdown(WPARAM wParam, LPARAM lParam)
 {
+	if (hasToDestroy)
+	{
+		pjsua_destroy();
+		hasToDestroy = false;
+	}
+
+
 	return 0;
 }
 
@@ -1206,16 +1101,6 @@ void SIPProto::on_reg_state()
 	else
 	{
 		Disconnect();
-	}
-}
-
-static void RemoveLtGt(TCHAR *str)
-{
-	int len = lstrlen(str);
-	if (str[0] == _T('<') && str[len-1] == _T('>'))
-	{
-		str[len-1] = 0;
-		memmove(str, &str[1], len * sizeof(TCHAR));
 	}
 }
 
@@ -1379,23 +1264,6 @@ void SIPProto::ConfigureDevices()
 int __cdecl SIPProto::VoiceCaps(WPARAM wParam,LPARAM lParam)
 {
 	return VOICE_CAPS_VOICE | VOICE_CAPS_CALL_CONTACT | VOICE_CAPS_CALL_STRING;
-}
-
-
-static void CleanupNumber(TCHAR *out, int outSize, const TCHAR *number)
-{
-	int pos = 0;
-	int len = lstrlen(number);
-	for(int i = 0; i < len && pos < outSize - 1; ++i)
-	{
-		TCHAR c = number[i];
-
-		if (i == 0 && c == _T('+'))
-			out[pos++] = c;
-		else if (c >= _T('0') && c <= _T('9'))
-			out[pos++] = c;
-	}
-	out[pos] = 0;
 }
 
 
@@ -1610,19 +1478,6 @@ int __cdecl SIPProto::VoiceHoldCall(WPARAM wParam, LPARAM lParam)
 	// NotifyCall(0, VOICE_STATE_ON_HOLD);
 
 	return 0;
-}
-
-
-static bool IsValidDTMF(TCHAR c)
-{
-	if (c >= _T('A') && c <= _T('D'))
-		return true;
-	if (c >= _T('0') && c <= _T('9'))
-		return true;
-	if (c == _T('#') || c == _T('*'))
-		return true;
-
-	return false;
 }
 
 
