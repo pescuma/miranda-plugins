@@ -80,7 +80,46 @@ Boston, MA 02111-1307, USA.
 #include "../../plugins/voiceservice/m_voiceservice.h"
 
 #include "resource.h"
+#include "strutils.h"
+
+
+struct MessageData
+{
+	HANDLE hContact;
+	LONG messageID;
+	pjsip_status_code status;
+};
+
+struct SIPEvent
+{
+	enum {
+		reg_state,
+		incoming_call,
+		call_state,
+		call_media_state,
+		incoming_subscribe,
+		buddy_state,
+		pager,
+		pager_status,
+		typing
+
+	} type;
+
+	pjsua_call_id call_id;
+	pjsua_call_info call_info;
+	pjsua_buddy_id buddy_id;
+	char *from;
+	char *text;
+	char *mime;
+	bool isTyping;
+	MessageData *messageData;
+	pjsua_srv_pres *srv_pres;
+};
+
+
+#include "m_sip.h"
 #include "SIPProto.h"
+#include "SIPClient.h"
 
 
 #define MODULE_NAME		"SIP"

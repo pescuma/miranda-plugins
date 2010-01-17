@@ -57,6 +57,9 @@ std::vector<HANDLE> hHooks;
 int ModulesLoaded(WPARAM wParam, LPARAM lParam);
 int PreShutdown(WPARAM wParam, LPARAM lParam);
 
+static INT_PTR ClientRegister(WPARAM wParam, LPARAM lParam);
+static INT_PTR ClientUnregister(WPARAM wParam, LPARAM lParam);
+
 
 static int sttCompareProtocols(const SIPProto *p1, const SIPProto *p2)
 {
@@ -106,9 +109,16 @@ static SIPProto *SIPProtoInit(const char* pszProtoName, const TCHAR* tszUserName
 		return NULL;
 	}
 
-	SIPProto *proto = new SIPProto(pszProtoName, tszUserName);
-	instances.insert(proto);
-	return proto;
+	try 
+	{
+		SIPProto *proto = new SIPProto(pszProtoName, tszUserName);
+		instances.insert(proto);
+		return proto;
+	}
+	catch(const char *)
+	{
+		return NULL;
+	}
 }
 
 
@@ -192,6 +202,9 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	pd.type = PROTOTYPE_PROTOCOL;
 	CallService(MS_PROTO_REGISTERMODULE, 0, (LPARAM) &pd);
 
+	CreateServiceFunction(MS_SIP_REGISTER, ClientRegister);
+	CreateServiceFunction(MS_SIP_UNREGISTER, ClientUnregister);
+
 	return 0;
 }
 
@@ -245,6 +258,99 @@ int PreShutdown(WPARAM wParam, LPARAM lParam)
 {
 	for(unsigned int i = 0; i < hHooks.size(); ++i)
 		UnhookEvent(hHooks[i]);
+
+	return 0;
+}
+
+
+static int ClientCall(SIP_CLIENT *sip, const TCHAR *username, const TCHAR *host, int port, int protocol)
+{
+	if (sip == NULL || sip->data == NULL)
+		return -1;
+
+	SIPClient *cli = (SIPClient *) sip->data;
+	return (int) cli->Call(username, host, port, protocol);
+}
+
+static int ClientDropCall(SIP_CLIENT *sip, int callId)
+{
+	if (sip == NULL || sip->data == NULL)
+		return -1;
+
+	SIPClient *cli = (SIPClient *) sip->data;
+	return (int) cli->DropCall((pjsua_call_id) callId);
+}
+
+static int ClientHoldCall(SIP_CLIENT *sip, int callId)
+{
+	if (sip == NULL || sip->data == NULL)
+		return -1;
+
+	SIPClient *cli = (SIPClient *) sip->data;
+	return (int) cli->HoldCall((pjsua_call_id) callId);
+}
+
+static int ClientAnswerCall(SIP_CLIENT *sip, int callId)
+{
+	if (sip == NULL || sip->data == NULL)
+		return -1;
+
+	SIPClient *cli = (SIPClient *) sip->data;
+	return (int) cli->AnswerCall((pjsua_call_id) callId);
+}
+
+static int ClientSendDTMF(SIP_CLIENT *sip, int callId, TCHAR dtmf)
+{
+	if (sip == NULL || sip->data == NULL)
+		return -1;
+
+	SIPClient *cli = (SIPClient *) sip->data;
+	return (int) cli->SendDTMF((pjsua_call_id) callId, dtmf);
+}
+
+static INT_PTR ClientRegister(WPARAM wParam, LPARAM lParam)
+{
+	SIP_REGISTRATION *reg = (SIP_REGISTRATION *) wParam;
+	if (reg == NULL || reg->cbSize < sizeof(SIP_REGISTRATION))
+		return NULL;
+
+	if (reg->name[0] == 0 || reg->username[0] == 0)
+		return NULL;
+
+	SIPClient *cli = new SIPClient(reg);
+	if (cli->Connect(reg->udp_port, reg->tcp_port, reg->tls_port) != 0)
+	{
+		cli->Disconnect();
+		delete cli;
+		return NULL;
+	}
+
+	SIP_CLIENT *ret = (SIP_CLIENT *) mir_alloc0(sizeof(SIP_CLIENT) + sizeof(SIPClient *));
+	ret->data = cli;
+	* (TCHAR **) & ret->username = cli->username;
+	* (TCHAR **) & ret->host = cli->host;
+	* (int *) & ret->udp_port = cli->udp.port;
+	* (int *) & ret->tcp_port = cli->tcp.port;
+	* (int *) & ret->tls_port = cli->tls.port;
+	ret->Call = &ClientCall;
+	ret->DropCall = &ClientDropCall;
+	ret->HoldCall = &ClientHoldCall;
+	ret->AnswerCall = &ClientAnswerCall;
+	ret->SendDTMF = &ClientSendDTMF;
+
+	return (INT_PTR) ret;
+}
+
+static INT_PTR ClientUnregister(WPARAM wParam, LPARAM lParam)
+{
+	SIP_CLIENT *sc = (SIP_CLIENT *) wParam;
+	if (sc == NULL || sc->data == NULL)
+		return 1;
+
+	SIPClient * cli = (SIPClient *) sc->data;
+	cli->Disconnect();
+	delete cli;
+	mir_free(sc);
 
 	return 0;
 }

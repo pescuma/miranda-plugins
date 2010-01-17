@@ -27,38 +27,6 @@ typedef INT_PTR (__cdecl SIPProto::*SIPServiceFunc)(WPARAM, LPARAM);
 typedef INT_PTR (__cdecl SIPProto::*SIPServiceFuncParam)(WPARAM, LPARAM, LPARAM);
 typedef int (__cdecl SIPProto::*SIPEventFunc)(WPARAM, LPARAM);
 
-struct MessageData
-{
-	HANDLE hContact;
-	LONG messageID;
-	pjsip_status_code status;
-};
-
-struct SIPEvent
-{
-	enum {
-		reg_state,
-		incoming_call,
-		call_state,
-		call_media_state,
-		incoming_subscribe,
-		buddy_state,
-		pager,
-		pager_status,
-		typing
-
-	} type;
-
-	pjsua_call_id call_id;
-	pjsua_call_info call_info;
-	pjsua_buddy_id buddy_id;
-	char *from;
-	char *text;
-	char *mime;
-	bool isTyping;
-	MessageData *messageData;
-	pjsua_srv_pres *srv_pres;
-};
 
 class SIPProto : public PROTO_INTERFACE
 {
@@ -66,7 +34,9 @@ private:
 	HANDLE hNetlibUser;
 	HANDLE hCallStateEvent;
 	bool hasToDestroy;
-	pjsua_transport_id transport_id;
+	pjsua_transport_id udp_transport_id;
+	pjsua_transport_id tcp_transport_id;
+	pjsua_transport_id tls_transport_id;
 	pjsua_acc_id acc_id;
 	LONG messageID;
 	LONG awayMessageID;
@@ -228,9 +198,6 @@ private:
 	void __cdecl GetAwayMsgThread(void* arg);
 	TCHAR *GetAwayMsg(int status);
 	INT_PTR __cdecl GetMyAwayMsg(WPARAM wParam, LPARAM lParam);
-
-	// Static callbacks
-	static void CALLBACK DisconnectProto(void *param);
 };
 
 
