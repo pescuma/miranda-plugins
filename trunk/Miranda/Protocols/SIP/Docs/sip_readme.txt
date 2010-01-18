@@ -16,12 +16,10 @@ Known bugs:
 
 
 Todo:
-- Add ssl
 - More than one instance
 - Protocol icons
 - Use netlib to send/receive packages?
 - Ask for new password at first login if "Save password" is not checked
-- Compile with VC6
 
 
 To report bugs/make suggestions, go to the forum thread: http://forums.miranda-im.org/showthread.php?t=23655

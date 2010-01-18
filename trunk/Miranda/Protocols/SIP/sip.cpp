@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"SIP protocol (Ansi)",
 #endif
-	PLUGIN_MAKE_VERSION(0,1,1,0),
+	PLUGIN_MAKE_VERSION(0,1,2,0),
 	"Provides support for SIP protocol",
 	"Ricardo Pescuma Domenecci",
 	"pescuma@miranda-im.org",
@@ -263,13 +263,17 @@ int PreShutdown(WPARAM wParam, LPARAM lParam)
 }
 
 
-static int ClientCall(SIP_CLIENT *sip, const TCHAR *username, const TCHAR *host, int port, int protocol)
+static int ClientCall(SIP_CLIENT *sip, const TCHAR *host, int port, int protocol)
 {
 	if (sip == NULL || sip->data == NULL)
 		return -1;
+	if (host[0] == 0 || port <= 0)
+		return -2;
+	if (protocol < 1 || protocol > 3)
+		return -2;
 
 	SIPClient *cli = (SIPClient *) sip->data;
-	return (int) cli->Call(username, host, port, protocol);
+	return (int) cli->Call(host, port, protocol);
 }
 
 static int ClientDropCall(SIP_CLIENT *sip, int callId)
@@ -314,7 +318,7 @@ static INT_PTR ClientRegister(WPARAM wParam, LPARAM lParam)
 	if (reg == NULL || reg->cbSize < sizeof(SIP_REGISTRATION))
 		return NULL;
 
-	if (reg->name[0] == 0 || reg->username[0] == 0)
+	if (reg->name[0] == 0)
 		return NULL;
 
 	SIPClient *cli = new SIPClient(reg);
@@ -325,9 +329,10 @@ static INT_PTR ClientRegister(WPARAM wParam, LPARAM lParam)
 		return NULL;
 	}
 
+	clients.insert(cli);
+
 	SIP_CLIENT *ret = (SIP_CLIENT *) mir_alloc0(sizeof(SIP_CLIENT) + sizeof(SIPClient *));
 	ret->data = cli;
-	* (TCHAR **) & ret->username = cli->username;
 	* (TCHAR **) & ret->host = cli->host;
 	* (int *) & ret->udp_port = cli->udp.port;
 	* (int *) & ret->tcp_port = cli->tcp.port;
@@ -349,7 +354,7 @@ static INT_PTR ClientUnregister(WPARAM wParam, LPARAM lParam)
 
 	SIPClient * cli = (SIPClient *) sc->data;
 	cli->Disconnect();
-	delete cli;
+	clients.remove(cli);
 	mir_free(sc);
 
 	return 0;

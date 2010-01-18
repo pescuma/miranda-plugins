@@ -23,13 +23,14 @@ Boston, MA 02111-1307, USA.
 
 
 // state is a VOICE_STATE_*
-typedef void (*SIPClientCallback)(void *param, int callId, int state, const TCHAR *name, const TCHAR *uri);
+// flags are VOICE_*
+// host_port can be NULL
+typedef void (*SIPClientCallback)(void *param, int callId, int state, int flags, const TCHAR *host_port);
 
 struct SIP_REGISTRATION
 {
 	int cbSize;				
 	const char *name;		// Internal name of client
-	const TCHAR *username;
 	int udp_port;			// UDP port to be used: 0 means random, -1 means don't want UDP
 	int tcp_port;			// UDP port to be used: 0 means TCP, -1 means don't want TCP
 	int tls_port;			// UDP port to be used: 0 means TLS, -1 means don't want TLS
@@ -44,7 +45,6 @@ struct SIP_REGISTRATION
 struct SIP_CLIENT
 {
 	void *data; // Do not touch
-	const TCHAR *username;
 	const TCHAR *host;
 	const int udp_port;
 	const int tcp_port;
@@ -52,7 +52,7 @@ struct SIP_CLIENT
 
 	// @param protocol 1 UDP, 2 TCP, 3 TLS
 	// @return callId or <0 on error
-	int (*Call)(SIP_CLIENT *sip, const TCHAR *username, const TCHAR *host, int port, int protocol);
+	int (*Call)(SIP_CLIENT *sip, const TCHAR *host, int port, int protocol);
 
 	// @return 0 on success
 	int (*DropCall)(SIP_CLIENT *sip, int callId);
