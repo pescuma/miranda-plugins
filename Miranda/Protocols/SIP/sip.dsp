@@ -57,7 +57,7 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 user32.lib shell32.lib wininet.lib gdi32.lib /nologo /base:"0x67100000" /dll /machine:I386 /filealign:0x200
 # SUBTRACT BASE LINK32 /pdb:none /map
-# ADD LINK32 libresample-i386-win32-vc6-release.lib libspeex-i386-win32-vc6-release.lib libsrtp-i386-win32-vc6-release.lib pjlib-i386-win32-vc6-release.lib pjlib-util-i386-win32-vc6-release.lib pjmedia-audiodev-i386-win32-vc6-release.lib pjmedia-codec-i386-win32-vc6-release.lib pjmedia-i386-win32-vc6-release.lib pjnath-i386-win32-vc6-release.lib pjsip-core-i386-win32-vc6-release.lib pjsip-simple-i386-win32-vc6-release.lib pjsip-ua-i386-win32-vc6-release.lib pjsua-lib-i386-win32-vc6-release.lib libg7221codec-i386-win32-vc6-release.lib libgsmcodec-i386-win32-vc6-release.lib libilbccodec-i386-win32-vc6-release.lib libmilenage-i386-win32-vc6-release.lib libportaudio-i386-win32-vc6-release.lib ws2_32.lib kernel32.lib user32.lib  Ole32.lib Advapi32.lib Gdi32.lib Mswsock.lib /nologo /base:"0x3EC20000" /dll /map /debug /debugtype:both /machine:I386 /out:"..\..\bin\release\Plugins\sip.dll" /pdbtype:sept /libpath:"lib\pjsip\lib\vc6" /libpath:"lib\openssl\lib" /filealign:0x200 /ALIGN:4096 /ignore:4108
+# ADD LINK32 libresample-i386-win32-vc6-release.lib libspeex-i386-win32-vc6-release.lib libsrtp-i386-win32-vc6-release.lib pjlib-i386-win32-vc6-release.lib pjlib-util-i386-win32-vc6-release.lib pjmedia-audiodev-i386-win32-vc6-release.lib pjmedia-codec-i386-win32-vc6-release.lib pjmedia-i386-win32-vc6-release.lib pjnath-i386-win32-vc6-release.lib pjsip-core-i386-win32-vc6-release.lib pjsip-simple-i386-win32-vc6-release.lib pjsip-ua-i386-win32-vc6-release.lib pjsua-lib-i386-win32-vc6-release.lib libg7221codec-i386-win32-vc6-release.lib libgsmcodec-i386-win32-vc6-release.lib libilbccodec-i386-win32-vc6-release.lib libmilenage-i386-win32-vc6-release.lib libportaudio-i386-win32-vc6-release.lib ws2_32.lib kernel32.lib user32.lib Ole32.lib Advapi32.lib Gdi32.lib Mswsock.lib /nologo /base:"0x3EC20000" /dll /map /debug /debugtype:both /machine:I386 /out:"..\..\bin\release\Plugins\sip.dll" /pdbtype:sept /libpath:"lib\pjsip\lib\vc6" /libpath:"lib\openssl\lib" /filealign:0x200 /ALIGN:4096 /ignore:4108
 # SUBTRACT LINK32 /profile /pdb:none
 
 !ELSEIF  "$(CFG)" == "sip - Win32 Debug"
@@ -86,7 +86,7 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 comctl32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386 /out:"..\..bin\release\Plugins\sip.dll" /filealign:0x200 /ALIGN:4096 /ignore:4108
 # SUBTRACT BASE LINK32 /profile /pdb:none
-# ADD LINK32 libspeex-i386-win32-vc6-debug.lib libsrtp-i386-win32-vc6-debug.lib pjlib-i386-win32-vc6-debug.lib pjlib-util-i386-win32-vc6-debug.lib pjmedia-audiodev-i386-win32-vc6-debug.lib pjmedia-codec-i386-win32-vc6-debug.lib pjmedia-i386-win32-vc6-debug.lib pjnath-i386-win32-vc6-debug.lib pjsip-core-i386-win32-vc6-debug.lib pjsip-simple-i386-win32-vc6-debug.lib pjsip-ua-i386-win32-vc6-debug.lib pjsua-lib-i386-win32-vc6-debug.lib libg7221codec-i386-win32-vc6-debug.lib libgsmcodec-i386-win32-vc6-debug.lib libilbccodec-i386-win32-vc6-debug.lib libmilenage-i386-win32-vc6-debug.lib libportaudio-i386-win32-vc6-debug.lib libresample-i386-win32-vc6-debug.lib ws2_32.lib kernel32.lib user32.lib  Ole32.lib Advapi32.lib Gdi32.lib Mswsock.lib /nologo /base:"0x3EC20000" /dll /incremental:yes /debug /machine:I386 /out:"..\..\bin\debug\Plugins\sip.dll" /libpath:"lib\pjsip\lib\vc6" /libpath:"lib\openssl\lib" /filealign:0x200 /ALIGN:4096 /ignore:4108
+# ADD LINK32 libspeex-i386-win32-vc6-debug.lib libsrtp-i386-win32-vc6-debug.lib pjlib-i386-win32-vc6-debug.lib pjlib-util-i386-win32-vc6-debug.lib pjmedia-audiodev-i386-win32-vc6-debug.lib pjmedia-codec-i386-win32-vc6-debug.lib pjmedia-i386-win32-vc6-debug.lib pjnath-i386-win32-vc6-debug.lib pjsip-core-i386-win32-vc6-debug.lib pjsip-simple-i386-win32-vc6-debug.lib pjsip-ua-i386-win32-vc6-debug.lib pjsua-lib-i386-win32-vc6-debug.lib libg7221codec-i386-win32-vc6-debug.lib libgsmcodec-i386-win32-vc6-debug.lib libilbccodec-i386-win32-vc6-debug.lib libmilenage-i386-win32-vc6-debug.lib libportaudio-i386-win32-vc6-debug.lib libresample-i386-win32-vc6-debug.lib ws2_32.lib kernel32.lib user32.lib Ole32.lib Advapi32.lib Gdi32.lib Mswsock.lib /nologo /base:"0x3EC20000" /dll /incremental:yes /debug /machine:I386 /out:"..\..\bin\debug\Plugins\sip.dll" /libpath:"lib\pjsip\lib\vc6" /libpath:"lib\openssl\lib" /filealign:0x200 /ALIGN:4096 /ignore:4108
 # SUBTRACT LINK32 /profile /pdb:none
 
 !ELSEIF  "$(CFG)" == "sip - Win32 Unicode Debug"
@@ -144,7 +144,7 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 comctl32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /base:"0x32100000" /dll /map /machine:I386 /out:"..\..\bin\release\Plugins\sip.dll" /filealign:0x200 /ALIGN:4096 /ignore:4108
 # SUBTRACT BASE LINK32 /profile /pdb:none
-# ADD LINK32 libresample-i386-win32-vc6-release.lib libspeex-i386-win32-vc6-release.lib libsrtp-i386-win32-vc6-release.lib pjlib-i386-win32-vc6-release.lib pjlib-util-i386-win32-vc6-release.lib pjmedia-audiodev-i386-win32-vc6-release.lib pjmedia-codec-i386-win32-vc6-release.lib pjmedia-i386-win32-vc6-release.lib pjnath-i386-win32-vc6-release.lib pjsip-core-i386-win32-vc6-release.lib pjsip-simple-i386-win32-vc6-release.lib pjsip-ua-i386-win32-vc6-release.lib pjsua-lib-i386-win32-vc6-release.lib libg7221codec-i386-win32-vc6-release.lib libgsmcodec-i386-win32-vc6-release.lib libilbccodec-i386-win32-vc6-release.lib libmilenage-i386-win32-vc6-release.lib libportaudio-i386-win32-vc6-release.lib ws2_32.lib kernel32.lib user32.lib  Ole32.lib Advapi32.lib Gdi32.lib Mswsock.lib /nologo /base:"0x3EC20000" /dll /map /debug /debugtype:both /machine:I386 /out:"..\..\bin\release unicode\Plugins\sipW.dll" /pdbtype:sept /libpath:"lib\pjsip\lib\vc6" /libpath:"lib\openssl\lib" /filealign:0x200 /ALIGN:4096 /ignore:4108
+# ADD LINK32 libresample-i386-win32-vc6-release.lib libspeex-i386-win32-vc6-release.lib libsrtp-i386-win32-vc6-release.lib pjlib-i386-win32-vc6-release.lib pjlib-util-i386-win32-vc6-release.lib pjmedia-audiodev-i386-win32-vc6-release.lib pjmedia-codec-i386-win32-vc6-release.lib pjmedia-i386-win32-vc6-release.lib pjnath-i386-win32-vc6-release.lib pjsip-core-i386-win32-vc6-release.lib pjsip-simple-i386-win32-vc6-release.lib pjsip-ua-i386-win32-vc6-release.lib pjsua-lib-i386-win32-vc6-release.lib libg7221codec-i386-win32-vc6-release.lib libgsmcodec-i386-win32-vc6-release.lib libilbccodec-i386-win32-vc6-release.lib libmilenage-i386-win32-vc6-release.lib libportaudio-i386-win32-vc6-release.lib ws2_32.lib kernel32.lib user32.lib Ole32.lib Advapi32.lib Gdi32.lib Mswsock.lib /nologo /base:"0x3EC20000" /dll /map /debug /debugtype:both /machine:I386 /out:"..\..\bin\release unicode\Plugins\sipW.dll" /pdbtype:sept /libpath:"lib\pjsip\lib\vc6" /libpath:"lib\openssl\lib" /filealign:0x200 /ALIGN:4096 /ignore:4108
 # SUBTRACT LINK32 /profile /pdb:none
 
 !ENDIF 
@@ -184,7 +184,15 @@ SOURCE=.\resource.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\SIPClient.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\SIPProto.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\strutils.h
 # End Source File
 # End Group
 # Begin Group "Resource Files"
@@ -213,6 +221,10 @@ SOURCE=..\..\plugins\utils\mir_options.cpp
 # Begin Source File
 
 SOURCE=.\sip.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\SIPClient.cpp
 # End Source File
 # Begin Source File
 

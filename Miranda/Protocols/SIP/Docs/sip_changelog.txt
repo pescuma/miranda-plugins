@@ -2,6 +2,9 @@ SIP protocol
 
 Changelog:
 
+. 0.1.2.0
+  + Support for clients
+
 . 0.1.1.0
   + Build with vc6
   * Fix for wrong voice service version

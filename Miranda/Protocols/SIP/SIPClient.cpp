@@ -41,7 +41,6 @@ SIPClient::SIPClient(SIP_REGISTRATION *reg)
 
 	hNetlibUser = reg->hNetlib;
 	lstrcpynA(name, reg->name, MAX_REGS(name));
-	lstrcpyn(username, reg->username, MAX_REGS(username));
 
 	callback = reg->callback;
 	callback_param = reg->callback_param;
@@ -179,7 +178,7 @@ static void static_on_log(int level, const char *data, int len)
 }
 
 
-#define TransportName(_T_) SipToTchar(pj_cstr(pjsip_transport_get_type_name(_T_)))
+#define TransportName(_T_) SipToTchar(pj_cstr(pjsip_transport_get_type_name(_T_))).get()
 
 void SIPClient::RegisterTransport(pjsip_transport_type_e type, int port, ta *ta)
 {
@@ -197,7 +196,7 @@ void SIPClient::RegisterTransport(pjsip_transport_type_e type, int port, ta *ta)
 	pj_status_t status = pjsua_transport_create(type, &cfg, &ta->transport_id);
 	if (status != PJ_SUCCESS)
 	{
-		Error(status, _T("Error creating %s transport"), (const TCHAR *) TransportName(type));
+		Error(status, _T("Error creating %s transport"), TransportName(type));
 		return;
 	}
 
@@ -205,7 +204,7 @@ void SIPClient::RegisterTransport(pjsip_transport_type_e type, int port, ta *ta)
 	status = pjsua_transport_get_info(ta->transport_id, &info);
 	if (status != PJ_SUCCESS)
 	{
-		Error(status, _T("Error getting %s info"), (const TCHAR *) TransportName(type));
+		Error(status, _T("Error getting %s info"), TransportName(type));
 		pjsua_transport_close(ta->transport_id, PJ_TRUE);
 		ta->transport_id = -1;
 		return;
@@ -214,11 +213,13 @@ void SIPClient::RegisterTransport(pjsip_transport_type_e type, int port, ta *ta)
 	status = pjsua_acc_add_local(ta->transport_id, PJ_TRUE, &ta->acc_id);
 	if (status != PJ_SUCCESS)
 	{
-		Error(status, _T("Error adding %s account"), (const TCHAR *) TransportName(type));
+		Error(status, _T("Error adding %s account"), TransportName(type));
 		pjsua_transport_close(ta->transport_id, PJ_TRUE);
 		ta->transport_id = -1;
 		return;
 	}
+
+	pjsua_acc_set_user_data(ta->acc_id, this);
 
 	lstrcpyn(host, SipToTchar(info.local_name.host), MAX_REGS(host));
 	ta->port = info.local_name.port;
@@ -396,12 +397,36 @@ void SIPClient::Disconnect()
 }
 
 
-void SIPClient::NotifyCall(pjsua_call_id call_id, int state, const TCHAR *name, const TCHAR *uri)
+void SIPClient::NotifyCall(pjsua_call_id call_id, int state, const TCHAR *uri)
 {
 	Trace(_T("NotifyCall %d -> %d"), call_id, state);
 
-	if (callback != NULL)
-		callback(callback_param, (int) call_id, state, name, uri);
+	if (callback == NULL)
+		return;
+
+	if (state == VOICE_STATE_ENDED || state == VOICE_STATE_BUSY)
+	{
+		// Can't get call info anymore
+		callback(callback_param, (int) call_id, state, 0, NULL);
+		return;
+	}
+
+	pjsua_call_info info;
+	pj_status_t status = pjsua_call_get_info(call_id, &info);
+	if (status != PJ_SUCCESS)
+	{
+		Error(status, _T("Error obtaining call info"));
+		callback(callback_param, (int) call_id, state, 0, NULL);
+		return;
+	}
+
+	TCHAR host_port[1024];
+	if (uri != NULL)
+		lstrcpyn(host_port, uri, MAX_REGS(host_port));
+	else
+		CleanupURI(host_port, MAX_REGS(host_port), SipToTchar(info.remote_contact));
+
+	callback(callback_param, (int) call_id, state, VOICE_UNICODE | (info.acc_id == tls.acc_id ? VOICE_SECURE : 0), host_port);
 }
 
 
@@ -409,21 +434,7 @@ void SIPClient::on_incoming_call(pjsua_call_id call_id)
 {
 	Trace(_T("on_incoming_call: %d"), call_id);
 
-	pjsua_call_info info;
-	pj_status_t status = pjsua_call_get_info(call_id, &info);
-	if (status != PJ_SUCCESS)
-	{
-		Error(status, _T("Error obtaining call info"));
-		return;
-	}
-
-	SipToTchar remote_info(info.remote_info);
-	SipToTchar remote_contact(info.remote_contact);
-
-	TCHAR name[256];
-	CleanupURI(name, MAX_REGS(name), remote_info);
-
-	NotifyCall(call_id, VOICE_STATE_RINGING, name, remote_contact);
+	NotifyCall(call_id, VOICE_STATE_RINGING);
 }
 
 
@@ -544,42 +555,25 @@ void SIPClient::ConfigureDevices()
 
 void SIPClient::CleanupURI(TCHAR *out, int outSize, const TCHAR *url)
 {
-	if (url[0] == _T('"'))
-	{
-		const TCHAR *other = _tcsstr(&url[1], _T("\" <"));
-		if (other != NULL)
-			url = other + 2;
-	}
-
 	lstrcpyn(out, url, outSize);
 
 	RemoveLtGt(out);
-
-	TCHAR *info = _tcschr(out, _T(';'));
-	if (info != NULL)
-		*info = 0;
-
-	RemoveLtGt(out);
-
-	info = _tcschr(out, _T(';'));
-	if (info != NULL)
-		*info = 0;
 
 	if (_tcsnicmp(_T("sip:"), out, 4) == 0)
 		lstrcpyn(out, &out[4], outSize);
 }
 
 
-void SIPClient::BuildURI(TCHAR *out, int outSize, const TCHAR *user, const TCHAR *host, int port, int protocol)
+void SIPClient::BuildURI(TCHAR *out, int outSize, const TCHAR *host, int port, int protocol)
 {
 	if (protocol == PJSIP_TRANSPORT_UDP)
-		mir_sntprintf(out, outSize, _T("<sip:%s@%s:%d>"), user, host, port);
+		mir_sntprintf(out, outSize, _T("<sip:%s:%d>"), host, port);
 	else
-		mir_sntprintf(out, outSize, _T("<sip:%s@%s:%d;transport=%s>"), user, host, 
-					  (const TCHAR *) TransportName((pjsip_transport_type_e) protocol));
+		mir_sntprintf(out, outSize, _T("<sip:%s:%d;transport=%s>"), host, port,
+					  TransportName((pjsip_transport_type_e) protocol));
 }
 
-pjsua_call_id SIPClient::Call(const TCHAR *username, const TCHAR *host, int port, int protocol)
+pjsua_call_id SIPClient::Call(const TCHAR *host, int port, int protocol)
 {
 	pjsua_acc_id acc_id;
 	switch(protocol)
@@ -593,7 +587,7 @@ pjsua_call_id SIPClient::Call(const TCHAR *username, const TCHAR *host, int port
 		return -1;
 
 	TCHAR uri[1024];
-	BuildURI(uri, MAX_REGS(uri), username, host, port, protocol);
+	BuildURI(uri, MAX_REGS(uri), host, port, protocol);
 
 	pjsua_call_id call_id;
 	pj_str_t ret;
@@ -604,7 +598,8 @@ pjsua_call_id SIPClient::Call(const TCHAR *username, const TCHAR *host, int port
 		return -1;
 	}
 
-	NotifyCall(call_id, VOICE_STATE_CALLING, username, uri);
+	mir_sntprintf(uri, MAX_REGS(uri), _T("%s:%d"), host, port);
+	NotifyCall(call_id, VOICE_STATE_CALLING, uri);
 
 	return call_id;
 }
