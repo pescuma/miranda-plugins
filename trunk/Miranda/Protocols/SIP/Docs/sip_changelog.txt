@@ -3,7 +3,7 @@ SIP protocol
 Changelog:
 
 . 0.1.2.0
-  + Support for clients
+  + Support for clients (Example plugin at http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/sip_cli )
 
 . 0.1.1.0
   + Build with vc6

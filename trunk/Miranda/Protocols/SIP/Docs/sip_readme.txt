@@ -20,6 +20,9 @@ Todo:
 - Protocol icons
 - Use netlib to send/receive packages?
 - Ask for new password at first login if "Save password" is not checked
+- Add popups with errors
+- User search
+- Proxy support (not sip proxy, but socks proxy)
 
 
 To report bugs/make suggestions, go to the forum thread: http://forums.miranda-im.org/showthread.php?t=23655
