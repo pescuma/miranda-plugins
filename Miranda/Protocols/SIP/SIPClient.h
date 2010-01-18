@@ -42,7 +42,6 @@ public:
 	void *callback_param;
 
 	char name[512];
-	TCHAR username[16];
 	TCHAR host[256];
 
 	CRITICAL_SECTION cs;
@@ -56,7 +55,7 @@ public:
 	bool on_call_media_state_sync(pjsua_call_id call_id, const pjsua_call_info &info);
 	void on_call_media_state(pjsua_call_id call_id);
 
-	pjsua_call_id Call(const TCHAR *username, const TCHAR *host, int port, int protocol);
+	pjsua_call_id Call(const TCHAR *host, int port, int protocol);
 	int DropCall(pjsua_call_id call_id);
 	int HoldCall(pjsua_call_id call_id);
 	int AnswerCall(pjsua_call_id call_id);
@@ -75,10 +74,10 @@ private:
 	void RegisterTransport(pjsip_transport_type_e type, int port, ta *ta);
 
 	void ConfigureDevices();
-	void BuildURI(TCHAR *out, int outSize, const TCHAR *user, const TCHAR *host, int port, int protocol);
+	void BuildURI(TCHAR *out, int outSize, const TCHAR *host, int port, int protocol);
 	void CleanupURI(TCHAR *out, int outSize, const TCHAR *url);
 
-	void NotifyCall(pjsua_call_id call_id, int state, const TCHAR *name = NULL, const TCHAR *uri = NULL);
+	void NotifyCall(pjsua_call_id call_id, int state, const TCHAR *host_port = NULL);
 };
 
 

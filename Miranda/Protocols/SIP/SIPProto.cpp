@@ -1015,7 +1015,7 @@ void SIPProto::NotifyCall(pjsua_call_id call_id, int state, HANDLE hContact, TCH
 
 	VOICE_CALL vc = {0};
 	vc.cbSize = sizeof(vc);
-	vc.szModule = m_szModuleName;
+	vc.moduleName = m_szModuleName;
 	vc.id = itoa((int) call_id, tmp, 10);
 	vc.flags = VOICE_TCHAR;
 	vc.hContact = hContact;

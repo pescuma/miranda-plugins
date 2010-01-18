@@ -14,7 +14,7 @@ VERSION_FILE="#{DOCS_DIR}/#{PROJECT}_version.txt"
 
 TYPES=[ 'ansi', 'unicode' ]
 
-SETUP_VC='C:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat'
+#SETUP_VC='C:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat'
 VC="devenv"
 
 version=nil
@@ -160,6 +160,10 @@ HISTORY_EVENTS=[ "../../../bin/Release/Plugins/aa_historyevents.dll", "../../../
     docs.exclude(VERSION_FILE)
     docs.each do |file|
       cp_relative(file, DOCS_DIR, target_dir)
+    end
+    docs = FileList["#{SRC_DIR}/m_#{PROJECT}.h"]
+    docs.each do |file|
+      cp_relative(file, SRC_DIR, target_dir)
     end
     
     target_dir = File.join(ZIP_FOLDERS[i], 'Plugins')
