@@ -31,8 +31,8 @@ STYLE DS_CENTER | WS_POPUP | WS_VISIBLE | WS_CAPTION
 CAPTION "SIP"
 FONT 8, "MS Sans Serif"
 BEGIN
-    LTEXT           "Host: %s\nUDP: %d\nTCP: %d\nTLS: %d",IDC_DATA,7,7,199,
-                    35
+    LTEXT           "UDP:  %s : %d\nTCP:  %s : %d\nTLS:  %s : %d",IDC_DATA,7,
+                    7,199,35
     GROUPBOX        "Contact",IDC_STATIC,7,45,199,87
     LTEXT           "Host:",IDC_STATIC,13,60,45,11
     EDITTEXT        IDC_HOST,63,58,137,13,ES_AUTOHSCROLL
