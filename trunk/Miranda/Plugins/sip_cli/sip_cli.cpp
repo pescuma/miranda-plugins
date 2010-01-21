@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo = {
 #else
 	"SIP Client Test (Ansi)",
 #endif
-	PLUGIN_MAKE_VERSION(0,1,0,0),
+	PLUGIN_MAKE_VERSION(0,1,1,0),
 	"SIP Client example",
 	"Ricardo Pescuma Domenecci",
 	"pescuma@miranda-im.org",
@@ -190,6 +190,8 @@ static INT_PTR ModulesLoaded(WPARAM wParam, LPARAM lParam)
 	SIP_REGISTRATION reg = {0};
 	reg.cbSize = sizeof(SIP_REGISTRATION);
 	reg.name = MODULE_NAME;
+	reg.stun.host = _T("stun01.sipphone.com");
+	reg.stun.port = 3478;
 	reg.callback = Callback;
 	
 	cli = (SIP_CLIENT *) CallService(MS_SIP_REGISTER, (WPARAM) &reg, 0);
@@ -247,8 +249,10 @@ static BOOL CALLBACK TestDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM l
 			TranslateDialogDefault(hwndDlg);
 			
 			TCHAR text[1024];
-			mir_sntprintf(text, MAX_REGS(text), TranslateT("Host: %s\nUDP: %d\nTCP: %d\nTLS: %d"),
-				cli->host, cli->udp_port, cli->tcp_port, cli->tls_port);
+			mir_sntprintf(text, MAX_REGS(text), TranslateT("UDP:  %s : %d\nTCP:  %s : %d\nTLS:  %s : %d"),
+				cli->udp_host, cli->udp_port, 
+				cli->tcp_host, cli->tcp_port, 
+				cli->tls_host, cli->tls_port);
 			SendDlgItemMessage(hwndDlg, IDC_DATA, WM_SETTEXT, 0, (LPARAM) text);
 
 			SendDlgItemMessage(hwndDlg, IDC_PROTOCOL, CB_ADDSTRING, 0, (LPARAM) _T("UDP"));
