@@ -166,6 +166,7 @@ private:
 	bool SendPresence(int status = 0);
 	int Connect();
 	void Disconnect();
+	void DestroySIP();
 	INT_PTR  __cdecl CreateAccMgrUI(WPARAM wParam, LPARAM lParam);
 
 	void ConfigureDevices();
