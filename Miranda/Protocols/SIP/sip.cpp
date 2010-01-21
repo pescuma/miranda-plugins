@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"SIP protocol (Ansi)",
 #endif
-	PLUGIN_MAKE_VERSION(0,1,2,0),
+	PLUGIN_MAKE_VERSION(0,1,3,0),
 	"Provides support for SIP protocol",
 	"Ricardo Pescuma Domenecci",
 	"pescuma@miranda-im.org",
@@ -322,7 +322,7 @@ static INT_PTR ClientRegister(WPARAM wParam, LPARAM lParam)
 		return NULL;
 
 	SIPClient *cli = new SIPClient(reg);
-	if (cli->Connect(reg->udp_port, reg->tcp_port, reg->tls_port) != 0)
+	if (cli->Connect(reg) != 0)
 	{
 		cli->Disconnect();
 		delete cli;
@@ -333,9 +333,11 @@ static INT_PTR ClientRegister(WPARAM wParam, LPARAM lParam)
 
 	SIP_CLIENT *ret = (SIP_CLIENT *) mir_alloc0(sizeof(SIP_CLIENT) + sizeof(SIPClient *));
 	ret->data = cli;
-	* (TCHAR **) & ret->host = cli->host;
+	* (TCHAR **) & ret->udp_host = cli->udp.host;
 	* (int *) & ret->udp_port = cli->udp.port;
+	* (TCHAR **) & ret->tcp_host = cli->tcp.host;
 	* (int *) & ret->tcp_port = cli->tcp.port;
+	* (TCHAR **) & ret->tls_host = cli->tls.host;
 	* (int *) & ret->tls_port = cli->tls.port;
 	ret->Call = &ClientCall;
 	ret->DropCall = &ClientDropCall;

@@ -31,12 +31,15 @@ SIPClient::SIPClient(SIP_REGISTRATION *reg)
 	hasToDestroy = false;
 	udp.transport_id = -1;
 	udp.acc_id = -1;
+	udp.host[0] = 0;
 	udp.port = 0;
 	tcp.transport_id = -1;
 	tcp.acc_id = -1;
 	tcp.port = 0;
+	tcp.host[0] = 0;
 	tls.transport_id = -1;
 	tls.acc_id = -1;
+	tls.host[0] = 0;
 	tls.port = 0;
 
 	hNetlibUser = reg->hNetlib;
@@ -221,12 +224,12 @@ void SIPClient::RegisterTransport(pjsip_transport_type_e type, int port, ta *ta)
 
 	pjsua_acc_set_user_data(ta->acc_id, this);
 
-	lstrcpyn(host, SipToTchar(info.local_name.host), MAX_REGS(host));
+	lstrcpyn(ta->host, SipToTchar(info.local_name.host), MAX_REGS(ta->host));
 	ta->port = info.local_name.port;
 }
 
 
-int SIPClient::Connect(int udp_port, int tcp_port, int tls_port)
+int SIPClient::Connect(SIP_REGISTRATION *reg)
 {
 	Trace(_T("Connecting..."));
 
@@ -241,6 +244,8 @@ int SIPClient::Connect(int udp_port, int tcp_port, int tls_port)
 	}
 
 	{
+		scoped_mir_free<char> stun;
+
 		pjsua_config cfg;
 		pjsua_config_default(&cfg);
 #ifndef _DEBUG
@@ -249,6 +254,19 @@ int SIPClient::Connect(int udp_port, int tcp_port, int tls_port)
 		cfg.cb.on_incoming_call = &static_on_incoming_call;
 		cfg.cb.on_call_media_state = &static_on_call_media_state;
 		cfg.cb.on_call_state = &static_on_call_state;
+
+
+		if (!IsEmpty(reg->stun.host))
+		{
+			TCHAR tmp[1024];
+			mir_sntprintf(tmp, MAX_REGS(tmp), _T("%s:%d"), 
+				CleanupSip(reg->stun.host), 
+				FirstGtZero(reg->stun.port, PJ_STUN_PORT));
+			stun = TcharToSip(tmp).detach();
+
+			cfg.stun_srv_cnt = 1;
+			cfg.stun_srv[0] = pj_str(stun);
+		}
 
 		pjsua_logging_config log_cfg;
 		pjsua_logging_config_default(&log_cfg);
@@ -267,9 +285,9 @@ int SIPClient::Connect(int udp_port, int tcp_port, int tls_port)
 	}
 
 	{
-		RegisterTransport(PJSIP_TRANSPORT_UDP, udp_port, &udp);
-		RegisterTransport(PJSIP_TRANSPORT_TCP, tcp_port, &tcp);
-		RegisterTransport(PJSIP_TRANSPORT_TLS, tls_port, &tls);
+		RegisterTransport(PJSIP_TRANSPORT_UDP, reg->udp_port, &udp);
+		RegisterTransport(PJSIP_TRANSPORT_TCP, reg->tcp_port, &tcp);
+		RegisterTransport(PJSIP_TRANSPORT_TLS, reg->tls_port, &tls);
 
 		if (udp.port <= 0 && tcp.port <= 0 && tls.port <= 0)
 			return 1;

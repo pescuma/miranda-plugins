@@ -41,16 +41,6 @@ SIPProto::SIPProto(const char *aProtoName, const TCHAR *aUserName)
 
 	memset(awayMessages, 0, sizeof(awayMessages));
 
-	{
-		pj_status_t status = pjsua_create();
-		if (status != PJ_SUCCESS) 
-		{
-			Error(status, _T("Error creating pjsua"));
-			throw "Error creating pjsua";
-		}
-		hasToDestroy = true;
-	}
-
 	InitializeCriticalSection(&cs);
 
 	m_tszUserName = mir_tstrdup(aUserName);
@@ -508,6 +498,19 @@ int SIPProto::Connect()
 
 	BroadcastStatus(ID_STATUS_CONNECTING);
 
+	DestroySIP();
+
+	{
+		pj_status_t status = pjsua_create();
+		if (status != PJ_SUCCESS) 
+		{
+			Error(status, _T("Error creating pjsua"));
+			Disconnect();
+			return 1;
+		}
+		hasToDestroy = true;
+	}
+
 	{
 		scoped_mir_free<char> stun;
 		scoped_mir_free<char> dns;
@@ -638,6 +641,7 @@ int SIPProto::Connect()
 		}
 
 		cfg.publish_enabled = (opts.publish ? PJ_TRUE : PJ_FALSE);
+		cfg.mwi_enabled = PJ_TRUE;
 
 		if (!opts.sendKeepAlive)
 			cfg.ka_interval = 0;
@@ -929,6 +933,7 @@ void SIPProto::Disconnect()
 		DBDeleteContactSetting(hContact, "CList", "StatusMsg");
 	}
 
+	m_iDesiredStatus = ID_STATUS_OFFLINE;
 	BroadcastStatus(ID_STATUS_OFFLINE);
 }
 
@@ -994,15 +999,19 @@ int __cdecl SIPProto::OnOptionsInit(WPARAM wParam, LPARAM lParam)
 }
 
 
+void SIPProto::DestroySIP()
+{
+	if (!hasToDestroy)
+		return;
+
+	pjsua_destroy();
+	hasToDestroy = false;
+}
+
+
 int __cdecl SIPProto::OnPreShutdown(WPARAM wParam, LPARAM lParam)
 {
-	if (hasToDestroy)
-	{
-		pjsua_destroy();
-		hasToDestroy = false;
-	}
-
-
+	DestroySIP();
 	return 0;
 }
 
