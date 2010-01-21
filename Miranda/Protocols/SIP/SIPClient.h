@@ -31,6 +31,7 @@ public:
 	struct ta {
 		pjsua_transport_id transport_id;
 		pjsua_acc_id acc_id;
+		TCHAR host[256];
 		int port;
 	};
 
@@ -42,7 +43,6 @@ public:
 	void *callback_param;
 
 	char name[512];
-	TCHAR host[256];
 
 	CRITICAL_SECTION cs;
 	std::vector<SIPEvent> events;
@@ -61,7 +61,7 @@ public:
 	int AnswerCall(pjsua_call_id call_id);
 	int SendDTMF(pjsua_call_id call_id, TCHAR dtmf);
 
-	int Connect(int udp_port, int tcp_port, int tls_port);
+	int Connect(SIP_REGISTRATION *reg);
 	void Disconnect();
 
 private:

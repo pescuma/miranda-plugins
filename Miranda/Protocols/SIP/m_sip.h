@@ -35,6 +35,11 @@ struct SIP_REGISTRATION
 	int tcp_port;			// UDP port to be used: 0 means TCP, -1 means don't want TCP
 	int tls_port;			// UDP port to be used: 0 means TLS, -1 means don't want TLS
 
+	struct {
+		const TCHAR *host;
+		int port;
+	} stun;
+
 	HANDLE hNetlib;			// To be used for logs. Can be 0
 
 	SIPClientCallback callback;
@@ -45,9 +50,11 @@ struct SIP_REGISTRATION
 struct SIP_CLIENT
 {
 	void *data; // Do not touch
-	const TCHAR *host;
+	const TCHAR *udp_host;
 	const int udp_port;
+	const TCHAR *tcp_host;
 	const int tcp_port;
+	const TCHAR *tls_host;
 	const int tls_port;
 
 	// @param protocol 1 UDP, 2 TCP, 3 TLS
