@@ -81,6 +81,7 @@ Boston, MA 02111-1307, USA.
 
 #include "resource.h"
 #include "strutils.h"
+#include "popup.h"
 
 
 struct MessageData

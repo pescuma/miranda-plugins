@@ -58,7 +58,6 @@
 				AssemblerListingLocation=".\Unicode_Release/"
 				ObjectFile=".\Unicode_Release/"
 				ProgramDataBaseFileName=".\Unicode_Release/"
-				BrowseInformation="2"
 				BrowseInformationFile=".\Unicode_Release/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
@@ -445,6 +444,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\popup.h"
+				>
+			</File>
+			<File
 				RelativePath="resource.h"
 				>
 			</File>
@@ -625,6 +628,10 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\popup.cpp"
+				>
 			</File>
 			<File
 				RelativePath="sip.cpp"

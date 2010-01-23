@@ -417,6 +417,9 @@ static void static_on_pager(pjsua_call_id call_id, const pj_str_t *from,
 	if (proto == NULL)
 		return;
 
+	if (!proto->on_pager_sync(call_id, from, to, contact, mime_type, text, rdata))
+		return;
+
 	SIPEvent ev;
 	memset(&ev, 0, sizeof(ev));
 	ev.type = SIPEvent::pager;
@@ -465,6 +468,9 @@ static void static_on_typing(pjsua_call_id call_id, const pj_str_t *from,
 	if (proto == NULL)
 		return;
 
+	if (!proto->on_typing_sync(call_id, from, to, contact, is_typing, rdata))
+		return;
+
 	SIPEvent ev;
 	memset(&ev, 0, sizeof(ev));
 	ev.type = SIPEvent::typing;
@@ -488,7 +494,13 @@ static void static_on_log(int level, const char *data, int len)
 {
 	char tmp[1024];
 	mir_snprintf(tmp, MAX_REGS(tmp), "Level %d : %*s", level, len, data);
+
+#ifdef _DEBUB
 	OutputDebugStringA(tmp);
+#endif
+
+	if (instances.getCount() > 0)
+		instances[0].Trace(SipToTchar(pj_str(tmp)));
 }
 
 
@@ -505,8 +517,7 @@ int SIPProto::Connect()
 		if (status != PJ_SUCCESS) 
 		{
 			Error(status, _T("Error creating pjsua"));
-			Disconnect();
-			return 1;
+			return -1;
 		}
 		hasToDestroy = true;
 	}
@@ -517,9 +528,9 @@ int SIPProto::Connect()
 
 		pjsua_config cfg;
 		pjsua_config_default(&cfg);
-#ifndef DEBUG
-		cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
-#endif
+//#ifndef _DEBUG
+//		cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
+//#endif
 		cfg.cb.on_incoming_call = &static_on_incoming_call;
 		cfg.cb.on_call_media_state = &static_on_call_media_state;
 		cfg.cb.on_call_state = &static_on_call_state;
@@ -531,6 +542,14 @@ int SIPProto::Connect()
 		cfg.cb.on_typing2 = &static_on_typing;
 		cfg.cb.on_mwi_info = &static_on_mwi_info;
 
+		char mir_ver[1024];
+		CallService(MS_SYSTEM_GETVERSIONTEXT, (WPARAM) sizeof(mir_ver), (LPARAM) mir_ver);
+
+		TCHAR user_agent[1024];
+		mir_sntprintf(user_agent, MAX_REGS(user_agent), _T("Miranda IM %s (pjsua v%s)/%s"), 
+			CharToTchar(mir_ver).get(), CharToTchar(pj_get_version()).get(), _T(PJ_OS_NAME));
+		TcharToSip ua(user_agent);
+		cfg.user_agent = pj_str(ua);
 
 		if (!IsEmpty(opts.stun.host))
 		{
@@ -591,7 +610,15 @@ int SIPProto::Connect()
 		status = pjsua_transport_create(PJSIP_TRANSPORT_TLS, &cfg, &udp_transport_id);
 		if (status != PJ_SUCCESS)
 			Error(status, _T("Error creating TLS transport"));
+
+		cfg.port = 4000;
+		status = pjsua_media_transports_create(&cfg);
+		if (status != PJ_SUCCESS)
+			Error(status, _T("Error creating media transports"));
 	}
+
+	pjsua_get_snd_dev(&defaultInput, &defaultOutput);
+	pjsua_set_null_snd_dev();
 
 	{
 		pj_status_t status = pjsua_start();
@@ -611,9 +638,10 @@ int SIPProto::Connect()
 		pjsua_acc_config cfg;
 		pjsua_acc_config_default(&cfg);
 		cfg.user_data = this;
-#ifndef DEBUG
-		cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
-#endif
+//		cfg.transport_id = transport_id;
+//#ifndef _DEBUG
+//		cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
+//#endif
 
 		BuildURI(tmp, MAX_REGS(tmp), opts.username, opts.domain);
 		TcharToSip id(tmp);
@@ -890,8 +918,14 @@ void SIPProto::ShowMessage(int type, TCHAR *fmt, va_list args)
 
 	mir_vsntprintf(&buff[7], MAX_REGS(buff)-7, fmt, args);
 
+#ifdef _DEBUG
 	OutputDebugString(buff);
 	OutputDebugString(_T("\n"));
+#endif
+
+	if (type == MESSAGE_TYPE_ERROR)
+		ShowErrPopup(buff, m_tszUserName);
+
 	CallService(MS_NETLIB_LOG, (WPARAM) hNetlibUser, (LPARAM) TcharToChar(buff).get());
 }
 
@@ -1125,6 +1159,9 @@ void SIPProto::on_incoming_call(pjsua_call_id call_id)
 		return;
 	}
 
+	// Send 180/RINGING
+	pjsua_call_answer(call_id, 180, NULL, NULL);
+
 	pjsua_buddy_id buddy_id = pjsua_buddy_find(&info.remote_info);
 	if (buddy_id != PJSUA_INVALID_ID)
 	{
@@ -1161,9 +1198,16 @@ void SIPProto::on_call_state(pjsua_call_id call_id, const pjsua_call_info &info)
 
 	switch(info.state)
 	{
-		case PJSIP_INV_STATE_NULL:
+/*		case PJSIP_INV_STATE_CALLING:
+		case PJSIP_INV_STATE_INCOMING:
+		{
+			ConfigureDevices();
+			break;
+		}
+*/		case PJSIP_INV_STATE_NULL:
 		case PJSIP_INV_STATE_DISCONNECTED:
 		{
+			pjsua_set_null_snd_dev();
 			NotifyCall(call_id, VOICE_STATE_ENDED);
 			break;
 		}
@@ -1257,11 +1301,11 @@ void SIPProto::ConfigureDevices()
 	int input, output;
 	pjsua_get_snd_dev(&input, &output);
 
-	int expectedInput = GetDevice(false, input);
-	int expectedOutput = GetDevice(true, output);
+	int expectedInput = GetDevice(false, defaultInput);
+	int expectedOutput = GetDevice(true, defaultOutput);
 
 	if (input != expectedInput || output != expectedOutput)
-		pjsua_set_snd_dev(input, output);
+		pjsua_set_snd_dev(expectedInput, expectedOutput);
 
 	if (DBGetContactSettingByte(NULL, "VoiceService", "EchoCancelation", TRUE))
 		pjsua_set_ec(PJSUA_DEFAULT_EC_TAIL_LEN, 0);
@@ -1418,7 +1462,7 @@ int __cdecl SIPProto::VoiceAnswerCall(WPARAM wParam, LPARAM lParam)
 		return -1;
 	}
 
-	if (info.state == PJSIP_INV_STATE_INCOMING)
+	if (info.state == PJSIP_INV_STATE_INCOMING || info.state == PJSIP_INV_STATE_EARLY)
 	{
 		pj_status_t status = pjsua_call_answer(call_id, 200, NULL, NULL);
 		if (status != PJ_SUCCESS) 
@@ -1755,6 +1799,17 @@ void SIPProto::on_buddy_state(pjsua_buddy_id buddy_id)
 	}
 }
 
+bool SIPProto::on_pager_sync(pjsua_call_id call_id, const pj_str_t *from, const pj_str_t *to, 
+							 const pj_str_t *contact, const pj_str_t *mime_type, const pj_str_t *text, pjsip_rx_data *rdata)
+{
+	HANDLE hContact = GetContact(SipToTchar(*from), true, true);
+	if (hContact == NULL)
+		return false;
+
+	LoadMirVer(hContact, rdata);
+
+	return true;
+}
 
 void SIPProto::on_pager(char *from, char *text, char *mime_type)
 {
@@ -1870,6 +1925,23 @@ void SIPProto::on_pager_status(HANDLE hContact, LONG messageID, pjsip_status_cod
 }
 
 
+bool SIPProto::on_typing_sync(pjsua_call_id call_id, const pj_str_t *from, const pj_str_t *to, 
+							  const pj_str_t *contact, pj_bool_t is_typing, pjsip_rx_data *rdata)
+{
+	pjsua_buddy_id buddy_id = pjsua_buddy_find(from);
+	if (buddy_id == PJSUA_INVALID_ID)
+		return false;
+
+	HANDLE hContact = GetContact(buddy_id);
+	if (hContact == NULL)
+		return false;
+
+	LoadMirVer(hContact, rdata);
+
+	return true;
+}
+
+
 void SIPProto::on_typing(char *from, bool isTyping)
 {
 	pj_str_t ret;
@@ -1915,6 +1987,27 @@ int __cdecl SIPProto::UserIsTyping(HANDLE hContact, int type)
 }
 
 
+void SIPProto::LoadMirVer(HANDLE hContact, pjsip_rx_data *rdata)
+{
+	pjsip_hdr *hdr = (pjsip_hdr *) pjsip_msg_find_hdr_by_name(rdata->msg_info.msg, &pj_str("User-Agent"), NULL);
+	if (hdr)
+	{
+		char buff[1024];
+		pjsip_hdr_print_on(hdr, buff, MAX_REGS(buff));
+
+		TCHAR mirver[1024];
+		lstrcpyn(mirver, SipToTchar(pj_str(&buff[11])), MAX_REGS(mirver));
+		lstrtrim(mirver);
+
+		DBWriteContactSettingTString(hContact, m_szModuleName, "MirVer", mirver);
+	}
+	else
+	{
+		DBDeleteContactSetting(hContact, m_szModuleName, "MirVer");
+	}
+}
+
+
 // Handler for incoming presence subscription request
 bool SIPProto::on_incoming_subscribe_sync(pjsua_srv_pres *srv_pres,
 										  pjsua_buddy_id buddy_id,
@@ -1930,7 +2023,16 @@ bool SIPProto::on_incoming_subscribe_sync(pjsua_srv_pres *srv_pres,
 		return true;
 	}
 
-	int authState = DBGetContactSettingByte(GetContact(buddy_id), m_szModuleName, "AuthState", 0);
+	HANDLE hContact = GetContact(buddy_id);
+	if (hContact == NULL)
+	{
+		*code = PJSIP_SC_ACCEPTED;
+		return true;
+	}
+
+	LoadMirVer(hContact, rdata);
+
+	int authState = DBGetContactSettingByte(hContact, m_szModuleName, "AuthState", 0);
 	switch(authState)
 	{
 		case AUTH_STATE_AUTHORIZED:
