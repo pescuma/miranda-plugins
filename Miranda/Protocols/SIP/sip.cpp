@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"SIP protocol (Ansi)",
 #endif
-	PLUGIN_MAKE_VERSION(0,1,3,0),
+	PLUGIN_MAKE_VERSION(0,1,4,0),
 	"Provides support for SIP protocol",
 	"Ricardo Pescuma Domenecci",
 	"pescuma@miranda-im.org",
@@ -250,12 +250,16 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
         CallService(MS_UPDATE_REGISTER, 0, (LPARAM)&upd);
 	}
 
+	InitPopups();
+
 	return 0;
 }
 
 
 int PreShutdown(WPARAM wParam, LPARAM lParam)
 {
+	DeInitPopups();
+
 	for(unsigned int i = 0; i < hHooks.size(); ++i)
 		UnhookEvent(hHooks[i]);
 

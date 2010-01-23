@@ -41,6 +41,7 @@ private:
 	LONG messageID;
 	LONG awayMessageID;
 	TCHAR *awayMessages[ID_STATUS_OUTTOLUNCH - ID_STATUS_ONLINE + 1];
+	int defaultInput, defaultOutput;
 
 public:
 	struct {
@@ -136,11 +137,17 @@ public:
 									pjsua_msg_data *msg_data);
 	void on_incoming_subscribe(char *from, char *text, pjsua_srv_pres *srv_pres);
 	void on_buddy_state(pjsua_buddy_id buddy_id);
+	bool on_pager_sync(pjsua_call_id call_id, const pj_str_t *from, const pj_str_t *to, const pj_str_t *contact,
+					   const pj_str_t *mime_type, const pj_str_t *text, pjsip_rx_data *rdata);
 	void on_pager(char *from, char *text, char *mime_type);
 	void on_pager_status(HANDLE hContact, LONG messageID, pjsip_status_code status, char *text);
+	bool on_typing_sync(pjsua_call_id call_id, const pj_str_t *from, const pj_str_t *to, const pj_str_t *contact, 
+						pj_bool_t is_typing, pjsip_rx_data *rdata);
 	void on_typing(char *from, bool isTyping);
 
 	bool IsMyContact(HANDLE hContact);
+
+	void Trace(TCHAR *fmt, ...);
 
 private:
 	int ConvertStatus(int status);
@@ -157,7 +164,6 @@ private:
 	int __cdecl OnPreShutdown(WPARAM wParam, LPARAM lParam);
 	int  __cdecl OnContactDeleted(WPARAM wParam, LPARAM lParam);
 
-	void Trace(TCHAR *fmt, ...);
 	void Info(TCHAR *fmt, ...);
 	void Error(TCHAR *fmt, ...);
 	void Error(pj_status_t status, TCHAR *fmt, ...);
@@ -194,6 +200,7 @@ private:
 	HANDLE GetContact(const TCHAR *uri, bool addIfNeeded = false, bool temporary = false);
 	void Attach(HANDLE hContact, pjsua_buddy_id buddy_id);
 	void __cdecl FakeMsgAck(void *param);
+	void LoadMirVer(HANDLE hContact, pjsip_rx_data *rdata);
 
 	// Away messages
 	void __cdecl GetAwayMsgThread(void* arg);
