@@ -1989,7 +1989,8 @@ int __cdecl SIPProto::UserIsTyping(HANDLE hContact, int type)
 
 void SIPProto::LoadMirVer(HANDLE hContact, pjsip_rx_data *rdata)
 {
-	pjsip_hdr *hdr = (pjsip_hdr *) pjsip_msg_find_hdr_by_name(rdata->msg_info.msg, &pj_str("User-Agent"), NULL);
+	pj_str_t ret;
+	pjsip_hdr *hdr = (pjsip_hdr *) pjsip_msg_find_hdr_by_name(rdata->msg_info.msg, pj_cstr(&ret, "User-Agent"), NULL);
 	if (hdr)
 	{
 		char buff[1024];
