@@ -11,7 +11,7 @@ WARNING: You can create only one instance of the protocol. If you create the sec
 
 
 Known bugs:
-- When you login, you will only show online the contacts that already are online (contacts that came online after that will stay offline)
+- When you login, you will only show online the contacts that already are online (contacts that came online after that will stay offline). Only happens with some servers.
 - Password is sent as plain text
 
 
@@ -20,7 +20,6 @@ Todo:
 - Protocol icons
 - Use netlib to send/receive packages?
 - Ask for new password at first login if "Save password" is not checked
-- Add popups with errors
 - User search
 - Proxy support (not sip proxy, but socks proxy)
 
