@@ -676,8 +676,7 @@ int SIPProto::Connect()
 
 		cfg.cred_count = 1;
 
-		TcharToSip realm(CleanupSip(opts.domain));
-		cfg.cred_info[0].realm = pj_str(realm);
+		cfg.cred_info[0].realm = pj_str("*");
 		cfg.cred_info[0].scheme = pj_str("digest");
 		TcharToSip username(opts.username);
 		cfg.cred_info[0].username = pj_str(username);
