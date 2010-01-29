@@ -14,7 +14,6 @@ WARNING: You can create only one instance of the protocol. If you create the sec
 
 Todo:
 - More than one instance
-- Protocol icons
 - Use netlib to send/receive packages?
 - Ask for new password at first login if "Save password" is not checked
 

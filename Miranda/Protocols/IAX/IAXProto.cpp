@@ -31,7 +31,7 @@ IAXProto::IAXProto(const char *aProtoName, const TCHAR *aUserName)
 {
 	InitializeCriticalSection(&cs);
 
-	reg_id = 0;
+	reg_id = -1;
 	hNetlibUser = 0;
 	hCallStateEvent = 0;
 	m_iDesiredStatus = m_iStatus = ID_STATUS_OFFLINE;
@@ -179,10 +179,10 @@ INT_PTR __cdecl IAXProto::SetStatus( int iNewStatus )
 		mir_sntprintf(server_port, MAX_REGS(server_port), _T("%s:%d"), opts.host, opts.port);
 
 		reg_id = iaxc_register(TcharToUtf8(opts.username), opts.password, TcharToUtf8(server_port));
-		if (reg_id <= 0)
+		if (reg_id < 0)
 		{
 			Error(_T("Error registering with IAX"));
-			BroadcastStatus(ID_STATUS_OFFLINE);
+			Disconnect();
 			return -1;
 		}
 	}
@@ -308,6 +308,11 @@ void IAXProto::ShowMessage(int type, const TCHAR *fmt, va_list args)
 
 	mir_vsntprintf(&buff[7], MAX_REGS(buff)-7, fmt, args);
 
+	if (type == MESSAGE_TYPE_INFO)
+		ShowInfoPopup(&buff[7], m_tszUserName);
+	else if (type == MESSAGE_TYPE_ERROR)
+		ShowErrPopup(&buff[7], m_tszUserName);
+
 //	OutputDebugString(buff);
 //	OutputDebugString(_T("\n"));
 	CallService(MS_NETLIB_LOG, (WPARAM) hNetlibUser, (LPARAM) TcharToChar(buff).get());
@@ -318,14 +323,15 @@ void IAXProto::Disconnect()
 {
 	Trace(_T("Disconnecting..."));
 
-	iaxc_dump_all_calls();
-
-	if (reg_id > 0)
+	if (reg_id >= 0)
 	{
+		iaxc_dump_all_calls();
+		
 		iaxc_unregister(reg_id);
-		reg_id = 0;
+		reg_id = -1;
 	}
 
+	m_iDesiredStatus = ID_STATUS_OFFLINE;
 	BroadcastStatus(ID_STATUS_OFFLINE);
 }
 
@@ -461,6 +467,9 @@ int IAXProto::registration_callback(iaxc_ev_registration &reg)
 		case IAXC_REGISTRATION_REPLY_ACK:
 		{
 			BroadcastStatus(m_iDesiredStatus > ID_STATUS_OFFLINE ? m_iDesiredStatus : ID_STATUS_ONLINE);
+
+			if (reg.msgcount >= 65535)
+				reg.msgcount = -1;
 
 			int messages = max(0, reg.msgcount);
 
@@ -600,7 +609,7 @@ INT_PTR __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 	if (iaxc_start_processing_thread())
 	{
-		Error(_T("Failed to initialize iax threads"));
+		Error(_T("Failed to initialize IAX threads"));
 		return 1;
 	}
 
@@ -652,7 +661,7 @@ void IAXProto::NotifyCall(int callNo, int state, HANDLE hContact, TCHAR *name, T
 
 	VOICE_CALL vc = {0};
 	vc.cbSize = sizeof(vc);
-	vc.szModule = m_szModuleName;
+	vc.moduleName = m_szModuleName;
 	vc.id = itoa(callNo, tmp, 10);
 	vc.flags = VOICE_TCHAR;
 	vc.hContact = hContact;
