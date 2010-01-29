@@ -11,6 +11,7 @@ GC_NAME = "IAX"
 
 SRC_DIR=File.expand_path("..")
 DOCS_DIR=File.expand_path("../Docs")
+RES_DIR=File.expand_path("../res")
 VERSION_FILE="#{DOCS_DIR}/#{PROJECT}_version.txt"
 
 TYPES=[ 'ansi', 'unicode' ]
@@ -154,6 +155,12 @@ HISTORY_EVENTS=[ "../../../bin/Release/Plugins/aa_historyevents.dll", "../../../
     docs.exclude(VERSION_FILE)
     docs.each do |file|
       cp_relative(file, DOCS_DIR, target_dir)
+    end
+    
+    target_dir = File.join(ZIP_FOLDERS[i], 'Icons')
+    docs = FileList["#{RES_DIR}/proto_#{PROJECT}.dll"]
+    docs.each do |file|
+      cp_relative(file, RES_DIR, target_dir)
     end
     
     target_dir = File.join(ZIP_FOLDERS[i], 'Plugins')

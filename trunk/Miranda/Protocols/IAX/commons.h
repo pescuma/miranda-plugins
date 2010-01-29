@@ -70,6 +70,7 @@ Boston, MA 02111-1307, USA.
 #include <iaxclient.h>
 
 #include "resource.h"
+#include "popup.h"
 #include "IAXProto.h"
 
 
