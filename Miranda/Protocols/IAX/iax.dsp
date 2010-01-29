@@ -184,12 +184,56 @@ SOURCE=..\..\plugins\utils\mir_options.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\popup.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\resource.h
 # End Source File
 # End Group
 # Begin Group "Resource Files"
 
 # PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
+# Begin Source File
+
+SOURCE=".\res\IAX-away.ico"
+# End Source File
+# Begin Source File
+
+SOURCE=".\res\IAX-dnd.ico"
+# End Source File
+# Begin Source File
+
+SOURCE=".\res\IAX-freechat.ico"
+# End Source File
+# Begin Source File
+
+SOURCE=".\res\IAX-invisible.ico"
+# End Source File
+# Begin Source File
+
+SOURCE=".\res\IAX-na.ico"
+# End Source File
+# Begin Source File
+
+SOURCE=".\res\IAX-occupied.ico"
+# End Source File
+# Begin Source File
+
+SOURCE=".\res\IAX-offline.ico"
+# End Source File
+# Begin Source File
+
+SOURCE=".\res\IAX-online.ico"
+# End Source File
+# Begin Source File
+
+SOURCE=".\res\IAX-onthephone.ico"
+# End Source File
+# Begin Source File
+
+SOURCE=".\res\IAX-outtolunch.ico"
+# End Source File
 # Begin Source File
 
 SOURCE=.\res\Logo.ico
@@ -221,6 +265,10 @@ SOURCE=..\..\plugins\utils\mir_log.cpp
 # Begin Source File
 
 SOURCE=..\..\plugins\utils\mir_options.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\popup.cpp
 # End Source File
 # End Group
 # Begin Group "Docs"

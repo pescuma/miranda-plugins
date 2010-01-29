@@ -2,6 +2,11 @@ IAX protocol
 
 Changelog:
 
+. 0.1.3.0
+  + Added protocol icons
+  + Added popups
+  * Fix for connection after connection failed
+
 . 0.1.2.0
   * Fix for wrong voiceservice version
   + Added protocol icon (thanks Angeli-Ka)
