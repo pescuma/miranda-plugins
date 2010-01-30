@@ -74,7 +74,7 @@ private:
 	void RegisterTransport(pjsip_transport_type_e type, int port, ta *ta);
 
 	void ConfigureDevices();
-	void BuildURI(TCHAR *out, int outSize, const TCHAR *host, int port, int protocol);
+	void BuildURI(TCHAR *out, int outSize, const TCHAR *host, int port, pjsip_transport_type_e transport);
 	void CleanupURI(TCHAR *out, int outSize, const TCHAR *url);
 
 	void NotifyCall(pjsua_call_id call_id, int state, const TCHAR *host_port = NULL);

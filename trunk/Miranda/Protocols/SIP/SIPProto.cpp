@@ -75,6 +75,7 @@ SIPProto::SIPProto(const char *aProtoName, const TCHAR *aUserName)
 		{ NULL,	CONTROL_INT,		IDC_STUN_PORT,		"STUNPort", PJ_STUN_PORT, 0, 0 },
 		{ NULL,	CONTROL_CHECKBOX,	IDC_PUBLISH,		"Publish", (BYTE) FALSE },
 		{ NULL,	CONTROL_CHECKBOX,	IDC_KEEPALIVE,		"SendKeepAlive", (BYTE) TRUE },
+		{ NULL,	CONTROL_CHECKBOX,	IDC_SRTP,			"UseSRTP", (BYTE) FALSE },
 	};
 
 	memmove(optionsCtrls, oCtrls, sizeof(optionsCtrls));
@@ -92,6 +93,7 @@ SIPProto::SIPProto(const char *aProtoName, const TCHAR *aUserName)
 	optionsCtrls[11].var = &opts.stun.port;
 	optionsCtrls[12].var = &opts.publish;
 	optionsCtrls[13].var = &opts.sendKeepAlive;
+	optionsCtrls[14].var = &opts.srtp;
 
 	LoadOpts(optionsCtrls, MAX_REGS(optionsCtrls), m_szModuleName);
 
@@ -528,9 +530,11 @@ int SIPProto::Connect()
 
 		pjsua_config cfg;
 		pjsua_config_default(&cfg);
-//#ifndef _DEBUG
-//		cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
-//#endif
+		if (opts.srtp)
+		{
+			cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
+			cfg.srtp_secure_signaling = 0;
+		}
 		cfg.cb.on_incoming_call = &static_on_incoming_call;
 		cfg.cb.on_call_media_state = &static_on_call_media_state;
 		cfg.cb.on_call_state = &static_on_call_state;
@@ -595,6 +599,7 @@ int SIPProto::Connect()
 	{
 		pjsua_transport_config cfg;
 		pjsua_transport_config_default(&cfg);
+
 		pj_status_t status = pjsua_transport_create(PJSIP_TRANSPORT_UDP, &cfg, &udp_transport_id);
 		if (status != PJ_SUCCESS)
 		{
@@ -602,19 +607,26 @@ int SIPProto::Connect()
 			Disconnect();
 			return 2;
 		}
-		
-		status = pjsua_transport_create(PJSIP_TRANSPORT_TCP, &cfg, &tcp_transport_id);
-		if (status != PJ_SUCCESS)
-			Error(status, _T("Error creating TCP transport"));
 
-		status = pjsua_transport_create(PJSIP_TRANSPORT_TLS, &cfg, &udp_transport_id);
+		//status = pjsua_transport_create(PJSIP_TRANSPORT_TCP, &cfg, &tcp_transport_id);
+		//if (status != PJ_SUCCESS)
+		//	Error(status, _T("Error creating TCP transport"));
+
+		status = pjsua_transport_create(PJSIP_TRANSPORT_TLS, &cfg, &tls_transport_id);
 		if (status != PJ_SUCCESS)
 			Error(status, _T("Error creating TLS transport"));
 
-		cfg.port = 4000;
+		enum { START_PORT=4000 };
+		unsigned range = (65535-START_PORT-PJSUA_MAX_CALLS*2);
+		cfg.port = START_PORT + ((pj_rand() % range) & 0xFFFE);
+
 		status = pjsua_media_transports_create(&cfg);
 		if (status != PJ_SUCCESS)
+		{
 			Error(status, _T("Error creating media transports"));
+			Disconnect();
+			return 2;
+		}
 	}
 
 	pjsua_get_snd_dev(&defaultInput, &defaultOutput);
@@ -639,9 +651,8 @@ int SIPProto::Connect()
 		pjsua_acc_config_default(&cfg);
 		cfg.user_data = this;
 //		cfg.transport_id = transport_id;
-//#ifndef _DEBUG
 //		cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
-//#endif
+//		cfg.srtp_secure_signaling = 0;
 
 		BuildURI(tmp, MAX_REGS(tmp), opts.username, opts.domain);
 		TcharToSip id(tmp);
@@ -917,13 +928,23 @@ void SIPProto::ShowMessage(int type, TCHAR *fmt, va_list args)
 
 	mir_vsntprintf(&buff[7], MAX_REGS(buff)-7, fmt, args);
 
+	for(size_t i = lstrlen(buff) - 1; i >= 7; --i)
+	{
+		if (buff[i] == _T('\r') || buff[i] == _T('\n'))
+			buff[i] = 0;
+		else
+			break;
+	}
+
+	if (type == MESSAGE_TYPE_ERROR)
+		ShowErrPopup(&buff[7], m_tszUserName);
+	else if (type == MESSAGE_TYPE_INFO)
+		ShowInfoPopup(&buff[7], m_tszUserName);
+
 #ifdef _DEBUG
 	OutputDebugString(buff);
 	OutputDebugString(_T("\n"));
 #endif
-
-	if (type == MESSAGE_TYPE_ERROR)
-		ShowErrPopup(buff, m_tszUserName);
 
 	CallService(MS_NETLIB_LOG, (WPARAM) hNetlibUser, (LPARAM) TcharToChar(buff).get());
 }
@@ -1053,13 +1074,19 @@ void SIPProto::NotifyCall(pjsua_call_id call_id, int state, HANDLE hContact, TCH
 {
 	Trace(_T("NotifyCall %d -> %d"), call_id, state);
 
+	bool secure = false;
+
+	pjsua_call_info info;
+	if (state < VOICE_STATE_ENDED && pjsua_call_get_info(call_id, &info) == PJ_SUCCESS)
+		secure = (_tcsstr(SipToTchar(info.local_contact), _T("transport=TLS")) != NULL);
+
 	char tmp[16];
 
 	VOICE_CALL vc = {0};
 	vc.cbSize = sizeof(vc);
 	vc.moduleName = m_szModuleName;
 	vc.id = itoa((int) call_id, tmp, 10);
-	vc.flags = VOICE_TCHAR;
+	vc.flags = VOICE_TCHAR | (secure ? VOICE_SECURE : 0);
 	vc.hContact = hContact;
 	vc.ptszName = name;
 	vc.ptszNumber = number;
@@ -1193,7 +1220,7 @@ void SIPProto::on_incoming_call(pjsua_call_id call_id)
 void SIPProto::on_call_state(pjsua_call_id call_id, const pjsua_call_info &info)
 {
 	Trace(_T("on_call_state: %d"), call_id);
-	Trace(_T("Call info: %d / last: %d %s"), info.state, info.last_status, info.last_status_text);
+	Trace(_T("Call info: %d / last: %d"), info.state, info.last_status);
 
 	switch(info.state)
 	{
@@ -1348,52 +1375,77 @@ void SIPProto::CleanupURI(TCHAR *out, int outSize, const TCHAR *url)
 		*host = 0;
 }
 
-
-void SIPProto::BuildTelURI(TCHAR *out, int outSize, const TCHAR *number)
+bool SIPProto::HasTransportEnabled(pjsip_transport_type_e transport)
 {
-	BuildURI(out, outSize, number, NULL, 0, true);
+	switch(transport)
+	{
+		case PJSIP_TRANSPORT_UDP: return udp_transport_id >= 0;
+		case PJSIP_TRANSPORT_TCP: return tcp_transport_id >= 0;
+		case PJSIP_TRANSPORT_TLS: return tls_transport_id >= 0;
+		default: return false;
+	}
 }
 
 
-void SIPProto::BuildURI(TCHAR *out, int outSize, const TCHAR *user, const TCHAR *aHost, int port, bool isTel)
+void SIPProto::BuildTelURI(TCHAR *out, int outSize, const TCHAR *number, pjsip_transport_type_e transport)
 {
-	if (user == NULL)
+	BuildURI(out, outSize, number, NULL, 0, transport, true);
+}
+
+
+void SIPProto::BuildURI(TCHAR *out, int outSize, const TCHAR *user, const TCHAR *aHost, int port, 
+						pjsip_transport_type_e transport, bool isTel)
+{
+	mir_sntprintf(out, outSize, _T("<sip:"));
+
+	if (user != NULL)
+	{
+		TCHAR tmp[1024];
+		CleanupURI(tmp, MAX_REGS(tmp), user);
+
+		TCHAR *host = _tcschr(tmp, _T('@'));
+		if (host != NULL)
+		{
+			*host = 0;
+			host++;
+		}
+
+		if (host != NULL && aHost != NULL && lstrcmp(host, aHost) != 0)
+			Error(_T("Two conflicting hosts: %s / %s , ignoring one in argument"), host, aHost);
+
+		host = FirstNotEmpty(host, (TCHAR *) aHost, opts.domain);
+
+		size_t len = lstrlen(out);
+		mir_sntprintf(out + len, outSize - len, _T("%s@%s"), tmp, host);
+	}
+	else
 	{
 		TCHAR *host = FirstNotEmpty((TCHAR *) aHost, opts.domain);
 
-		if (port > 0)
-			mir_sntprintf(out, outSize, _T("<sip:%s:%d>"), host, port);
-		else
-			mir_sntprintf(out, outSize, _T("<sip:%s>"), host);
-
-		return;
+		size_t len = lstrlen(out);
+		mir_sntprintf(out + len, outSize - len, _T("%s"), host);
 	}
 
-	TCHAR tmp[1024];
-	CleanupURI(tmp, MAX_REGS(tmp), user);
-
-	TCHAR *host = _tcschr(tmp, _T('@'));
-	if (host != NULL)
+	if (port > 0)
 	{
-		*host = 0;
-		host++;
+		size_t len = lstrlen(out);
+		mir_sntprintf(out + len, outSize - len, _T(":%d"), port);
 	}
 
-	if (host != NULL && aHost != NULL && lstrcmp(host, aHost) != 0)
-		Error(_T("Two conflicting hosts: %s / %s , ignoring one in argument"), host, aHost);
+	if (isTel)
+	{
+		size_t len = lstrlen(out);
+		mir_sntprintf(out + len, outSize - len, _T(";user=phone"));
+	}
 
-	host = FirstNotEmpty(host, (TCHAR *) aHost, opts.domain);
+	if (transport != PJSIP_TRANSPORT_UDP && HasTransportEnabled(transport))
+	{
+		size_t len = lstrlen(out);
+		mir_sntprintf(out + len, outSize - len, _T(";transport=%s"), TransportName(transport));
+	}
 
-	
-
-	if (isTel && port > 0)
-		mir_sntprintf(out, outSize, _T("<sip:%s@%s:%d;user=phone>"), tmp, host, port);
-	else if (isTel)
-		mir_sntprintf(out, outSize, _T("<sip:%s@%s;user=phone>"), tmp, host);
-	else if (port > 0)
-		mir_sntprintf(out, outSize, _T("<sip:%s@%s:%d>"), tmp, host, port);
-	else
-		mir_sntprintf(out, outSize, _T("<sip:%s@%s>"), tmp, host);
+	size_t len = lstrlen(out);
+	mir_sntprintf(out + len, outSize - len, _T(">"));
 }
 
 
@@ -1409,10 +1461,9 @@ int __cdecl SIPProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 		if (!VoiceCallStringValid((WPARAM) number, 0))
 			return 1;
 
-		if (_tcsncmp(_T("sip:"), number, 4) == 0)
-		{
+		if (_tcsncmp(_T("sip:"), number, 4) == 0 || _tcsncmp(_T("sips:"), number, 5) == 0)
 			mir_sntprintf(uri, MAX_REGS(uri), _T("<%s>"), number);
-		}
+
 		else
 			BuildTelURI(uri, MAX_REGS(uri), number);
 	}
@@ -1615,17 +1666,17 @@ void __cdecl SIPProto::SearchUserThread(void *param)
 		return;
 	}
 
-	pj_str_t ret;
-	if (pjsua_buddy_find(pj_cstr(&ret, sip_uri)) != PJSUA_INVALID_ID)
-	{
-		Info(_T("Contact already in your contact list"));
-		SendBroadcast(NULL, ACKTYPE_SEARCH, ACKRESULT_SUCCESS, param, 0);
-		return;
-	}
-
 	TCHAR name[1024];
 	CleanupURI(name, MAX_REGS(name), uri);
 	TcharToChar name_char(name);
+
+	pj_str_t ret;
+	if (pjsua_buddy_find(pj_cstr(&ret, sip_uri)) != PJSUA_INVALID_ID)
+	{
+		Info(_T("Contact already in your contact list: %s"), name);
+		SendBroadcast(NULL, ACKTYPE_SEARCH, ACKRESULT_SUCCESS, param, 0);
+		return;
+	}
 
 	PROTOSEARCHRESULT isr = {0};
 	isr.cbSize = sizeof(isr);

@@ -57,11 +57,17 @@ void DeInitPopups()
 }
 
 
-// Show an error popup
 void ShowErrPopup(const TCHAR *description, const TCHAR *title)
 {
 	ShowPopupEx(NULL, title == NULL ? _T(MODULE_NAME) _T(" Error") : title, description,
 			  NULL, POPUP_TYPE_ERROR, NULL);
+}
+
+
+void ShowInfoPopup(const TCHAR *description, const TCHAR *title)
+{
+	ShowPopupEx(NULL, title == NULL ? _T(MODULE_NAME) _T(" Information") : title, description,
+		NULL, POPUP_TYPE_INFO, NULL);
 }
 
 
@@ -118,10 +124,15 @@ void ShowPopupEx(HANDLE hContact, const TCHAR *title, const TCHAR *description,
 				ppd.colorText = op->popup_text_color;
 			}
 */		}
-		else // if (type == POPUP_TYPE_ERROR)
+		else if (type == POPUP_TYPE_ERROR)
 		{
 			ppd.colorBack = RGB(200,0,0);
 			ppd.colorText = RGB(255,255,255);
+		}
+		else // if (type == POPUP_TYPE_INFO)
+		{
+			ppd.colorBack = RGB(255,255,128);
+			ppd.colorText = RGB(0,0,0);
 		}
 
 		if (type == POPUP_TYPE_NORMAL)
@@ -152,7 +163,7 @@ void ShowPopupEx(HANDLE hContact, const TCHAR *title, const TCHAR *description,
 					break;
 			}
 */		}
-		else // if (type == POPUP_TYPE_ERROR)
+		else // if (type == POPUP_TYPE_ERROR || type == POPUP_TYPE_INFO)
 		{
 			ppd.iSeconds = 0;
 		}
@@ -199,10 +210,15 @@ void ShowPopupEx(HANDLE hContact, const TCHAR *title, const TCHAR *description,
 			}
 */
 		}
-		else // if (type == POPUP_TYPE_ERROR)
+		else if (type == POPUP_TYPE_ERROR)
 		{
 			ppd.colorBack = RGB(200,0,0);
 			ppd.colorText = RGB(255,255,255);
+		}
+		else // if (type == POPUP_TYPE_INFO)
+		{
+			ppd.colorBack = RGB(255,255,128);
+			ppd.colorText = RGB(0,0,0);
 		}
 
 		if (type == POPUP_TYPE_NORMAL)
@@ -233,7 +249,7 @@ void ShowPopupEx(HANDLE hContact, const TCHAR *title, const TCHAR *description,
 					break;
 			}
 */		}
-		else // if (type == POPUP_TYPE_ERROR)
+		else // if (type == POPUP_TYPE_ERROR || type == POPUP_TYPE_INFO)
 		{
 			ppd.iSeconds = 0;
 		}
