@@ -34,6 +34,8 @@
 #define IDC_VIDEO                       1088
 #define IDC_PUBLISH2                    1088
 #define IDC_KEEPALIVE                   1088
+#define IDC_KEEPALIVE2                  1089
+#define IDC_SRTP                        1089
 #define IDC_DOMAIN                      1091
 #define IDC_STATIC                      -1
 

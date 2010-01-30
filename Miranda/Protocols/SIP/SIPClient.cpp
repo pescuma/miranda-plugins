@@ -181,8 +181,6 @@ static void static_on_log(int level, const char *data, int len)
 }
 
 
-#define TransportName(_T_) SipToTchar(pj_cstr(pjsip_transport_get_type_name(_T_))).get()
-
 void SIPClient::RegisterTransport(pjsip_transport_type_e type, int port, ta *ta)
 {
 	ta->transport_id = -1;
@@ -248,9 +246,8 @@ int SIPClient::Connect(SIP_REGISTRATION *reg)
 
 		pjsua_config cfg;
 		pjsua_config_default(&cfg);
-#ifndef _DEBUG
 		cfg.use_srtp = PJMEDIA_SRTP_OPTIONAL;
-#endif
+		cfg.srtp_secure_signaling = 0;
 		cfg.cb.on_incoming_call = &static_on_incoming_call;
 		cfg.cb.on_call_media_state = &static_on_call_media_state;
 		cfg.cb.on_call_state = &static_on_call_state;
@@ -291,6 +288,20 @@ int SIPClient::Connect(SIP_REGISTRATION *reg)
 
 		if (udp.port <= 0 && tcp.port <= 0 && tls.port <= 0)
 			return 1;
+
+		pjsua_transport_config cfg;
+		pjsua_transport_config_default(&cfg);
+
+		enum { START_PORT=4000 };
+		unsigned range = (65535-START_PORT-PJSUA_MAX_CALLS*2);
+		cfg.port = START_PORT + ((pj_rand() % range) & 0xFFFE);
+
+		pj_status_t status = pjsua_media_transports_create(&cfg);
+		if (status != PJ_SUCCESS)
+		{
+			Error(status, _T("Error creating media transports"));
+			return 1;
+		}
 	}
 
 	{
@@ -582,13 +593,13 @@ void SIPClient::CleanupURI(TCHAR *out, int outSize, const TCHAR *url)
 }
 
 
-void SIPClient::BuildURI(TCHAR *out, int outSize, const TCHAR *host, int port, int protocol)
+void SIPClient::BuildURI(TCHAR *out, int outSize, const TCHAR *host, int port, pjsip_transport_type_e transport)
 {
-	if (protocol == PJSIP_TRANSPORT_UDP)
+	if (transport == PJSIP_TRANSPORT_UDP)
 		mir_sntprintf(out, outSize, _T("<sip:%s:%d>"), host, port);
 	else
 		mir_sntprintf(out, outSize, _T("<sip:%s:%d;transport=%s>"), host, port,
-					  TransportName((pjsip_transport_type_e) protocol));
+					  TransportName(transport));
 }
 
 pjsua_call_id SIPClient::Call(const TCHAR *host, int port, int protocol)
@@ -605,7 +616,7 @@ pjsua_call_id SIPClient::Call(const TCHAR *host, int port, int protocol)
 		return -1;
 
 	TCHAR uri[1024];
-	BuildURI(uri, MAX_REGS(uri), host, port, protocol);
+	BuildURI(uri, MAX_REGS(uri), host, port, (pjsip_transport_type_e) protocol);
 
 	pjsua_call_id call_id;
 	pj_str_t ret;

@@ -67,12 +67,13 @@ public:
 		} proxy;
 		BYTE publish;
 		BYTE sendKeepAlive;
+		BYTE srtp;
 	} opts;
 
 	CRITICAL_SECTION cs;
 	std::vector<SIPEvent> events;
 	OptPageControl accountManagerCtrls[4];
-	OptPageControl optionsCtrls[14];
+	OptPageControl optionsCtrls[15];
 
 	SIPProto(const char *aProtoName, const TCHAR *aUserName);
 	virtual ~SIPProto();
@@ -176,9 +177,11 @@ private:
 	INT_PTR  __cdecl CreateAccMgrUI(WPARAM wParam, LPARAM lParam);
 
 	void ConfigureDevices();
-	void BuildTelURI(TCHAR *out, int outSize, const TCHAR *number);
-	void BuildURI(TCHAR *out, int outSize, const TCHAR *user, const TCHAR *host = NULL, int port = 0, bool isTel = false);
+	void BuildTelURI(TCHAR *out, int outSize, const TCHAR *number, pjsip_transport_type_e transport = PJSIP_TRANSPORT_UDP);
+	void BuildURI(TCHAR *out, int outSize, const TCHAR *user, const TCHAR *host = NULL, int port = 0, 
+				  pjsip_transport_type_e transport = PJSIP_TRANSPORT_UDP, bool isTel = false);
 	void CleanupURI(TCHAR *out, int outSize, const TCHAR *url);
+	bool HasTransportEnabled(pjsip_transport_type_e transport);
 
 	// Voice services
 	void NotifyCall(pjsua_call_id call_id, int state, HANDLE hContact = NULL, TCHAR *name = NULL, TCHAR *number = NULL);
