@@ -170,7 +170,7 @@ DWORD_PTR __cdecl SIPProto::GetCaps( int type, HANDLE hContact )
 					 | PF2_FREECHAT | PF2_OUTTOLUNCH | PF2_ONTHEPHONE | PF2_INVISIBLE | PF2_IDLE;
 
 		case PFLAGNUM_4:
-			return PF4_SUPPORTTYPING | PF4_FORCEADDED | PF4_NOCUSTOMAUTH;
+			return PF4_SUPPORTTYPING | PF4_FORCEADDED | PF4_NOCUSTOMAUTH | PF4_IMSENDOFFLINE | PF4_IMSENDUTF;
 
 		case PFLAG_UNIQUEIDTEXT:
 			return (UINT_PTR) Translate("Username");
@@ -1186,7 +1186,7 @@ void SIPProto::on_incoming_call(pjsua_call_id call_id)
 	}
 
 	// Send 180/RINGING
-	pjsua_call_answer(call_id, 180, NULL, NULL);
+	pjsua_call_answer(call_id, PJSIP_SC_RINGING, NULL, NULL);
 
 	pjsua_buddy_id buddy_id = pjsua_buddy_find(&info.remote_info);
 	if (buddy_id != PJSUA_INVALID_ID)
@@ -1463,6 +1463,9 @@ int __cdecl SIPProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 
 		if (_tcsncmp(_T("sip:"), number, 4) == 0 || _tcsncmp(_T("sips:"), number, 5) == 0)
 			mir_sntprintf(uri, MAX_REGS(uri), _T("<%s>"), number);
+
+		else if (_tcschr(number, _T('@')) != NULL)
+			BuildURI(uri, MAX_REGS(uri), number);
 
 		else
 			BuildTelURI(uri, MAX_REGS(uri), number);
@@ -1970,7 +1973,7 @@ void __cdecl SIPProto::FakeMsgAck(void *param)
 void SIPProto::on_pager_status(HANDLE hContact, LONG messageID, pjsip_status_code status, char *text)
 {
 	SendBroadcast(hContact, ACKTYPE_MESSAGE, 
-				  status != PJSIP_SC_OK ? ACKRESULT_FAILED : ACKRESULT_SUCCESS,
+				  status != PJSIP_SC_OK && status != PJSIP_SC_ACCEPTED ? ACKRESULT_FAILED : ACKRESULT_SUCCESS,
 				  (HANDLE) messageID, (LPARAM) text);
 }
 
