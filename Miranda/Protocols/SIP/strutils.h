@@ -196,5 +196,7 @@ static const pj_str_t pj_cstr(const char *s)
     return str;
 }
 
+#define TransportName(_T_) SipToTchar(pj_cstr(pjsip_transport_get_type_name(_T_))).get()
+
 
 #endif // __STRUTILS_H__

@@ -41,15 +41,15 @@ void DeInitPopups();
 #define POPUP_TYPE_NORMAL	0
 #define POPUP_TYPE_TEST		1
 #define POPUP_TYPE_ERROR	2
+#define POPUP_TYPE_INFO		3
 
-// Show an popup
 void ShowPopup(HANDLE hContact, const TCHAR *title, const TCHAR *description);
 
-// Show an test
 void ShowTestPopup(const TCHAR *title, const TCHAR *description, const Options *op);
 
-// Show an error popup
 void ShowErrPopup(const TCHAR *description, const TCHAR *title = NULL);
+
+void ShowInfoPopup(const TCHAR *description, const TCHAR *title = NULL);
 
 void ShowPopupEx(HANDLE hContact, const TCHAR *title, const TCHAR *description, 
 			   void *plugin_data, int type, const Options *op);
