@@ -1,2 +1,36 @@
 ; IAX protocol
 ; Author: Pescuma
+
+[IAX]
+
+[Username]
+[%s plugin connections]
+
+; Infos
+[You have %d voicemail message(s)]
+[No more slots to make calls. You need to drop some calls.]
+
+; Errors
+[IAX needs Voice Service plugin to work!]
+[Could not load iaxclient module]
+[Error loading iaxclient dll]
+[Failed to initialize iaxclient lib]
+[Failed to initialize IAX threads]
+[Error registering with IAX server]
+[Registration rejected]
+[Registration timeout]
+[Error making call (callNo=%d)]
+
+; Options
+[Protocols]
+[Protocol icon]
+
+[Server:]
+[Username:]
+[Password:]
+[Save password]
+
+[Caller ID]
+[Name:]
+[Number:]
+[These are only used if the server allows.]

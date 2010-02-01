@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"IAX protocol (Ansi)",
 #endif
-	PLUGIN_MAKE_VERSION(0,1,3,0),
+	PLUGIN_MAKE_VERSION(0,2,0,0),
 	"Provides support for Inter-Asterisk eXchange (IAX) protocol",
 	"Ricardo Pescuma Domenecci",
 	"pescuma@miranda-im.org",
@@ -51,6 +51,8 @@ PLUGINLINK *pluginLink;
 MM_INTERFACE mmi;
 UTF8_INTERFACE utfi;
 LIST_INTERFACE li;
+
+void * iaxclientDllCode = NULL;
 
 std::vector<HANDLE> hHooks;
 
@@ -100,13 +102,14 @@ extern "C" __declspec(dllexport) const MUUID* MirandaPluginInterfaces(void)
 
 static IAXProto *IAXProtoInit(const char* pszProtoName, const TCHAR* tszUserName)
 {
-	if (instances.getCount() != 0)
+	HMEMORYMODULE iaxclient = MemoryLoadLibrary((const char *) iaxclientDllCode);
+	if (iaxclient == NULL)
 	{
-		MessageBox(NULL, TranslateT("Only one instance is allowed.\nI will crash now."), _T("IAX"), MB_OK | MB_ICONERROR);
+		MessageBox(NULL, TranslateT("Error loading iaxclient dll"), TranslateT("IAX"), MB_OK | MB_ICONERROR);
 		return NULL;
 	}
-
-	IAXProto *proto = new IAXProto(pszProtoName, tszUserName);
+	
+	IAXProto *proto = new IAXProto(iaxclient, pszProtoName, tszUserName);
 	instances.insert(proto);
 	return proto;
 }
@@ -119,11 +122,40 @@ static int IAXProtoUninit(IAXProto *proto)
 }
 
 
+static void * LoadDllFromResource(LPCTSTR lpName)
+{
+	HRSRC hRes = FindResource(hInst, lpName, RT_RCDATA);
+	if (hRes == NULL) 
+		return NULL;
+	
+	HGLOBAL hResLoad = LoadResource(hInst, hRes);
+	if (hResLoad == NULL) 
+		return NULL;
+	
+	return LockResource(hResLoad);
+}
+
+
 extern "C" int __declspec(dllexport) Load(PLUGINLINK *link) 
 {
 	pluginLink = link;
 
-	CHECK_VERSION("IAX")
+	CHECK_VERSION("IAX");
+
+	iaxclientDllCode = LoadDllFromResource(MAKEINTRESOURCE(IDR_IAXCLIENT_DLL));
+	if (iaxclientDllCode == NULL)
+	{
+		MessageBox(NULL, TranslateT("Could not load iaxclient module"), TranslateT("IAX"), MB_OK | MB_ICONERROR);
+		return -1;
+	}
+
+	HMEMORYMODULE iaxclient = MemoryLoadLibrary((const char *) iaxclientDllCode);
+	if (iaxclient == NULL)
+	{
+		MessageBox(NULL, TranslateT("Error loading iaxclient dll"), TranslateT("IAX"), MB_OK | MB_ICONERROR);
+		return -1;
+	}
+	MemoryFreeLibrary(iaxclient);
 
 	// TODO Assert results here
 	mir_getMMI(&mmi);
@@ -154,6 +186,9 @@ extern "C" int __declspec(dllexport) Unload(void)
 // Called when all the modules are loaded
 int ModulesLoaded(WPARAM wParam, LPARAM lParam) 
 {
+	if (!ServiceExists(MS_VOICESERVICE_REGISTER))
+		MessageBox(NULL, TranslateT("IAX needs Voice Service plugin to work!"), _T("IAX"), MB_OK | MB_ICONERROR);
+	
 	// Add our modules to the KnownModules list
 	CallService("DBEditorpp/RegisterSingleModule", (WPARAM) MODULE_NAME, 0);
 
