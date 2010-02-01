@@ -2,6 +2,9 @@ IAX protocol
 
 Changelog:
 
+. 0.2.0.0
+  + Allow more than one protocol instance
+
 . 0.1.3.0
   + Added protocol icons
   + Added popups
