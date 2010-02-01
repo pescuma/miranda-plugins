@@ -27,8 +27,90 @@ static INT_PTR CALLBACK DlgOptions(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 static int static_iaxc_callback(iaxc_event e, void *param);
 
 
-IAXProto::IAXProto(const char *aProtoName, const TCHAR *aUserName)
+IAXProto::IAXProto(HMEMORYMODULE iaxclient, const char *aProtoName, const TCHAR *aUserName)
+	: iaxclient(iaxclient)
 {
+#define LOAD(_F_) * (void **) & iax._F_ = (void *) MemoryGetProcAddress(iaxclient, "iaxc_" #_F_)
+	LOAD(set_event_callback);
+	LOAD(set_event_callpost);
+	LOAD(free_event);
+	LOAD(get_event_levels);
+	LOAD(get_event_text);
+	LOAD(get_event_state);
+	LOAD(set_preferred_source_udp_port);
+	LOAD(get_bind_port);
+	LOAD(initialize);
+	LOAD(shutdown);
+	LOAD(set_formats);
+	LOAD(set_min_outgoing_framesize);
+	LOAD(set_callerid);
+	LOAD(start_processing_thread);
+	LOAD(stop_processing_thread);
+	LOAD(call);
+	LOAD(call_ex);
+	LOAD(unregister);
+	* (void **) & iax.register_ = (void *) MemoryGetProcAddress(iaxclient, "iaxc_register");
+	LOAD(register_ex);
+	LOAD(send_busy_on_incoming_call);
+	LOAD(answer_call);
+	LOAD(key_radio);
+	LOAD(unkey_radio);
+	LOAD(blind_transfer_call);
+	LOAD(setup_call_transfer);
+	LOAD(dump_all_calls);
+	LOAD(dump_call_number);
+	LOAD(dump_call);
+	LOAD(reject_call);
+	LOAD(reject_call_number);
+	LOAD(send_dtmf);
+	LOAD(send_text);
+	LOAD(send_text_call);
+	LOAD(send_url);
+	LOAD(get_call_state);
+	LOAD(millisleep);
+	LOAD(set_silence_threshold);
+	LOAD(set_audio_output);
+	LOAD(select_call);
+	LOAD(first_free_call);
+	LOAD(selected_call);
+	LOAD(quelch);
+	LOAD(unquelch);
+	LOAD(mic_boost_get);
+	LOAD(mic_boost_set);
+	LOAD(version);
+	LOAD(set_jb_target_extra);
+	LOAD(set_networking);
+	LOAD(get_netstats);
+	LOAD(audio_devices_get);
+	LOAD(audio_devices_set);
+	LOAD(input_level_get);
+	LOAD(output_level_get);
+	LOAD(input_level_set);
+	LOAD(output_level_set);
+	LOAD(play_sound);
+	LOAD(stop_sound);
+	LOAD(get_filters);
+	LOAD(set_filters);
+	LOAD(set_speex_settings);
+	LOAD(get_audio_prefs);
+	LOAD(set_audio_prefs);
+	LOAD(video_devices_get);
+	LOAD(video_device_set);
+	LOAD(get_video_prefs);
+	LOAD(set_video_prefs);
+	LOAD(video_format_get_cap);
+	LOAD(video_format_set_cap);
+	LOAD(video_format_set);
+	LOAD(video_params_change);
+	LOAD(set_holding_frame);
+	LOAD(video_bypass_jitter);
+	LOAD(is_camera_working);
+	LOAD(YUV420_to_RGB32);
+	LOAD(set_test_mode);
+	LOAD(push_audio);
+	LOAD(push_video);
+	LOAD(debug_iax_set);
+
 	InitializeCriticalSection(&cs);
 
 	reg_id = -1;
@@ -111,6 +193,8 @@ IAXProto::~IAXProto()
 	mir_free(m_szModuleName);
 
 	DeleteCriticalSection(&cs);
+
+	MemoryFreeLibrary(iaxclient);
 }
 
 
@@ -178,10 +262,10 @@ INT_PTR __cdecl IAXProto::SetStatus( int iNewStatus )
 		TCHAR server_port[1024];
 		mir_sntprintf(server_port, MAX_REGS(server_port), _T("%s:%d"), opts.host, opts.port);
 
-		reg_id = iaxc_register(TcharToUtf8(opts.username), opts.password, TcharToUtf8(server_port));
+		reg_id = iax.register_(TcharToUtf8(opts.username), opts.password, TcharToUtf8(server_port));
 		if (reg_id < 0)
 		{
-			Error(_T("Error registering with IAX"));
+			Error(_T("Error registering with IAX server"));
 			Disconnect();
 			return -1;
 		}
@@ -325,9 +409,9 @@ void IAXProto::Disconnect()
 
 	if (reg_id >= 0)
 	{
-		iaxc_dump_all_calls();
+		iax.dump_all_calls();
 		
-		iaxc_unregister(reg_id);
+		iax.unregister(reg_id);
 		reg_id = -1;
 	}
 
@@ -353,12 +437,15 @@ int IAXProto::text_callback(iaxc_ev_text &text)
 		}
 		case IAXC_TEXT_TYPE_NOTICE:
 		{
-			Info(_T("Notice: %s"), Utf8ToTchar(text.message));
+			if (strncmp("Originating an ", text.message, 15) == 0)
+				Trace(_T("Notice: %s"), Utf8ToTchar(text.message));
+			else
+				Info(_T("%s"), Utf8ToTchar(text.message)); // To avoid translate
 			return 1;
 		}
 		case IAXC_TEXT_TYPE_ERROR:
 		{
-			Error(Utf8ToTchar(text.message));
+			Error(_T("%s"), Utf8ToTchar(text.message)); // To avoid translate
 			return 1;
 		}
 		case IAXC_TEXT_TYPE_FATALERROR:
@@ -431,7 +518,7 @@ int IAXProto::state_callback(iaxc_ev_call_state &call)
 	}
 	else 
 	{
-		if (call.callNo == iaxc_selected_call())
+		if (call.callNo == iax.selected_call())
 			NotifyCall(call.callNo, VOICE_STATE_TALKING, NULL, name, number);
 		else
 			NotifyCall(call.callNo, VOICE_STATE_ON_HOLD, NULL, name, number);
@@ -576,6 +663,12 @@ INT_PTR __cdecl IAXProto::OnEvent( PROTOEVENTTYPE iEventType, WPARAM wParam, LPA
 
 INT_PTR __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 {
+	if (!ServiceExists(MS_VOICESERVICE_REGISTER))
+	{
+		Error(_T("IAX needs Voice Service plugin to work!"));
+		return 1;
+	}
+	
 	TCHAR buffer[MAX_PATH]; 
 	mir_sntprintf(buffer, MAX_REGS(buffer), TranslateT("%s plugin connections"), m_tszUserName);
 		
@@ -586,28 +679,22 @@ INT_PTR __cdecl IAXProto::OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 	nl_user.ptszDescriptiveName = buffer;
 	hNetlibUser = (HANDLE) CallService(MS_NETLIB_REGISTERUSER, 0, (LPARAM)&nl_user);
 
-	if (!ServiceExists(MS_VOICESERVICE_REGISTER))
-	{
-		Error(_T("IAX needs Voice Service plugin to work!"));
-		return 1;
-	}
-
-	iaxc_set_event_callback(&static_iaxc_callback, this); 
+	iax.set_event_callback(&static_iaxc_callback, this); 
 	
 	// TODO Handle network out port
-	iaxc_set_preferred_source_udp_port(-1);
-	if (iaxc_initialize(NUM_LINES))
+	iax.set_preferred_source_udp_port(-1);
+	if (iax.initialize(NUM_LINES))
 	{
-		Error(_T("Failed to initialize iaxc lib"));
+		Error(_T("Failed to initialize iaxclient lib"));
 		return 1;
 	}
 
-	iaxc_set_formats(IAXC_FORMAT_SPEEX,
+	iax.set_formats(IAXC_FORMAT_SPEEX,
 					 IAXC_FORMAT_ULAW|IAXC_FORMAT_ALAW|IAXC_FORMAT_GSM|IAXC_FORMAT_SPEEX|IAXC_FORMAT_ILBC);
-	iaxc_set_speex_settings(1,-1,-1,0,8000,3);
-	iaxc_set_silence_threshold(-99);
+	iax.set_speex_settings(1,-1,-1,0,8000,3);
+	iax.set_silence_threshold(-99);
 
-	if (iaxc_start_processing_thread())
+	if (iax.start_processing_thread())
 	{
 		Error(_T("Failed to initialize IAX threads"));
 		return 1;
@@ -636,9 +723,9 @@ INT_PTR __cdecl IAXProto::OnOptionsInit(WPARAM wParam, LPARAM lParam)
 
 INT_PTR __cdecl IAXProto::OnPreShutdown(WPARAM wParam, LPARAM lParam)
 {
-	iaxc_stop_processing_thread();
+	iax.stop_processing_thread();
 
-	iaxc_shutdown();
+	iax.shutdown();
 
 	return 0;
 }
@@ -704,7 +791,7 @@ void IAXProto::ConfigureDevices()
 	int input;
 	int output; 
 	int ring;
-	iaxc_audio_devices_get(&devs, &nDevs, &input, &output, &ring);
+	iax.audio_devices_get(&devs, &nDevs, &input, &output, &ring);
 
 	int expectedOutput = GetDevice(devs, nDevs, true);
 	if (expectedOutput == -1)
@@ -715,22 +802,22 @@ void IAXProto::ConfigureDevices()
 		expectedInput = input;
 
 	if (input != expectedInput || output != expectedOutput || ring != expectedOutput)
-		iaxc_audio_devices_set(expectedInput, expectedOutput, expectedOutput);
+		iax.audio_devices_set(expectedInput, expectedOutput, expectedOutput);
 
 
 	int expectedBoost = DBGetContactSettingByte(NULL, "VoiceService", "MicBoost", TRUE);
-	if (expectedBoost != iaxc_mic_boost_get())
-		iaxc_mic_boost_set(expectedBoost);
+	if (expectedBoost != iax.mic_boost_get())
+		iax.mic_boost_set(expectedBoost);
 
 
-	int filters = iaxc_get_filters();
+	int filters = iax.get_filters();
 	int expectedFilters;
 	if (DBGetContactSettingByte(NULL, "VoiceService", "EchoCancelation", TRUE))
 		expectedFilters = filters | IAXC_FILTER_ECHO;
 	else
 		expectedFilters = filters & ~IAXC_FILTER_ECHO;
 	if (expectedFilters != filters)
-		iaxc_set_filters(expectedFilters);
+		iax.set_filters(expectedFilters);
 }
 
 
@@ -750,14 +837,14 @@ INT_PTR __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 
 	ConfigureDevices();
 
-	int callNo = iaxc_first_free_call();
+	int callNo = iax.first_free_call();
 	if (callNo < 0 || callNo >= NUM_LINES)
 	{
 		Info(_T("No more slots to make calls. You need to drop some calls."));
 		return 2;
 	}
 
-	iaxc_select_call(-1);
+	iax.select_call(-1);
 
 	char buff[512];
 	mir_snprintf(buff, MAX_REGS(buff), "%s:%s@%s/%s", 
@@ -770,10 +857,10 @@ INT_PTR __cdecl IAXProto::VoiceCall(WPARAM wParam, LPARAM lParam)
 	if (myName[0] == 0 && myNumber[0] == 0)
 		myName = opts.username;
 
-	callNo = iaxc_call_ex(buff, TcharToUtf8(myName), TcharToUtf8(myNumber), FALSE);
+	callNo = iax.call_ex(buff, TcharToUtf8(myName), TcharToUtf8(myNumber), FALSE);
 	if (callNo < 0 || callNo >= NUM_LINES)
 	{
-		Error(_T("Error making call (callNo=%d)."), callNo);
+		Error(_T("Error making call (callNo=%d)"), callNo);
 		return 3;
 	}
 
@@ -795,7 +882,7 @@ INT_PTR __cdecl IAXProto::VoiceAnswerCall(WPARAM wParam, LPARAM lParam)
 
 	ConfigureDevices();
 
-	if (iaxc_select_call(callNo) < 0)
+	if (iax.select_call(callNo) < 0)
 		return 3;
 
 	return 0;
@@ -812,10 +899,10 @@ INT_PTR __cdecl IAXProto::VoiceDropCall(WPARAM wParam, LPARAM lParam)
 	if (callNo < 0 || callNo >= NUM_LINES)
 		return 2;
 
-	if (iaxc_get_call_state(callNo) & IAXC_CALL_STATE_RINGING)
-		iaxc_reject_call_number(callNo);
+	if (iax.get_call_state(callNo) & IAXC_CALL_STATE_RINGING)
+		iax.reject_call_number(callNo);
 	else
-		iaxc_dump_call_number(callNo);
+		iax.dump_call_number(callNo);
 
 	return 0;
 }
@@ -831,10 +918,10 @@ INT_PTR __cdecl IAXProto::VoiceHoldCall(WPARAM wParam, LPARAM lParam)
 	if (callNo < 0 || callNo >= NUM_LINES)
 		return 2;
 
-	if (callNo != iaxc_selected_call())
+	if (callNo != iax.selected_call())
 		return 3;
 
-	iaxc_select_call(-1);
+	iax.select_call(-1);
 	NotifyCall(callNo, VOICE_STATE_ON_HOLD);
 	return 0;
 }
@@ -864,7 +951,7 @@ INT_PTR __cdecl IAXProto::VoiceSendDTMF(WPARAM wParam, LPARAM lParam)
 	if (callNo < 0 || callNo >= NUM_LINES)
 		return 2;
 
-	if (callNo != iaxc_selected_call())
+	if (callNo != iax.selected_call())
 		return 3;
 
 	if (c >= _T('a') && c <= _T('d'))
@@ -873,7 +960,7 @@ INT_PTR __cdecl IAXProto::VoiceSendDTMF(WPARAM wParam, LPARAM lParam)
 	if (!IsValidDTMF(c))
 		return 4;
 
-	iaxc_send_dtmf((char) c);
+	iax.send_dtmf((char) c);
 	
 	return 0;
 }

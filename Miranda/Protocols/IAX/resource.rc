@@ -14,6 +14,25 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
+// Neutral resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
+#ifdef _WIN32
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// RT_RCDATA
+//
+
+IDR_IAXCLIENT_DLL       RCDATA DISCARDABLE   "lib\\iaxclient\\Dll\\iaxclient.dll"
+#endif    // Neutral resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
 // English (U.S.) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
@@ -30,7 +49,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 IDD_ACCMGRUI DIALOGEX 0, 0, 186, 134
 STYLE DS_FIXEDSYS | WS_CHILD
 EXSTYLE WS_EX_CONTROLPARENT
-FONT 8, "MS Shell Dlg"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     LTEXT           "Server:",IDC_STATIC,0,0,53,12,SS_CENTERIMAGE
     EDITTEXT        IDC_HOST,54,0,92,12,ES_AUTOHSCROLL
@@ -47,7 +66,7 @@ END
 IDD_OPTIONS DIALOGEX 0, 0, 216, 158
 STYLE DS_FIXEDSYS | WS_CHILD
 EXSTYLE WS_EX_CONTROLPARENT
-FONT 8, "MS Shell Dlg"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     GROUPBOX        "AIX",IDC_STATIC,3,4,209,76
     LTEXT           "Server:",IDC_STATIC,14,17,53,12,SS_CENTERIMAGE
@@ -94,7 +113,6 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_PROTO               ICON    DISCARDABLE     "res\\Logo.ico"
-
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 

@@ -64,10 +64,11 @@ Boston, MA 02111-1307, USA.
 #include "../../plugins/utils/mir_icons.h"
 #include "../../plugins/utils/mir_log.h"
 #include "../../plugins/utils/utf8_helpers.h"
+#include "../../plugins/utils/MemoryModule.h"
 #include "../../plugins/voiceservice/m_voice.h"
 #include "../../plugins/voiceservice/m_voiceservice.h"
 
-#include <iaxclient.h>
+#include <dll/iaxclient_ptrs.h>
 
 #include "resource.h"
 #include "popup.h"

@@ -29,6 +29,8 @@ typedef int (__cdecl IAXProto::*IAXEventFunc)(WPARAM, LPARAM);
 class IAXProto : public PROTO_INTERFACE
 {
 private:
+	HMEMORYMODULE iaxclient;
+	IAXCLIENT iax;
 	HANDLE hNetlibUser;
 	HANDLE hCallStateEvent;
 	int reg_id;
@@ -53,7 +55,7 @@ public:
 	OptPageControl accountManagerCtrls[5];
 	OptPageControl optionsCtrls[7];
 
-	IAXProto(const char *aProtoName, const TCHAR *aUserName);
+	IAXProto(HMEMORYMODULE iaxclient, const char *aProtoName, const TCHAR *aUserName);
 	virtual ~IAXProto();
 
 	virtual	HANDLE   __cdecl AddToList( int flags, PROTOSEARCHRESULT* psr ) { return 0; }
