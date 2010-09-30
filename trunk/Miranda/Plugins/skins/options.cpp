@@ -202,7 +202,7 @@ static BOOL CALLBACK SkinOptDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 									WS_CHILD | WS_VISIBLE, 
 									labelRc.left, y + (lineHeight - font.tmHeight) / 2, 
 									labelRc.right - labelRc.left, font.tmHeight, 
-									hwndDlg, NULL, hInst, NULL);
+									hwndDlg, (HMENU) id + 2, hInst, NULL);
 							SendMessage(lbl, WM_SETFONT, (WPARAM) hFont, FALSE);
 
 							HWND edit = CreateWindowEx(WS_EX_CLIENTEDGE, _T("EDIT"), _T(""), 
@@ -233,7 +233,7 @@ static BOOL CALLBACK SkinOptDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 									WS_CHILD | WS_VISIBLE, 
 									labelRc.left, y + (lineHeight - font.tmHeight) / 2, 
 									labelRc.right - labelRc.left, font.tmHeight, 
-									hwndDlg, NULL, hInst, NULL);
+									hwndDlg, (HMENU) id + 1, hInst, NULL);
 							SendMessage(lbl, WM_SETFONT, (WPARAM) hFont, FALSE);
 
 							HWND edit = CreateWindowEx(WS_EX_CLIENTEDGE, _T("EDIT"), _T(""), 
@@ -250,7 +250,7 @@ static BOOL CALLBACK SkinOptDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 						}
 					}
 
-					id += 2;
+					id += 3;
 					y += lineHeight + V_SPACE;
 				}
 
@@ -357,14 +357,30 @@ static BOOL CALLBACK SkinOptDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 			if (dlg == NULL)
 				break;
 
+			SkinOptions *opts = dlg->getOpts();
+
 			if (LOWORD(wParam) == IDC_SKIN)
 			{
 				if (HIWORD(wParam) == CBN_SELCHANGE && (HWND)lParam == GetFocus())
+				{
 					SendMessage(GetParent(hwndDlg), PSM_CHANGED, 0, 0);
+
+					// Disable all options
+					if (opts != NULL)
+					{
+						int id = IDC_SKIN_OPTS_L + 1;
+						for (unsigned int i = 0; i < opts->getNumOptions(); i++)
+						{
+							EnableWindow(GetDlgItem(hwndDlg, id), FALSE);
+							EnableWindow(GetDlgItem(hwndDlg, id+1), FALSE);
+							EnableWindow(GetDlgItem(hwndDlg, id+2), FALSE);
+							id += 3;
+						}
+					}
+				}
 				break;
 			}
 
-			SkinOptions *opts = dlg->getOpts();
 			if (opts == NULL)
 				break;
 
@@ -394,7 +410,7 @@ static BOOL CALLBACK SkinOptDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 					}
 				}
 
-				id += 2;
+				id += 3;
 			}
 
 			if (changed)
@@ -412,40 +428,7 @@ static BOOL CALLBACK SkinOptDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 				if (dlg == NULL)
 					break;
 
-				SkinOptions *opts = dlg->getOpts();
-				if (opts == NULL)
-					break;
-
-				int id = IDC_SKIN_OPTS_L + 1;
-				for (unsigned int i = 0; i < opts->getNumOptions(); i++)
-				{
-					SkinOption *opt = opts->getOption(i);
-
-					switch(opt->getType())
-					{
-						case CHECKBOX:
-						{
-							opt->setValueCheckbox(IsDlgButtonChecked(hwndDlg, id) != 0);
-							break;
-						}
-						case NUMBER:
-						{
-							opt->setValueNumber(SendDlgItemMessage(hwndDlg, id + 1, UDM_GETPOS, 0, 0));
-							break;
-						}
-						case TEXT:
-						{
-							TCHAR tmp[MAX_TEXT_SIZE];
-							GetDlgItemText(hwndDlg, id, tmp, MAX_TEXT_SIZE);
-							opt->setValueText(tmp);
-							break;
-						}
-					}
-
-					id += 2;
-				}
-
-				dlg->storeToDB(opts);
+				bool changedSkin = false;
 
 				// TODO Correctly handle changing skins
 				int pos = SendDlgItemMessage(hwndDlg, IDC_SKIN, CB_GETCURSEL, 0, 0);
@@ -453,7 +436,45 @@ static BOOL CALLBACK SkinOptDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 				{
 					TCHAR tmp[1024];
 					GetWindowText(GetDlgItem(hwndDlg, IDC_SKIN), tmp, MAX_REGS(tmp));
+
+					changedSkin = (lstrcmp(dlg->getSkinName(), tmp) != 0);
+
 					dlg->setSkinName(tmp);
+				}
+
+				SkinOptions *opts = dlg->getOpts();
+				if (opts != NULL && !changedSkin)
+				{
+					int id = IDC_SKIN_OPTS_L + 1;
+					for (unsigned int i = 0; i < opts->getNumOptions(); i++)
+					{
+						SkinOption *opt = opts->getOption(i);
+
+						switch(opt->getType())
+						{
+							case CHECKBOX:
+							{
+								opt->setValueCheckbox(IsDlgButtonChecked(hwndDlg, id) != 0);
+								break;
+							}
+							case NUMBER:
+							{
+								opt->setValueNumber(SendDlgItemMessage(hwndDlg, id + 1, UDM_GETPOS, 0, 0));
+								break;
+							}
+							case TEXT:
+							{
+								TCHAR tmp[MAX_TEXT_SIZE];
+								GetDlgItemText(hwndDlg, id, tmp, MAX_TEXT_SIZE);
+								opt->setValueText(tmp);
+								break;
+							}
+						}
+
+						id += 3;
+					}
+
+					dlg->storeToDB(opts);
 				}
 
 				return TRUE;

@@ -125,6 +125,7 @@ void SkinnedDialog::releaseCompiledScript()
 {
 	delete script;
 	script = NULL;
+	fileChangedTime = 0;
 
 	delete opts;
 	opts = NULL;
