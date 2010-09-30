@@ -3,6 +3,7 @@ Skins
 Changelog:
 
 . 0.0.0.5
+  + Allow changing skins
   * Updated v8
   * Updated updater to use googlecode
   
