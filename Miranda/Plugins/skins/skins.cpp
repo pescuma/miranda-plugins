@@ -30,11 +30,11 @@ PLUGININFOEX pluginInfo={
 #else
 	"Skins",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,0,4),
+	PLUGIN_MAKE_VERSION(0,0,0,5),
 	"Skins",
 	"Ricardo Pescuma Domenecci",
 	"",
-	"© 2008 Ricardo Pescuma Domenecci",
+	"© 2008-2010 Ricardo Pescuma Domenecci",
 	"http://pescuma.org/miranda/skins",
 	UNICODE_AWARE,
 	0,		//doesn't replace anything built-in
@@ -131,8 +131,7 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	// Folders plugin support
 	if (ServiceExists(MS_FOLDERS_REGISTER_PATH))
 	{
-		hSkinsFolder = (HANDLE) FoldersRegisterCustomPathT(Translate("Skins"), 
-			Translate("Skins"), _T(MIRANDA_PATH) _T("\\Skins"));
+		hSkinsFolder = FoldersRegisterCustomPathT("Skins",  "Skins", _T(MIRANDA_PATH) _T("\\Skins"));
 
 		FoldersGetCustomPathT(hSkinsFolder, skinsFolder, MAX_REGS(skinsFolder), _T("."));
 	}
@@ -172,14 +171,14 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 		upd.szUpdateURL = UPDATER_AUTOREGISTER;
 
-		upd.szBetaVersionURL = "http://pescuma.org/miranda/skins_version.txt";
-		upd.szBetaChangelogURL = "http://pescuma.org/miranda/skins#Changelog";
+		upd.szBetaVersionURL = "http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/skins/Docs/skins_version.txt";
+		upd.szBetaChangelogURL = "http://pescuma.googlecode.com/svn/trunk/Miranda/Plugins/skins/Docs/skins_changelog.txt";
 		upd.pbBetaVersionPrefix = (BYTE *)"Skins ";
 		upd.cpbBetaVersionPrefix = strlen((char *)upd.pbBetaVersionPrefix);
 #ifdef UNICODE
-		upd.szBetaUpdateURL = "http://pescuma.org/miranda/skinsW.zip";
+		upd.szBetaUpdateURL = "http://pescuma.googlecode.com/files/skinsW.%VERSION%.zip";
 #else
-		upd.szBetaUpdateURL = "http://pescuma.org/miranda/skins.zip";
+		upd.szBetaUpdateURL = "http://pescuma.googlecode.com/files/skins.%VERSION%.zip";
 #endif
 
 		upd.pbVersion = (BYTE *)CreateVersionStringPlugin((PLUGININFO*) &pluginInfo, szCurrentVersion);
