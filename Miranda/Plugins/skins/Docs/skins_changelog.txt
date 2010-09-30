@@ -2,6 +2,10 @@ Skins
 
 Changelog:
 
+. 0.0.0.5
+  * Updated v8
+  * Updated updater to use googlecode
+  
 . 0.0.0.4
   * Fixed font service iteration
   * Fixed naming of skin options
