@@ -8,7 +8,7 @@ MirandaSkinnedDialog::MirandaSkinnedDialog(const char *name, const char *aDescri
 		: SkinnedDialog(name), description(aDescription), module(aModule), 
 		skinChangedCallback(NULL), skinChangedCallbackParam(NULL)
 {
-	getSettting("Skin", _T(DEFAULT_SKIN_NAME), skinName);
+	getSettting("Skin", _T(DEFAULT_SKIN_NAME), skinName, true);
 }
 
 MirandaSkinnedDialog::~MirandaSkinnedDialog()
@@ -35,9 +35,9 @@ void MirandaSkinnedDialog::setSkinName(const TCHAR *name)
 	if (skinName == name)
 		return;
 
-// TODO	skinName = name;
-	setSettting("Skin", skinName.c_str());
-// TODO	updateFilename();
+	skinName = name;
+	setSettting("Skin", skinName.c_str(), true);
+	updateFilename();
 }
 
 bool MirandaSkinnedDialog::finishedConfiguring()
@@ -111,42 +111,42 @@ void MirandaSkinnedDialog::storeToDB(const SkinOption *opt)
 	}
 }
 
-bool MirandaSkinnedDialog::getSettting(const char *name, bool defVal)
+bool MirandaSkinnedDialog::getSettting(const char *name, bool defVal, bool global)
 {
 	char setting[SETTING_NAME_SIZE];
-	getSettingName(setting, name);
+	getSettingName(setting, name, global);
 
 	return DBGetContactSettingByte(NULL, getModule(), setting, defVal ? 1 : 0) != 0;
 }
 
-void MirandaSkinnedDialog::setSettting(const char *name, bool val)
+void MirandaSkinnedDialog::setSettting(const char *name, bool val, bool global)
 {
 	char setting[SETTING_NAME_SIZE];
-	getSettingName(setting, name);
+	getSettingName(setting, name, global);
 
 	DBWriteContactSettingByte(NULL, getModule(), setting, val ? 1 : 0);
 }
 
-int MirandaSkinnedDialog::getSettting(const char *name, int defVal)
+int MirandaSkinnedDialog::getSettting(const char *name, int defVal, bool global)
 {
 	char setting[SETTING_NAME_SIZE];
-	getSettingName(setting, name);
+	getSettingName(setting, name, global);
 
 	return DBGetContactSettingDword(NULL, getModule(), setting, defVal);
 }
 
-void MirandaSkinnedDialog::setSettting(const char *name, int val)
+void MirandaSkinnedDialog::setSettting(const char *name, int val, bool global)
 {
 	char setting[SETTING_NAME_SIZE];
-	getSettingName(setting, name);
+	getSettingName(setting, name, global);
 
 	DBWriteContactSettingDword(NULL, getModule(), setting, val);
 }
 
-void MirandaSkinnedDialog::getSettting(const char *name, const WCHAR *defVal, std::wstring &ret)
+void MirandaSkinnedDialog::getSettting(const char *name, const WCHAR *defVal, std::wstring &ret, bool global)
 {
 	char setting[SETTING_NAME_SIZE];
-	getSettingName(setting, name);
+	getSettingName(setting, name, global);
 
 	DBVARIANT dbv = {0};
 	if (DBGetContactSettingWString(NULL, getModule(), setting, &dbv))
@@ -159,18 +159,18 @@ void MirandaSkinnedDialog::getSettting(const char *name, const WCHAR *defVal, st
 	DBFreeVariant(&dbv);
 }
 
-void MirandaSkinnedDialog::setSettting(const char *name, const WCHAR *val)
+void MirandaSkinnedDialog::setSettting(const char *name, const WCHAR *val, bool global)
 {
 	char setting[SETTING_NAME_SIZE];
-	getSettingName(setting, name);
+	getSettingName(setting, name, global);
 
 	DBWriteContactSettingWString(NULL, getModule(), setting, val);
 }
 
-void MirandaSkinnedDialog::getSettting(const char *name, const char *defVal, std::string &ret)
+void MirandaSkinnedDialog::getSettting(const char *name, const char *defVal, std::string &ret, bool global)
 {
 	char setting[SETTING_NAME_SIZE];
-	getSettingName(setting, name);
+	getSettingName(setting, name, global);
 
 	DBVARIANT dbv = {0};
 	if (DBGetContactSettingString(NULL, getModule(), setting, &dbv))
@@ -183,17 +183,20 @@ void MirandaSkinnedDialog::getSettting(const char *name, const char *defVal, std
 	DBFreeVariant(&dbv);
 }
 
-void MirandaSkinnedDialog::setSettting(const char *name, const char *val)
+void MirandaSkinnedDialog::setSettting(const char *name, const char *val, bool global)
 {
 	char setting[SETTING_NAME_SIZE];
-	getSettingName(setting, name);
+	getSettingName(setting, name, global);
 
 	DBWriteContactSettingString(NULL, getModule(), setting, val);
 }
 
-void MirandaSkinnedDialog::getSettingName(char *setting, const char * name)
+void MirandaSkinnedDialog::getSettingName(char *setting, const char * name, bool global)
 {
-	mir_snprintf(setting, SETTING_NAME_SIZE, "%s%s%s", TcharToChar(getSkinName()), getName(), name);
+	if (global)
+		mir_snprintf(setting, SETTING_NAME_SIZE, "%s%s", getName(), name);
+	else
+		mir_snprintf(setting, SETTING_NAME_SIZE, "%s%s%s", TcharToChar(getSkinName()), getName(), name);
 }
 
 void MirandaSkinnedDialog::setOnSkinChangedCallback(MirandaSkinnedCallback cb, void *param)

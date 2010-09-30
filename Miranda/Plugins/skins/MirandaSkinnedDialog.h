@@ -42,16 +42,16 @@ private:
 	void loadFromDB(SkinOption *opt);
 	void storeToDB(const SkinOption *opt);
 
-	bool getSettting(const char *name, bool defVal);
-	void setSettting(const char *name, bool val);
-	int getSettting(const char *name, int defVal);
-	void setSettting(const char *name, int val);
-	void getSettting(const char *name, const WCHAR *defVal, std::wstring &ret);
-	void setSettting(const char *name, const WCHAR *val);
-	void getSettting(const char *name, const char *defVal, std::string &ret);
-	void setSettting(const char *name, const char *val);
+	bool getSettting(const char *name, bool defVal, bool global = false);
+	void setSettting(const char *name, bool val, bool global = false);
+	int getSettting(const char *name, int defVal, bool global = false);
+	void setSettting(const char *name, int val, bool global = false);
+	void getSettting(const char *name, const WCHAR *defVal, std::wstring &ret, bool global = false);
+	void setSettting(const char *name, const WCHAR *val, bool global = false);
+	void getSettting(const char *name, const char *defVal, std::string &ret, bool global = false);
+	void setSettting(const char *name, const char *val, bool global = false);
 
-	inline void getSettingName(char *setting, const char * name);
+	inline void getSettingName(char *setting, const char * name, bool global);
 
 	void fireOnSkinChanged();
 
