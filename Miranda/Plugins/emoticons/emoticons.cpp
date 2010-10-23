@@ -30,7 +30,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Emoticons",
 #endif
-	PLUGIN_MAKE_VERSION(0,3,0,0),
+	PLUGIN_MAKE_VERSION(0,3,0,1),
 	"Emoticons",
 	"Ricardo Pescuma Domenecci",
 	"",
@@ -289,7 +289,7 @@ protected:
 		url = &url[pos];
 
 		removeOtherArguments(url, out, outLen);
-		return true;
+		return out[0] != _T('\0');
 	}
 
 	void removeOtherArguments(const TCHAR *url, TCHAR *out, size_t outLen)
@@ -562,7 +562,7 @@ BOOL isVideo(const TCHAR *url, size_t urlLen, FlashData *flash)
 
 	for (int j = 0; j < MAX_REGS(videos); j++)
 	{
-		if (videos[j]->convertToFlash(tmp, flash))
+		if (videos[j]->convertToFlash(tmp, flash)) 
 			return TRUE;
 	}
 	
@@ -1031,7 +1031,7 @@ int AddVideo(RichEditCtrl &rec, int pos, const FlashData *flash)
 		cf.dwMask = CFM_ALL2;
 		SendMessage(rec.hwnd, EM_GETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf);
 
-		sel.cpMin = sel.cpMax = pos + 1;
+		sel.cpMin = sel.cpMax = pos;
 		SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
 		
 		if (cf.dwEffects & CFE_AUTOBACKCOLOR)
@@ -1053,13 +1053,6 @@ int AddVideo(RichEditCtrl &rec, int pos, const FlashData *flash)
 			SendMessage(rec.hwnd, EM_EXSETSEL, 0, (LPARAM) &sel);
 			SendMessage(rec.hwnd, EM_REPLACESEL, FALSE, (LPARAM) _T("\n"));
 			ret++;
-
-	/*		StreamData data("aaaa");
-			EDITSTREAM stream = {0};
-			stream.pfnCallback = StreamInEvents;
-			stream.dwCookie = (DWORD_PTR) &data;
-			SendMessage(rec.hwnd, EM_STREAMIN, SFF_SELECTION | SF_RTF, (LPARAM) &stream);
-	*/
 
 			sel.cpMin = pos;
 			sel.cpMax = pos + 3;
@@ -1188,7 +1181,7 @@ void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, TC
 		{
 			int urlLen = findURLEnd(&text[i], len - i);
 
-			if (!inInputArea)
+			if (allowVideo)
 			{
 				FlashData flash;
 				if (isVideo(&text[i], urlLen, &flash))
@@ -1209,6 +1202,7 @@ void ReplaceAllEmoticons(RichEditCtrl &rec, Contact *contact, Module *module, TC
 
 					int this_dif = AddVideo(rec, pos, &flash);
 
+					diff += this_dif;
 					i += this_dif - 1;
 					continue;
 				}
