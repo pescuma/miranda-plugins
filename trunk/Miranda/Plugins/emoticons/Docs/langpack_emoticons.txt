@@ -12,6 +12,7 @@
 [Use default emoticon pack for unknown protocols]
 [Only replace emoticons surrounded by spaces]
 [Enable custom smileys]
+[Embed videos]
 [Download more emoticon packs]
 
 [Protocols Configuration]

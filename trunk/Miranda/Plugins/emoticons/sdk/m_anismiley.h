@@ -40,30 +40,25 @@ typedef struct _tagINSERTANISMILEY
 
 #if defined ServiceExists && defined CallService && !defined InsertAnimatedSmiley
 
-#ifdef _cplusplus
-extern "C" {
-#endif
 static BOOL InsertAnimatedSmiley(HWND _hwnd, const TCHAR * _szFilename, COLORREF _dwBack, int _nWidth, int _nHeight, const TCHAR * _szText, const TCHAR * _szFlashVars)
-    {
-        static int bServiceExists=-1;        
-        INSERTANISMILEY ias={0};
-        if (bServiceExists==-1)
-            bServiceExists=ServiceExists(MS_INSERTANISMILEY);        
-        if (!bServiceExists) return FALSE;
-        ias.cbSize=sizeof(INSERTANISMILEY);
-        ias.hWnd=_hwnd;
-        ias.tcsFilename=_szFilename;
-        ias.dwFlags=IASF_TCHAR;
-        ias.nWidth=_nWidth;
-        ias.nHeight=_nHeight;
-        ias.dwBackColor=_dwBack;
-        ias.tcsText=_szText;
-		ias.tcsFlashVars=_szFlashVars;
-        return (BOOL) CallService(MS_INSERTANISMILEY,(WPARAM)&ias, 0);
-    };
-#ifdef _cplusplus
+{
+    static int bServiceExists=-1;        
+    INSERTANISMILEY ias={0};
+    if (bServiceExists==-1)
+        bServiceExists=ServiceExists(MS_INSERTANISMILEY);        
+    if (!bServiceExists) return FALSE;
+    ias.cbSize=sizeof(INSERTANISMILEY);
+    ias.hWnd=_hwnd;
+    ias.tcsFilename=_szFilename;
+    ias.dwFlags=IASF_TCHAR;
+    ias.nWidth=_nWidth;
+    ias.nHeight=_nHeight;
+    ias.dwBackColor=_dwBack;
+    ias.tcsText=_szText;
+	ias.tcsFlashVars=_szFlashVars;
+    return (BOOL) CallService(MS_INSERTANISMILEY,(WPARAM)&ias, 0);
 };
-#endif
+
 #endif // defined ServiceExists && defined CallService
 
 
