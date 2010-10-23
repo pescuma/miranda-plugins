@@ -557,11 +557,18 @@ int SIPProto::Connect()
 
 		if (!IsEmpty(opts.stun.host))
 		{
-			TCHAR tmp[1024];
-			mir_sntprintf(tmp, MAX_REGS(tmp), _T("%s:%d"), 
-				CleanupSip(opts.stun.host), 
-				FirstGtZero(opts.stun.port, PJ_STUN_PORT));
-			stun = TcharToSip(tmp).detach();
+			if (_tcsncmp(opts.stun.host, _T("sip:"), 4) == 0)
+			{
+				stun = TcharToSip(opts.stun.host).detach();
+			}
+			else
+			{
+				TCHAR tmp[1024];
+				mir_sntprintf(tmp, MAX_REGS(tmp), _T("%s:%d"), 
+					CleanupSip(opts.stun.host), 
+					FirstGtZero(opts.stun.port, PJ_STUN_PORT));
+				stun = TcharToSip(tmp).detach();
+			}
 
 			cfg.stun_srv_cnt = 1;
 			cfg.stun_srv[0] = pj_str(stun);
@@ -569,12 +576,18 @@ int SIPProto::Connect()
 
 		if (!IsEmpty(opts.dns.host))
 		{
-			TCHAR tmp[1024];
-			mir_sntprintf(tmp, MAX_REGS(tmp), _T("%s:%d"), 
-				CleanupSip(opts.dns.host), 
-				FirstGtZero(opts.dns.port, 53));
-			dns = TcharToSip(tmp).detach();
-
+			if (_tcsncmp(opts.dns.host, _T("sip:"), 4) == 0)
+			{
+				dns = TcharToSip(opts.dns.host).detach();
+			}
+			else
+			{
+				TCHAR tmp[1024];
+				mir_sntprintf(tmp, MAX_REGS(tmp), _T("%s:%d"), 
+					CleanupSip(opts.dns.host), 
+					FirstGtZero(opts.dns.port, 53));
+				dns = TcharToSip(tmp).detach();
+			}
 			cfg.nameserver_count = 1;
 			cfg.nameserver[0] = pj_str(dns);
 		}
@@ -660,20 +673,36 @@ int SIPProto::Connect()
 
 		if (!IsEmpty(opts.registrar.host))
 		{
-			BuildURI(tmp, MAX_REGS(tmp), NULL, 
-					 CleanupSip(opts.registrar.host), 
-					 FirstGtZero(opts.registrar.port, 5060));
-			registrar = TcharToSip(tmp).detach();
+			if (_tcsncmp(opts.registrar.host, _T("sip:"), 4) == 0)
+			{
+				registrar = TcharToSip(opts.registrar.host).detach();
+			}
+			else
+			{
+				int port = FirstGtZero(opts.registrar.port, 5060);
+				BuildURI(tmp, MAX_REGS(tmp), NULL, 
+					CleanupSip(opts.registrar.host), 
+					port == 5060 ? 0 : port);
+				registrar = TcharToSip(tmp).detach();
+			}
 
 			cfg.reg_uri = pj_str(registrar);
 		}
 
 		if (!IsEmpty(opts.proxy.host))
 		{
-			BuildURI(tmp, MAX_REGS(tmp), NULL, 
-					 CleanupSip(opts.proxy.host), 
-					 FirstGtZero(opts.proxy.port, 5060));
-			proxy = TcharToSip(tmp).detach();
+			if (_tcsncmp(opts.proxy.host, _T("sip:"), 4) == 0)
+			{
+				proxy = TcharToSip(opts.proxy.host).detach();
+			}
+			else
+			{
+				int port = FirstGtZero(opts.proxy.port, 5060);
+				BuildURI(tmp, MAX_REGS(tmp), NULL, 
+						 CleanupSip(opts.proxy.host), 
+						 port == 5060 ? 0 : port);
+				proxy = TcharToSip(tmp).detach();
+			}
 
 			cfg.proxy_cnt = 1;
 			cfg.proxy[0] = pj_str(proxy);
