@@ -165,6 +165,11 @@
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Unicode Release|x64'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Unicode Release|x64'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Unicode Release|x64'" />
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Unicode Debug|Win32'">$(ProjectName)W</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Unicode Debug|x64'">$(ProjectName)64</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Unicode Release|x64'">$(ProjectName)64</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectName)64</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectName)64</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Unicode Release|Win32'">
     <Midl>
@@ -242,8 +247,8 @@
       <MapFileName>.\Release64/spellchecker64.map</MapFileName>
       <BaseAddress>0x3EC20000</BaseAddress>
       <TargetMachine>MachineX64</TargetMachine>
-      <OutputFile>$(OutDir)$(TargetName)64$(TargetExt)</OutputFile>
-      <ProgramDatabaseFile>$(TargetDir)$(TargetName)64.pdb</ProgramDatabaseFile>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -318,7 +323,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <BaseAddress>0x3EC20000</BaseAddress>
       <TargetMachine>MachineX64</TargetMachine>
-      <OutputFile>$(OutDir)$(TargetName)64$(TargetExt)</OutputFile>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ProgramDatabaseFile>$(TargetDir)$(TargetName)64.pdb</ProgramDatabaseFile>
     </Link>
     <Bscmake>
@@ -392,7 +397,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <BaseAddress>0x3EC20000</BaseAddress>
       <TargetMachine>MachineX64</TargetMachine>
-      <OutputFile>$(OutDir)$(TargetName)64$(TargetExt)</OutputFile>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ProgramDatabaseFile>$(TargetDir)$(TargetName)64.pdb</ProgramDatabaseFile>
     </Link>
     <Bscmake>
@@ -474,7 +479,7 @@
       <MapFileName>.\Release/spellchecker.map</MapFileName>
       <BaseAddress>0x3EC20000</BaseAddress>
       <TargetMachine>MachineX64</TargetMachine>
-      <OutputFile>$(OutDir)$(TargetName)64$(TargetExt)</OutputFile>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <ProgramDatabaseFile>$(TargetDir)$(TargetName)64.pdb</ProgramDatabaseFile>
     </Link>
     <Bscmake>
