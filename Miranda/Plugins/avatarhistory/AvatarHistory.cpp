@@ -36,7 +36,7 @@ HANDLE hFolder = NULL;
 
 char *metacontacts_proto = NULL;
 
-char profilePath[MAX_PATH];		// database profile path (read at startup only)
+TCHAR profilePath[MAX_PATH];		// database profile path (read at startup only)
 TCHAR basedir[MAX_PATH];
 MM_INTERFACE mmi;
 int hLangpack = 0;
@@ -48,10 +48,8 @@ int OptInit(WPARAM wParam,LPARAM lParam);
 
 TCHAR * GetHistoryFolder(TCHAR *fn);
 TCHAR * GetProtocolFolder(TCHAR *fn, char *proto);
-TCHAR * GetContactFolder(TCHAR *fn, HANDLE hContact);
 TCHAR * GetOldStyleAvatarName(TCHAR *fn, HANDLE hContact);
 
-void InitFolders();
 void InitMenuItem();
 
 void * GetHistoryEventText(HANDLE hContact, HANDLE hDbEvent, DBEVENTINFO *dbe, int format);
@@ -59,7 +57,7 @@ void * GetHistoryEventText(HANDLE hContact, HANDLE hDbEvent, DBEVENTINFO *dbe, i
 // Services
 static INT_PTR IsEnabled(WPARAM wParam, LPARAM lParam);
 static INT_PTR GetCachedAvatar(WPARAM wParam, LPARAM lParam);
-TCHAR * GetCachedAvatar(char *proto, char *hash);
+TCHAR * GetCachedAvatar(char *proto, TCHAR *hash);
 BOOL CreateShortcut(TCHAR *file, TCHAR *shortcut);
 
 #ifdef DBGPOPUPS
@@ -78,12 +76,12 @@ PLUGININFOEX pluginInfo={
 #else
 	"Avatar History (Ansi)",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,2,10),
+	PLUGIN_MAKE_VERSION(0,0,3,0),
 	"This plugin keeps backups of all your contacts' avatar changes and/or shows popups",
 	"Matthew Wild (MattJ), Ricardo Pescuma Domenecci",
 	"mwild1@gmail.com",
-	"© 2006-2007 Matthew Wild, Ricardo Pescuma Domenecci",
-	"http://pescuma.mirandaim.ru/miranda/avatarhist",
+	"© 2006-2012 Matthew Wild, Ricardo Pescuma Domenecci",
+	"http://pescuma.org/miranda/avatarhist",
 	UNICODE_AWARE,
 	0,		//doesn't replace anything built-in
 #ifdef WIN64
@@ -103,6 +101,11 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvRese
 
 extern "C" __declspec(dllexport) PLUGININFOEX* MirandaPluginInfoEx(DWORD mirandaVersion)
 {
+	if(mirandaVersion < PLUGIN_MAKE_VERSION(0,10,0,3))
+	{
+		MessageBox(NULL,_T("AvatarHistory requires Miranda IM 0.10 Alpha #3 or later."),_T("Avatar History"),MB_OK);
+		return NULL;
+	}
 	mirVer = mirandaVersion;
 	return &pluginInfo;
 }
@@ -211,22 +214,20 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	hServices[0] = CreateServiceFunction(MS_AVATARHISTORY_ENABLED, IsEnabled);
 	hServices[1] = CreateServiceFunction(MS_AVATARHISTORY_GET_CACHED_AVATAR, GetCachedAvatar);
 
-	if(CallService(MS_DB_GETPROFILEPATH, MAX_PATH, (LPARAM)profilePath) != 0)
-		strcpy(profilePath, "."); // Failed, use current dir
-	_strlwr(profilePath);
+	if(CallService(MS_DB_GETPROFILEPATHT, MAX_PATH, (LPARAM)profilePath) != 0)
+		_tcscpy(profilePath, _T(".")); // Failed, use current dir
+
+	SkinAddNewSoundExT("avatar_changed",LPGENT("Avatar History"),LPGENT("Contact changed avatar"));
+	SkinAddNewSoundExT("avatar_removed",LPGENT("Avatar History"),LPGENT("Contact removed avatar"));
 
 	return 0;
 }
 
 static int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 {
-#ifdef UNICODE
-	mir_sntprintf(basedir, MAX_REGS(basedir), _T("%S\\Avatars History"), profilePath);
-#else
 	mir_sntprintf(basedir, MAX_REGS(basedir), _T("%s\\Avatars History"), profilePath);
-#endif
 
-	hFolder = (HANDLE)FoldersRegisterCustomPathT(LPGEN("Avatars"), LPGEN("Avatar History"), 
+	hFolder = FoldersRegisterCustomPathT(LPGEN("Avatars"), LPGEN("Avatar History"), 
 		PROFILE_PATHT _T("\\") CURRENT_PROFILET _T("\\Avatars History"));
 
 	hHooks[2] = HookEvent(ME_AV_CONTACTAVATARCHANGED, AvatarChanged);
@@ -249,18 +250,20 @@ static int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 		upd.szUpdateURL = UPDATER_AUTOREGISTER;
 
-		upd.szBetaVersionURL = "http://pescuma.mirandaim.ru/miranda/avatarhist_version.txt";
-		upd.szBetaChangelogURL = "http://pescuma.mirandaim.ru/miranda/avatarhist#Changelog";
+		upd.szBetaVersionURL = "http://pescuma.org/miranda/avatarhist_version.txt";
+		upd.szBetaChangelogURL = "http://pescuma.org/miranda/avatarhist#Changelog";
 		upd.pbBetaVersionPrefix = (BYTE *)"Avatar History ";
-		upd.cpbBetaVersionPrefix = strlen((char *)upd.pbBetaVersionPrefix);
-#ifdef UNICODE
-		upd.szBetaUpdateURL = "http://pescuma.mirandaim.ru/miranda/avatarhistW.zip";
+		upd.cpbBetaVersionPrefix = (int) strlen((char *)upd.pbBetaVersionPrefix);
+#ifdef WIN64
+		upd.szBetaUpdateURL = "http://pescuma.org/miranda/avatarhist64.zip";
+#elif UNICODE
+		upd.szBetaUpdateURL = "http://pescuma.org/miranda/avatarhistW.zip";
 #else
-		upd.szBetaUpdateURL = "http://pescuma.mirandaim.ru/miranda/avatarhist.zip";
+		upd.szBetaUpdateURL = "http://pescuma.org/miranda/avatarhist.zip";
 #endif
 
 		upd.pbVersion = (BYTE *)CreateVersionStringPluginEx(&pluginInfo, szCurrentVersion);
-		upd.cpbVersion = strlen((char *)upd.pbVersion);
+		upd.cpbVersion = (int) strlen((char *)upd.pbVersion);
 
         CallService(MS_UPDATE_REGISTER, 0, (LPARAM)&upd);
 	}
@@ -334,56 +337,7 @@ BOOL IsUnicodeAscii(const WCHAR * pBuffer, int nSize)
 	return bResult;
 }
 
-
-int PathIsAbsolute(const char *path)
-{
-    if (!path || !(strlen(path) > 2)) 
-        return 0;
-    if ((path[1]==':'&&path[2]=='\\')||(path[0]=='\\'&&path[1]=='\\')) return 1;
-    return 0;
-}
-
-int PathToRelative(const char *pSrc, char *pOut)
-{
-    if (!pSrc||!strlen(pSrc)||strlen(pSrc)>MAX_PATH) return 0;
-    if (!PathIsAbsolute(pSrc)) {
-        mir_snprintf(pOut, MAX_PATH, "%s", pSrc);
-        return strlen(pOut);
-    }
-    else {
-        char szTmp[MAX_PATH];
-        mir_snprintf(szTmp, MAX_REGS(szTmp), "%s", pSrc);
-        _strlwr(szTmp);
-        if (strstr(szTmp, profilePath)) {
-            mir_snprintf(pOut, MAX_PATH, "%s", pSrc + strlen(profilePath) + 1);
-            return strlen(pOut);
-        }
-        else {
-            mir_snprintf(pOut, MAX_PATH, "%s", pSrc);
-            return strlen(pOut);
-        }
-    }
-
-	return 0;
-}
-
-int PathToAbsolute(char *pSrc, char *pOut) 
-{
-    if (!pSrc||!strlen(pSrc)||strlen(pSrc)>MAX_PATH) 
-		return 0;
-    if (PathIsAbsolute(pSrc)||!isalnum(pSrc[0])) 
-	{
-        mir_snprintf(pOut, MAX_PATH, "%s", pSrc);
-        return 1;
-    }
-    else 
-	{
-        mir_snprintf(pOut, MAX_PATH, "%s\\%s", profilePath, pSrc);
-        return 1;
-    }
-}
-
-void ConvertToFilename(char *str, size_t size) {
+void ConvertToFilename(TCHAR *str, size_t size) {
 	for(size_t i = 0; i < size && str[i] != '\0'; i++) {
 		switch(str[i]) {
 			case '/':
@@ -395,12 +349,43 @@ void ConvertToFilename(char *str, size_t size) {
 			case '<':
 			case '>':
 			case '|':
-			case '.':
+			//case '.':
 				str[i] = '_';
 		}
 	}
 }
 
+void ErrorExit(HANDLE hContact,LPTSTR lpszFunction) 
+{ 
+    // Retrieve the system error message for the last-error code
+
+    LPVOID lpMsgBuf;
+    LPVOID lpDisplayBuf;
+    DWORD dw = GetLastError(); 
+
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        dw,
+        MAKELANGID(LANG_GERMAN, SUBLANG_GERMAN),
+        (LPTSTR) &lpMsgBuf,
+        0, NULL );
+
+    // Display the error message and exit the process
+
+    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
+        (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR)); 
+    StringCchPrintf((LPTSTR)lpDisplayBuf, 
+        LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+        TEXT("%s failed with error %d: %s"), 
+        lpszFunction, dw, lpMsgBuf); 
+    ShowDebugPopup(hContact,TEXT("Error"),  (LPCTSTR)lpDisplayBuf); 
+
+    LocalFree(lpMsgBuf);
+    LocalFree(lpDisplayBuf);
+}
 
 #ifdef UNICODE
 
@@ -415,6 +400,7 @@ void ConvertToFilename(char *str, size_t size) {
 
 TCHAR * GetExtension(TCHAR *file)
 {
+	if(file == NULL) return _T("");
 	TCHAR *ext = _tcsrchr(file, _T('.'));
 	if (ext != NULL)
 		ext++;
@@ -436,43 +422,24 @@ void CreateOldStyleShortcut(HANDLE hContact, TCHAR *history_filename)
 
 	if (!CreateShortcut(history_filename, shortcut))
 	{
-		ShowPopup(hContact, _T("Avatar History"), _T("Unable to create shortcut"));
+		ShowPopup(hContact, _T("Avatar History: Unable to create shortcut"), shortcut);
 	}
 	else
 	{
-		ShowDebugPopup(hContact, _T("AVH Debug"), _T("Shortcut created successfully"));
+		ShowDebugPopup(hContact, _T("AVH Debug: Shortcut created successfully"), shortcut);
 	}
 }
 
 
-int CopyImageFile(TCHAR *old_file, TCHAR *new_file)
+BOOL CopyImageFile(TCHAR *old_file, TCHAR *new_file)
 {
 	TCHAR *ext = GetExtension(old_file);
+	mir_sntprintf(new_file, MAX_PATH, _T("%s.%s"), new_file, ext);
 
-	if (lstrcmpi(ext, _T("bmp")) == 0 
-		&& ServiceExists(MS_IMG_SAVE))
-	{
-		// Store as PNG
-		mir_sntprintf(new_file, MAX_PATH, _T("%s.png"), new_file);
-
-		IMGSRVC_INFO ii = {0};
-		ii.cbSize = sizeof(ii);
-#ifdef UNICODE
-		ii.wszName = new_file;
-#else
-		ii.szName = new_file;
-#endif
-		ii.hbm = (HBITMAP) CallService(MS_IMG_LOAD, (WPARAM) old_file, IMGL_TCHAR);
-		ii.dwMask = IMGI_HBITMAP;
-		ii.fif = FIF_UNKNOWN;
-		return CallService(MS_IMG_SAVE, (WPARAM) &ii, IMGL_TCHAR) != 1;
-	}
-	else
-	{
-		mir_sntprintf(new_file, MAX_PATH, _T("%s.%s"), new_file, ext);
-
-		return !CopyFile(old_file, new_file, TRUE);
-	}
+	BOOL ret = CopyFile(old_file, new_file, TRUE);
+	if(!ret)
+		ErrorExit(NULL,_T("CopyImageFile"));
+	return !ret;
 }
 
 // fired when the contacts avatar changes
@@ -495,37 +462,38 @@ static int AvatarChanged(WPARAM wParam, LPARAM lParam)
 		return 0;
 	}
 
-	char *proto = (char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
+	char *proto = (char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, wParam, 0);
 	if (proto == NULL)
 	{
-		ShowDebugPopup(NULL, _T("AVH Debug"), _T("Invalid protocol... skipping"));
+		ShowDebugPopup(hContact, _T("AVH Debug"), _T("Invalid protocol... skipping"));
 		return 0;
 	}
 	else if (metacontacts_proto != NULL && strcmp(metacontacts_proto, proto) == 0)
 	{
-		ShowDebugPopup(NULL, _T("AVH Debug"), _T("Ignoring metacontacts notification"));
+		ShowDebugPopup(hContact, _T("AVH Debug"), _T("Ignoring metacontacts notification"));
 		return 0;
 	}
 
 	BOOL removed = (avatar == NULL && DBGetContactSettingWord(hContact, "ContactPhoto", "Format", 0) == 0);
 
-	char oldhash[1024] = "";
-	char * ret = MyDBGetString(hContact, "AvatarHistory", "AvatarHash", oldhash, sizeof(oldhash));
+	TCHAR oldhash[1024] = _T("");
+	TCHAR * ret = MyDBGetStringT(hContact, MODULE_NAME, "AvatarHash", oldhash, sizeof(oldhash));
 
 	BOOL first_time = (ret == NULL);
 
 	if(
-		(avatar != NULL && !strcmp(oldhash, avatar->hash)) // Changed it
+		(avatar != NULL && !_tcscmp(oldhash, avatar->hash)) // Changed it
 		|| (avatar == NULL && oldhash[0] == '\0') // Removed it
 		)
 	{
-		ShowDebugPopup(NULL, "AVH Debug", "Hashes are the same... skipping");
+		ShowDebugPopup(hContact, _T("AVH Debug"), _T("Hashes are the same... skipping"));
 		return 0;
 	}
 
 	if (removed)
 	{
-		db_string_set(hContact, "AvatarHistory", "AvatarHash", "");
+		SkinPlaySound("avatar_removed");
+		DBWriteContactSettingTString(hContact, MODULE_NAME, "AvatarHash", _T(""));
 
 		if (!first_time && ContactEnabled(hContact, "AvatarPopups", AVH_DEF_AVPOPUPS) && opts.popup_show_removed)
 			ShowPopup(hContact, NULL, opts.popup_removed);
@@ -535,14 +503,14 @@ static int AvatarChanged(WPARAM wParam, LPARAM lParam)
 	}
 	else if (avatar == NULL)
 	{
-		if (!strcmp(oldhash, "-"))
+		if (!_tcscmp(oldhash, _T("-")))
 		{
-			ShowDebugPopup(NULL, "AVH Debug", "Changed from a flash avatar to a flash avatar... skipping");
+			ShowDebugPopup(hContact, _T("AVH Debug"), _T("Changed from a flash avatar to a flash avatar... skipping"));
 			return 0;
 		}
 
 		// Is a flash avatar or avs could not load it
-		db_string_set(hContact, "AvatarHistory", "AvatarHash", "-");
+		DBWriteContactSettingTString(hContact, MODULE_NAME, "AvatarHash", _T("-"));
 
 		if (!first_time && ContactEnabled(hContact, "AvatarPopups", AVH_DEF_AVPOPUPS) && opts.popup_show_changed)
 			ShowPopup(hContact, NULL, opts.popup_changed);
@@ -552,7 +520,8 @@ static int AvatarChanged(WPARAM wParam, LPARAM lParam)
 	}
 	else
 	{
-		db_string_set(hContact, "AvatarHistory", "AvatarHash", avatar->hash);
+		SkinPlaySound("avatar_changed");
+		DBWriteContactSettingTString(hContact, "AvatarHistory", "AvatarHash", avatar->hash);
 
 		TCHAR history_filename[MAX_PATH] = _T("");
 
@@ -562,27 +531,25 @@ static int AvatarChanged(WPARAM wParam, LPARAM lParam)
 			{
 				if (opts.log_per_contact_folders)
 				{
-					INPLACE_CHAR_TO_TCHAR(file, 1024, avatar->filename);
-
 					GetOldStyleAvatarName(history_filename, hContact);
-					if (CopyImageFile(file, history_filename))
-						ShowPopup(hContact, _T("Avatar History"), _T("Unable to save avatar"));
+					if (CopyImageFile(avatar->filename, history_filename))
+						ShowPopup(hContact, _T("Avatar History: Unable to save avatar"), history_filename);
 					else
-						ShowDebugPopup(hContact, _T("AVH Debug"), _T("File copied successfully"));
+						ShowDebugPopup(hContact, _T("AVH Debug: File copied successfully"), history_filename);
 
 					if (ServiceExists(MS_MC_GETMETACONTACT)) 
 					{
-						HANDLE hMetaContact = (HANDLE) CallService(MS_MC_GETMETACONTACT, (WPARAM)hContact, 0);
+						HANDLE hMetaContact = (HANDLE) CallService(MS_MC_GETMETACONTACT, wParam, 0);
 
 						if (hMetaContact != NULL && ContactEnabled(hMetaContact, "LogToDisk", AVH_DEF_LOGTOHISTORY))
 						{
 							TCHAR filename[MAX_PATH] = _T("");
 
 							GetOldStyleAvatarName(filename, hMetaContact);
-							if (CopyImageFile(file, filename))
-								ShowPopup(hContact, _T("Avatar History"), _T("Unable to save avatar"));
+							if (CopyImageFile(avatar->filename, filename))
+								ShowPopup(hContact, _T("Avatar History: Unable to save avatar"), filename);
 							else
-								ShowDebugPopup(hContact, _T("AVH Debug"), _T("File copied successfully"));
+								ShowDebugPopup(hContact, _T("AVH Debug: File copied successfully"), filename);
 						}
 					}
 				}
@@ -590,8 +557,8 @@ static int AvatarChanged(WPARAM wParam, LPARAM lParam)
 			else
 			{
 				// See if we already have the avatar
-				char hash[128];
-				lstrcpynA(hash, avatar->hash, sizeof(hash));
+				TCHAR hash[128];
+				lstrcpyn(hash, avatar->hash, sizeof(hash));
 				ConvertToFilename(hash, sizeof(hash));
 
 				TCHAR *file = GetCachedAvatar(proto, hash);
@@ -603,22 +570,18 @@ static int AvatarChanged(WPARAM wParam, LPARAM lParam)
 				}
 				else
 				{
-					// Needed because path in event is char*
-					INPLACE_CHAR_TO_TCHAR(file, MAX_PATH, avatar->filename);
-					TCHAR *ext = GetExtension(file);
-
 					if (opts.log_keep_same_folder)
 						GetHistoryFolder(history_filename);
 					else
 						GetProtocolFolder(history_filename, proto);
 
 					mir_sntprintf(history_filename, MAX_REGS(history_filename), 
-							_T("%s\\") _T(CS), history_filename, hash);
+							_T("%s\\%s"), history_filename, hash);
 
-					if (CopyImageFile(file, history_filename))
-						ShowPopup(hContact, _T("Avatar History"), _T("Unable to save avatar"));
+					if (CopyImageFile(avatar->filename, history_filename))
+						ShowPopup(hContact, _T("Avatar History: Unable to save avatar"), history_filename);
 					else
-						ShowDebugPopup(hContact, _T("AVH Debug"), _T("File copied successfully"));
+						ShowDebugPopup(hContact, _T("AVH Debug: File copied successfully"), history_filename);
 				}
 
 				if (opts.log_per_contact_folders)
@@ -627,7 +590,7 @@ static int AvatarChanged(WPARAM wParam, LPARAM lParam)
 
 					if (ServiceExists(MS_MC_GETMETACONTACT)) 
 					{
-						HANDLE hMetaContact = (HANDLE) CallService(MS_MC_GETMETACONTACT, (WPARAM)hContact, 0);
+						HANDLE hMetaContact = (HANDLE) CallService(MS_MC_GETMETACONTACT, wParam, 0);
 
 						if (hMetaContact != NULL && ContactEnabled(hMetaContact, "LogToDisk", AVH_DEF_LOGTOHISTORY))
 							CreateOldStyleShortcut(hMetaContact, history_filename);
@@ -644,8 +607,8 @@ static int AvatarChanged(WPARAM wParam, LPARAM lParam)
 		{
 			char rel_path[MAX_PATH] = "";
 			INPLACE_TCHAR_TO_CHAR(tmp, MAX_PATH, history_filename);
-			PathToRelative(tmp, rel_path);
-			HistoryEvents_AddToHistoryEx(hContact, EVENTTYPE_AVATAR_CHANGE, 0, NULL, 0, (PBYTE) rel_path, strlen(rel_path) + 1, DBEF_READ);
+			CallService(MS_UTILS_PATHTORELATIVE,(WPARAM)tmp,(LPARAM)rel_path);
+			HistoryEvents_AddToHistoryEx(hContact, EVENTTYPE_AVATAR_CHANGE, 0, NULL, 0, (PBYTE) rel_path, (int) strlen(rel_path) + 1, DBEF_READ);
 		}
 	}
 
@@ -671,19 +634,19 @@ static INT_PTR IsEnabled(WPARAM wParam, LPARAM lParam)
 Get cached avatar
 
 wParam: (char *) protocol name
-lParam: (char *) hash 
+lParam: (TCHAR *) hash 
 return: (TCHAR *) NULL if none is found or the path to the avatar. You need to free this string 
         with mir_free.
 */
 static INT_PTR GetCachedAvatar(WPARAM wParam, LPARAM lParam)
 {
-	char hash[128];
-	lstrcpynA(hash, (char *) lParam, sizeof(hash));
+	TCHAR hash[128];
+	lstrcpyn(hash, (TCHAR *) lParam, sizeof(hash));
 	ConvertToFilename(hash, sizeof(hash));
-	return (int) GetCachedAvatar((char *) wParam, hash);
+	return (INT_PTR) GetCachedAvatar((char *) wParam, hash);
 }
 
-TCHAR * GetCachedAvatar(char *proto, char *hash)
+TCHAR * GetCachedAvatar(char *proto, TCHAR *hash)
 {
 	TCHAR *ret = NULL;
 	TCHAR file[1024] = _T("");
@@ -693,7 +656,7 @@ TCHAR * GetCachedAvatar(char *proto, char *hash)
 	else
 		GetProtocolFolder(file, proto);
 
-	mir_sntprintf(search, MAX_REGS(search), _T("%s\\") _T(CS) _T(".*"), file, hash);
+	mir_sntprintf(search, MAX_REGS(search), _T("%s\\%s.*"), file, hash);
 
 	WIN32_FIND_DATA finddata;
 	HANDLE hFind = FindFirstFile(search, &finddata);
@@ -763,7 +726,8 @@ int GetUIDFromHContact(HANDLE contact, TCHAR* uinout, size_t uinout_len)
 TCHAR * GetHistoryFolder(TCHAR *fn)
 {
 	FoldersGetCustomPathT(hFolder, fn, MAX_PATH, basedir);
-	CreateDirectory(fn, NULL);
+	if(!CreateDirectory(fn, NULL))
+		ErrorExit(NULL,_T("GetHistoryFolder"));
 
 	return fn;
 }
@@ -777,7 +741,8 @@ TCHAR * GetProtocolFolder(TCHAR *fn, char *proto)
 		proto = Translate("Unknown Protocol");
 
 	mir_sntprintf(fn, MAX_PATH, _T("%s\\") _T(CS), fn, proto);
-	CreateDirectory(fn, NULL);
+	if(!CreateDirectory(fn, NULL))
+		ErrorExit(NULL,_T("CreateDirectory"));
 	
 	return fn;
 }
@@ -792,12 +757,14 @@ TCHAR * GetContactFolder(TCHAR *fn, HANDLE hContact)
 	
 	GetUIDFromHContact(hContact, uin, MAX_REGS(uin));
 	mir_sntprintf(fn, MAX_PATH, _T("%s\\%s"), fn, uin);
-	CreateDirectory(fn, NULL);
+	if(!CreateDirectory(fn, NULL))
+		ErrorExit(hContact,_T("CreateDirectory"));
+	ConvertToFilename(uin, sizeof(uin)); //added so that weather id's like "yw/CI0000" work
 	
 #ifdef DBGPOPUPS
-	char log[1024];
-	mir_snprintf(log, MAX_REGS(log), "Path: " CS "\nProto: %s\nUIN: " CS, fn, proto, uin);
-	ShowPopup(NULL, "AVH Debug: GetContactFolder", log);
+	TCHAR log[1024];
+	mir_sntprintf(log, MAX_REGS(log), _T("Path: %s\nProto: ") _T(CS) _T("\nUIN: %s"), fn, proto, uin);
+	ShowPopup(hContact, _T("AVH Debug: GetContactFolder"), log);
 #endif
 
 	return fn;
@@ -813,6 +780,7 @@ TCHAR * GetOldStyleAvatarName(TCHAR *fn, HANDLE hContact)
 		_T("%s\\%04d-%02d-%02d %02dh%02dm%02ds"), fn, 
 		curtime.wYear, curtime.wMonth, curtime.wDay, 
 		curtime.wHour, curtime.wMinute, curtime.wSecond);
+	ShowDebugPopup(hContact,_T("AVH Debug: GetOldStyleAvatarName"),fn);
 	return fn;
 }
 
@@ -850,6 +818,8 @@ BOOL CreateShortcut(TCHAR *file, TCHAR *shortcut)
         psl->Release(); 
     } 
 
+	if(FAILED(hr))
+		ErrorExit(NULL,_T("CreateShortcut"));
 	return SUCCEEDED(hr);
 }
 
@@ -893,6 +863,8 @@ BOOL ResolveShortcut(TCHAR *shortcut, TCHAR *file)
         psl->Release(); 
     }
 
+	if(FAILED(hr))
+		ErrorExit(NULL,_T("CreateShortcut"));
 	return SUCCEEDED(hr);
 }
 
@@ -1000,7 +972,7 @@ void * GetHistoryEventText(HANDLE hContact, HANDLE hDbEvent, DBEVENTINFO *dbe, i
 		if (dbe->pBlob[i] != 0)
 		{
 			char absFile[MAX_PATH] = "";
-			PathToAbsolute((char *) & dbe->pBlob[i], absFile);
+			CallService(MS_UTILS_PATHTOABSOLUTE,(WPARAM)(char *) & dbe->pBlob[i], (LPARAM)absFile);
 			HBITMAP hBmp = (HBITMAP) CallService(MS_IMG_LOAD, (WPARAM) absFile, 0);
 
 			if (hBmp != NULL)

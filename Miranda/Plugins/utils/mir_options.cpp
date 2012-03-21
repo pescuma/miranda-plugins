@@ -50,15 +50,15 @@ static TCHAR* MyDBGetContactSettingTString(HANDLE hContact, char* module, char* 
 #ifdef UNICODE
 		if (dbv.type == DBVT_ASCIIZ)
 		{
-			MultiByteToWideChar(CP_ACP, 0, dbv.pszVal, -1, out, len);
+			MultiByteToWideChar(CP_ACP, 0, dbv.pszVal, -1, out, (int)len);
 		}
 		else if (dbv.type == DBVT_UTF8)
 		{
-			MultiByteToWideChar(CP_UTF8, 0, dbv.pszVal, -1, out, len);
+			MultiByteToWideChar(CP_UTF8, 0, dbv.pszVal, -1, out, (int)len);
 		}
 		else if (dbv.type == DBVT_WCHAR)
 		{
-			lstrcpyn(out, dbv.pwszVal, len);
+			lstrcpyn(out, dbv.pwszVal, (int)len);
 		}
 #else
 		if (dbv.type == DBVT_ASCIIZ)
@@ -69,7 +69,7 @@ static TCHAR* MyDBGetContactSettingTString(HANDLE hContact, char* module, char* 
 		else
 		{
 			if (def != NULL)
-				lstrcpyn(out, def, len);
+				lstrcpyn(out, def, (int)len);
 		}
 		
 		DBFreeVariant(&dbv);
@@ -77,7 +77,7 @@ static TCHAR* MyDBGetContactSettingTString(HANDLE hContact, char* module, char* 
 	else
 	{
 		if (def != NULL)
-			lstrcpyn(out, def, len);
+			lstrcpyn(out, def, (int)len);
 	}
 
 	return out;
@@ -100,7 +100,7 @@ static void PathToRelative(TCHAR *pOut, size_t outSize, const TCHAR *pSrc)
 {
     if (!PathIsAbsolute(pSrc)) 
 	{
-		lstrcpyn(pOut, pSrc, outSize);
+		lstrcpyn(pOut, pSrc, (int)outSize);
     }
     else 
 	{
@@ -118,7 +118,7 @@ static void PathToRelative(TCHAR *pOut, size_t outSize, const TCHAR *pSrc)
         }
         else 
 		{
-            lstrcpyn(pOut, pSrc, outSize);
+            lstrcpyn(pOut, pSrc, (int)outSize);
         }
     }
 }
@@ -127,7 +127,7 @@ static void PathToAbsolute(TCHAR *pOut, size_t outSize, const TCHAR *pSrc)
 {
     if (PathIsAbsolute(pSrc) || !isalnum(pSrc[0])) 
 	{
-        lstrcpyn(pOut, pSrc, outSize);
+        lstrcpyn(pOut, pSrc, (int)outSize);
     }
     else 
 	{
@@ -237,7 +237,7 @@ void LoadOpts(OptPageControl *controls, int controlsSize, char *module)
 
 
 
-BOOL CALLBACK SaveOptsDlgProc(OptPageControl *controls, int controlsSize, char *module, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK SaveOptsDlgProc(OptPageControl *controls, int controlsSize, char *module, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
@@ -301,14 +301,8 @@ BOOL CALLBACK SaveOptsDlgProc(OptPageControl *controls, int controlsSize, char *
 						lvi.iItem = 1000;
 						
 						PROTOACCOUNT **protos;
-						int count;
-
-						BOOL hasAccounts = ServiceExists(MS_PROTO_ENUMACCOUNTS);
-
-						if (hasAccounts)
-							CallService(MS_PROTO_ENUMACCOUNTS, (WPARAM)&count, (LPARAM)&protos);
-						else
-							CallService(MS_PROTO_ENUMPROTOCOLS, (WPARAM)&count, (LPARAM)&protos);
+						int count = 0;
+						ProtoEnumAccounts(&count,&protos);
 						
 						for (int i = 0; i < count; i++)
 						{
@@ -321,18 +315,7 @@ BOOL CALLBACK SaveOptsDlgProc(OptPageControl *controls, int controlsSize, char *
 							if (ctrl->allowProtocol != NULL && !ctrl->allowProtocol(protos[i]->szModuleName))
 								continue;
 
-							TCHAR *name;
-							if (hasAccounts)
-							{
-								name = mir_tstrdup(protos[i]->tszAccountName);
-							}
-							else
-							{
-								char szName[128];
-								CallProtoService(protos[i]->szModuleName, PS_GETNAME, sizeof(szName), (LPARAM)szName);
-								name = mir_a2t(szName);
-							}
-							
+							TCHAR *name = mir_tstrdup(protos[i]->tszAccountName);
 							char *setting = (char *) mir_alloc(128 * sizeof(char));
 							mir_snprintf(setting, 128, ctrl->setting, protos[i]->szModuleName);
 

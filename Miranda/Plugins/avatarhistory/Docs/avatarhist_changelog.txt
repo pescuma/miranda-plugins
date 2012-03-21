@@ -2,6 +2,18 @@ Avatar History
 
 Changelog:
 
+. 0.0.3.0
+THIS REQUIRES MIRANDA IM 0.10 ALPHA #3 OR ABOVE!!
+  + added x64 version
+  + improved unicode support
+  + added sounds
+  + added more debug information
+  * save position of avatar history dialog
+  ! fixed crash with empty avatar history
+  * BMP files are not converted to PNG any more
+  * fixed Updater support
+
+
 . 0.0.2.10
   * Fix for get event text
 
