@@ -1,5 +1,5 @@
 /* 
-Copyright (C) 2006-2009 Ricardo Pescuma Domenecci
+Copyright (C) 2006-2012 Ricardo Pescuma Domenecci
 
 This is free software; you can redistribute it and/or
 modify it under the terms of the GNU Library General Public
@@ -30,6 +30,7 @@ Boston, MA 02111-1307, USA.
 
 
 #define MIRANDA_VER 0x0710
+#define MIRANDA_CUSTOM_LP
 
 // Miranda headers
 #include <win2k.h>

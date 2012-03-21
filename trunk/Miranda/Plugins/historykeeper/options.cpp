@@ -1,5 +1,5 @@
 /*	
-Copyright (C) 2006-2009 Ricardo Pescuma Domenecci
+Copyright (C) 2006-2010 Ricardo Pescuma Domenecci
 
 This is free software; you can redistribute it and/or
 modify it under the terms of the GNU Library General Public
@@ -30,25 +30,25 @@ Boston, MA 02111-1307, USA.
 HANDLE hOptHook = NULL;
 
 
-static BOOL CALLBACK OptionsDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-static BOOL CALLBACK PopupsDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-static BOOL CALLBACK SpeakDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-static BOOL CALLBACK NotificationsDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK OptionsDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK PopupsDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK SpeakDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK NotificationsDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 #define HACK(i) \
-		static BOOL CALLBACK OptionsDlgProc ## i (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
+		static INT_PTR CALLBACK OptionsDlgProc ## i (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
 		{ \
 			return OptionsDlgProc(i, hwndDlg, msg, wParam, lParam); \
 		} \
-		static BOOL CALLBACK PopupsDlgProc ## i (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
+		static INT_PTR CALLBACK PopupsDlgProc ## i (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
 		{ \
 			return PopupsDlgProc(i, hwndDlg, msg, wParam, lParam); \
 		} \
-		static BOOL CALLBACK SpeakDlgProc ## i (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
+		static INT_PTR CALLBACK SpeakDlgProc ## i (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
 		{ \
 			return SpeakDlgProc(i, hwndDlg, msg, wParam, lParam); \
 		} \
-		static BOOL CALLBACK NotificationsDlgProc ## i (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
+		static INT_PTR CALLBACK NotificationsDlgProc ## i (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) \
 		{ \
 			return NotificationsDlgProc(i, hwndDlg, msg, wParam, lParam); \
 		} \
@@ -147,7 +147,7 @@ int InitOptionsCallback(WPARAM wParam,LPARAM lParam)
 		ZeroMemory(&odp,sizeof(odp));
 		odp.cbSize = sizeof(odp);
 		odp.hInstance = hInst;
-		odp.pszGroup = Translate("Popups");
+		odp.pszGroup = LPGEN("Popups");
 		odp.flags = ODPF_BOLDGROUPS;
 		odp.expertOnlyControls = popupsExpertControls;
 		odp.nExpertOnlyControls = MAX_REGS(popupsExpertControls);
@@ -161,7 +161,7 @@ int InitOptionsCallback(WPARAM wParam,LPARAM lParam)
 				odp.pszTemplate = MAKEINTRESOURCEA(IDD_POPUPS_NOREM);
 
 			char tmp[128];
-			mir_snprintf(tmp, MAX_REGS(tmp), Translate("%s Change"), types[i].description);
+			mir_snprintf(tmp, MAX_REGS(tmp), Translate("%s Change"), Translate(types[i].description));
 
 			odp.pszTitle = tmp;
 			odp.pfnDlgProc = PopupsDlgProcArr[i];
@@ -175,7 +175,7 @@ int InitOptionsCallback(WPARAM wParam,LPARAM lParam)
 		ZeroMemory(&odp,sizeof(odp));
 		odp.cbSize = sizeof(odp);
 		odp.hInstance = hInst;
-		odp.pszGroup = Translate("Speak");
+		odp.pszGroup = LPGEN("Speak");
 		odp.flags = ODPF_BOLDGROUPS;
 
 		for (int i = 0; i < NUM_TYPES; i++) 
@@ -186,7 +186,7 @@ int InitOptionsCallback(WPARAM wParam,LPARAM lParam)
 				odp.pszTemplate = MAKEINTRESOURCEA(IDD_SPEAK_NOREM);
 
 			char tmp[128];
-			mir_snprintf(tmp, MAX_REGS(tmp), Translate("%s Change"), types[i].description);
+			mir_snprintf(tmp, MAX_REGS(tmp), Translate("%s Change"), Translate(types[i].description));
 
 			odp.pszTitle = tmp;
 			odp.pfnDlgProc = SpeakDlgProcArr[i];
@@ -348,7 +348,7 @@ void LoadOptions()
 }
 
 
-static BOOL CALLBACK OptionsDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
+static INT_PTR CALLBACK OptionsDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
 {
 	switch (msg) 
 	{
@@ -402,7 +402,7 @@ static BOOL CALLBACK OptionsDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wPa
 }
 
 
-static BOOL CALLBACK SpeakDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
+static INT_PTR CALLBACK SpeakDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
 {
 	switch (msg) 
 	{
@@ -450,7 +450,7 @@ static void PopupsEnableDisableCtrls(HWND hwndDlg)
 }
 
 
-static BOOL CALLBACK PopupsDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
+static INT_PTR CALLBACK PopupsDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
 {
 	switch (msg) 
 	{
@@ -664,7 +664,7 @@ static int ImageList_AddIcon_NotShared(HIMAGELIST hIml, int ico)
 }
 
 
-static BOOL CALLBACK NotificationsDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK NotificationsDlgProc(int type, HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static HANDLE hItemAll;
 

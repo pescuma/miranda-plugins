@@ -70,7 +70,7 @@ void InitPopups()
 	hPopupWindow = CreateWindowEx(WS_EX_TOOLWINDOW, _T("static"), _T(MODULE_NAME) _T("_PopupWindow"), 
 		0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, HWND_DESKTOP,
 		NULL, hInst, NULL);
-	SetWindowLong(hPopupWindow, GWL_WNDPROC, (LONG)(WNDPROC)PopupWndProc);
+	SetWindowLongPtr(hPopupWindow, GWLP_WNDPROC, (LONG)(WNDPROC)PopupWndProc);
 }
 
 
