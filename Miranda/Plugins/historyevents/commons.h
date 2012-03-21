@@ -1,5 +1,5 @@
 /* 
-Copyright (C) 2006 Ricardo Pescuma Domenecci
+Copyright (C) 2006-2012 Ricardo Pescuma Domenecci
 
 This is free software; you can redistribute it and/or
 modify it under the terms of the GNU Library General Public
@@ -30,6 +30,7 @@ Boston, MA 02111-1307, USA.
 
 // Miranda headers
 #define MIRANDA_VER 0x0700
+#define MIRANDA_CUSTOM_LP
 
 #include <newpluginapi.h>
 #include <m_system.h>
@@ -59,7 +60,6 @@ Boston, MA 02111-1307, USA.
 
 // Global Variables
 extern HINSTANCE hInst;
-extern PLUGINLINK *pluginLink;
 extern LIST<HISTORY_EVENT_HANDLER> handlers;
 
 #define MAX_REGS(_A_) ( sizeof(_A_) / sizeof(_A_[0]) )
