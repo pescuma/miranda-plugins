@@ -1,3 +1,42 @@
+/* 
+ListeningTo plugin for Miranda IM
+==========================================================================
+Copyright	(C) 2005-2011 Ricardo Pescuma Domenecci
+			(C) 2010-2011 Merlin_de
+
+PRE-CONDITION to use this code under the GNU General Public License:
+ 1. you do not build another Miranda IM plugin with the code without written permission
+    of the autor (peace for the project).
+ 2. you do not publish copies of the code in other Miranda IM-related code repositories.
+    This project is already hosted in a SVN and you are welcome to become a contributing member.
+ 3. you do not create listeningTo-derivatives based on this code for the Miranda IM project.
+    (feel free to do this for another project e.g. foobar)
+ 4. you do not distribute any kind of self-compiled binary of this plugin (we want continuity
+    for the plugin users, who should know that they use the original) you can compile this plugin
+    for your own needs, friends, but not for a whole branch of people (e.g. miranda plugin pack).
+ 5. This isn't free beer. If your jurisdiction (country) does not accept
+    GNU General Public License, as a whole, you have no rights to the software
+    until you sign a private contract with its author. !!!
+ 6. you always put these notes and copyright notice at the beginning of your code.
+==========================================================================
+
+in case you accept the pre-condition,
+this is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the
+Free Software Foundation, Inc.,
+59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+*/
+
 #include "foobar2000/SDK/foobar2000.h"
 #include "foobar2000/helpers/helpers.h"
 #include "..\..\m_listeningto.h"
@@ -17,6 +56,8 @@ using namespace pfc;
 
 UINT timer = 0;
 WCHAR lastSongData[DATA_SIZE] = L"";
+
+static bool g_off = true;		//global state for sending listeningto infos
 
 
 // Functions ////////////////////////////////////////////////////////////////////////////
@@ -273,6 +314,8 @@ class play_callback_miranda : public play_callback_static
 	virtual void on_playback_starting(play_control::t_track_command p_command, bool p_paused) {}
 	virtual void on_playback_new_track(metadb_handle_ptr p_track)
 	{
+		if (g_off) return;
+
 		KillTimer();
 		if (IsRadio(p_track))
 			return;
@@ -285,11 +328,13 @@ class play_callback_miranda : public play_callback_static
 	}
 	virtual void on_playback_stop(play_control::t_stop_reason p_reason)
 	{
+		if (g_off) return;
 		SetTimer();
 	}
 	virtual void on_playback_seek(double p_time) {}
 	virtual void on_playback_pause(bool p_state)
 	{
+		if (g_off) return;
 		if (p_state)
 		{
 			SetTimer();
@@ -305,6 +350,7 @@ class play_callback_miranda : public play_callback_static
 	virtual void on_playback_dynamic_info(const file_info & info) {}
 	virtual void on_playback_dynamic_info_track(const file_info & info) 
 	{
+		if (g_off) return;
 		metadb_handle_ptr p_track;
 		static_api_ptr_t<play_control>()->get_now_playing(p_track);
 		if (p_track.is_valid())
@@ -334,4 +380,33 @@ class play_callback_miranda : public play_callback_static
 
 static play_callback_static_factory_t<play_callback_miranda> miranda_callback_factory;
 
-DECLARE_COMPONENT_VERSION("Miranda ListeningTo foobar2000 Plugin", "1.0", 0)
+class myinitquit : public initquit {
+public:
+	void on_init()
+	{
+		//check if foo_comserver2 is present and set g_off to false if foo_mlt go active
+		//TODO:detect foo_comserver2 from component list (can also check for other plugins)
+		CLSID clsid;
+		if(S_OK != CLSIDFromProgID(L"Foobar2000.Application.0.7", &clsid)) {
+			g_off = false;
+			SetTimer();
+		}
+	}
+	void on_quit()
+	{
+		if(!g_off && FindWindow(MIRANDA_WINDOWCLASS, NULL) != NULL)
+			SendData(L"0\\0foobar2000\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0");
+	}
+};
+
+static initquit_factory_t<myinitquit> g_myinitquit_factory;
+
+DECLARE_COMPONENT_VERSION("Miranda ListeningTo foobar2000 Plugin",
+"1.1.1",
+"compiled: " __DATE__ " with foo_SDK-2010-10-02\r\n\
+Sending listeningto information to Mitanda IM client\r\n\
+if no foo_comserver2 is present.\r\n\
+Copyright (C) 2006-2010 Ricardo Pescuma Domenecci\r\n\
+http://www.miranda-im.org\r\n\
+http://pescuma.org/miranda/listeningto"
+)

@@ -1,6 +1,35 @@
 ListeningTo
-
+TODO:
+  * remove watrack (not needet since watrack support jabber-tune) ?
+  * dynamic disable mRadio player on optionspage 'IDD_PLAYERS' 
+    if user disable radio stream on optionspage 'IDD_OPTIONS'
+  + add processing multi-media-keys (to fix some problems with wmp player)
+  
 Changelog:
+. 0.3.1.1 (in work)
+  * update copyright
+  + support Awkward's great mRadio Mod plugin (new player)
+    support mRadio +0.0.1.7 and new beta 0.0.2.1 event system
+  * port latest m_music.inc to m_music.h
+  + add new core langpack support (support new langpack design)
+  * change HookEvent to HookEventObj in watrack class
+  * change min core version from 0x0600 to 0x0800
+
+. 0.3.1.0
+  + use precompile header (patch by Merlin_de)
+  * change iTunes to new class member and rework COM connection - not testet (patch by Merlin_de)
+  + rework WMP player, COM full "remoting" the Windows Media Player Control
+    real anable / disable the player, event and status support - no need for LiveMessanger (patch by Merlin_de)
+  + rework foobar player, add foo_comserver2 support 
+    and true event handling, no polling need (COM conection - patch by Merlin_de)
+  * change CALL macro to prevent mem leaks (patch by Merlin_de)
+  * change hTimer to support active player (faster - patch by Merlin_de)
+  + foo_mlt check for foo_comserver2 (stop work if present, no need for foo_mlt - patch by Merlin_de)
+  + foo_mlt add "on_init" and "on_quit" to prevent show wrong info (patch by Merlin_de)
+  * FIX foo_mlt and update to foobar2000 SDK 2010-10-02 (patch by Merlin_de)
+  + x64 unicode release (patch by Merlin_de)
+  + native clist_nicer icon-slot support (patch by Merlin_de)
+  + native clist_mw icon-slot support (patch by Merlin_de)
 
 . 0.3.0.0
   + A lot of changes for the internal logic for handling players
