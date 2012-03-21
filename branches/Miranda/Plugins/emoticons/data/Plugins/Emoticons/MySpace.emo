@@ -1,0 +1,33 @@
+# My Space protocol emoticons
+
+[My Space]
+
+"smile-big" = "bigsmile", ":D" ":-D"
+"devilish" = "devil", "}:)" "}:-)"
+"confused" = "frassled", ":Z"
+"glass-nerdy" = "geek / nerd", "B)" "Q)"
+"silly" = "googles", "%)"
+"freaked-out" = "growl", ":E"
+"smile" = "happy", ":)" ":-)"
+"in-love" = "heart", ":X"
+"laugh" = "laugh", ":))"
+"mohawk" = "mohawk", "-:"
+"angry" = "mad", "X("
+"messed" = "messed", "X)"
+"doh" = "oops", ":G"
+"pirate" = "pirate", "P)"
+"shock" = "scared", ":O"
+"struggle" = "sidefrown", ":{"
+"sinister" = "sinister", ":B"
+"smirk" = "smirk", ":,"
+"neutral" = "straight", ":|"
+"tongue" = "tongue", ":p" ":P"
+"pissed-off" = "upset", "B|"
+"wink" = "wink", ";-)" ";)" 
+"sad" = "worried", ":[" 
+"kiss" = "kiss", ":x" ":X"
+
+
+[Nudge]
+
+"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0:Wrapper:NUDGE/Send:hContact:0>"

@@ -1,0 +1,124 @@
+Emoticons
+
+Changelog:
+
+. 0.3.0.0
+  + Allows to embed videos in history
+  * Some fixes for emoticons texts
+
+. 0.0.2.11
+  * Fix for custom smileys
+  + Don't show custom smileys on outgoing messages
+
+. 0.0.2.10
+  * Better handling of text in input area
+  * Fixed handling of URLs
+  + Added initial version of Tlen
+
+. 0.0.2.9
+  * Fix for crash
+
+. 0.0.2.8
+  * Fix for AIM smileys
+  + Added support for IEView and Clist Modern
+
+. 0.0.2.7
+  * Fix to copy emoticons from message log (closes issue 39)
+
+. 0.0.2.6
+  * Fix for jabber transports
+
+. 0.0.2.5
+  + Support for SRMM (but no button)
+
+. 0.0.2.4
+  * Handle metacontact change in the middle of chat
+  * Works with miranda 0.7
+  
+. 0.0.2.3
+  + Send nudges throught nudge plugin (if possible)
+  * Better guess of number of columns in selection window
+
+. 0.0.2.2
+  + Support for accounts and jabber transports
+  * Fix for frame in selection window
+
+. 0.0.2.1
+  * Fix for guessing fonts of Scriver
+  * Show less flags in options dialog
+
+. 0.0.2.0
+  + New selection window layout
+  + Support for service calls in .emo
+  + Added nudge
+  + Added tZers (need ICQJ Plus mod)
+
+. 0.0.1.6
+  + Allow URLs in emoticon packs
+  + Flash emoticons
+  + Added Skype and Sametime emoticons
+  + Option to select which frame to show in selection window (for animated gif and swf)
+
+. 0.0.1.5
+  + Added MySpace and AIM emoticons
+  * Fix for smileys after URL (closes issue 11)
+
+. 0.0.1.4
+  * Fix for updater
+
+. 0.0.1.3
+  * Fix for protocol emoticons (closes issue 22)
+  * Fix for URLs in input area
+  + Support for borkra's version of custom smileys
+  + Option to disable custom smileys
+
+. 0.0.1.2
+  * Fix for wrong memory free
+  + Support for custom smileys
+
+. 0.0.1.1
+  * Fix for copy in input area
+  + Added silly to de default pack
+
+. 0.0.1.0
+  + Allows loading emoticons from folder with proto name
+  + Allows to write generic paths (inside pack folder) for an emoticon in .mep
+  + Random emoticons in options page
+
+. 0.0.0.9
+  + Use AniSmiley if avaiable (recomended) or my control as fallback (more buggy)
+  * Updated AniSmiley to latest version (a lot of fixes)
+  * Fixes and other stuff
+
+. 0.0.0.8
+  + Created my own ole image control
+
+. 0.0.0.7
+  + Option to only replace emoticons surrounded by spaces
+
+. 0.0.0.6
+  * Fix for URLs in history
+  * Fix for HOME key in input area
+
+. 0.0.0.5
+  + Added Yahoo emoticons
+  * Fix for emoticons like :(|) in input area
+
+. 0.0.0.4
+  * Fix for emoticons in history
+  + New emoticon pack selection control
+
+. 0.0.0.3
+  * Protocol and pack names are case insensitive
+  + Tooltips in selection window
+  + Show smileys without images as text in selection window
+  + Added default module
+  * Fix for transparent images
+
+. 0.0.0.2
+  * Fix if not using metacontacts
+  * Fix for first message only with :)
+  + Added jgmail emoticons (still missing one)
+
+. 0.0.0.1
+  + Initial version

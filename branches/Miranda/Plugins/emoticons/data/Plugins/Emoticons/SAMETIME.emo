@@ -1,0 +1,28 @@
+# Sametime protocol
+
+[Sametime]
+
+"smile" = "smile", ":-)" ":)"
+"smile-big" = "laugh", "lol"
+"wink" = "wink", ";)" ";-)"
+"laugh" = "grin", ":-D" ":-d"
+"glass-cool" = "cool", "8-)"
+"angry" = "angry", ":-@"
+"thinking" = "half", ":-/"
+"sarcastic" = "eyebrow", "/:)"
+"sad" = "frown", ":-(" ":("
+"embarrassed" = "shy", ":-$"
+"confused" = "goofy", ":-S" ":-s"
+"shock" = "oops", ":-O" ":-0" ":-o" ":O" ":0" ":o"
+"tongue" = "tongue", ":-P" ":P"
+"lamp" = "idea", "(i)" "(I)"
+"yes" = "yes", "(y)"
+"no" = "no", "(n)"
+"angel" = "angel", "0:-)" "0:)"
+"crying" = "crying", ":'("
+"rotfl" = "laughroll", "rofl"
+
+
+[Nudge]
+
+"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0:Wrapper:NUDGE/Send:hContact:0>"

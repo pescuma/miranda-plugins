@@ -1,0 +1,53 @@
+# ICQ protocol emoticons
+
+[ICQ]
+
+"smile" = "Smile", ":-)" ":)" 
+"neutral" = "Nothing to say", ":-$" ":-|" 
+"sad" = "Sad", ":-(" ":(" 
+"shock" = "Surprised", "=-O" "=-o" ":-O" ":-o"
+"wink" = "Blinking", ";-)" ";)" 
+"glass-cool" = "Cool", "8-)" "8)" 
+"tongue" = "Tongue out", ":-P" ":P" ":p" ":-p"
+"music" = "Listening to music", "[:-}"
+"laugh" = "Laughing", "*JOKINGLY*" "*jokingly*"
+"sleepy" = "Falling asleep", "*TIRED*" "*tired*"
+"crying" = "Crying", ":'-(" ":'(" 
+"sick" = "Gross", ":-!"
+"stop" = "Stop", "*STOP*" "*stop*"
+"kissed" = "Kissed", "*KISSED*" "*kissed*"
+"kiss" = "Kiss", ":-{}" ":-*"
+"blowkiss" = "Kissing", "*KISSING*" "*kissing*"
+"embarrassed" = "Blushing", ":-[" 
+"devilish" = "Devil", "]:->"
+"angel" = "Angel", "O:-)"
+"rose" = "Thank you", "@}->--"
+"shut-mouth" = "Can't say / Shut up", ":-X" ":X" ":-x" ":x"
+"bomb" = "Bomb", "@="
+"thinking" = "Mad", ":-/" ":-\\"
+"yes" = "Thumbs up", "*THUMBS UP*" "*thumbs up*"
+"scream" = "Scream", ":-@" ">:o" ">:O"
+"beer" = "Drinking", "*DRINK*" "*drink*"
+"rotfl" = "Laughing out loud (LOL)", ":-D" ":D" ":-d" ":d"
+"in-love" = "In love", "*IN LOVE*" "*in love*"
+
+
+[Nudge]
+
+"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0:Wrapper:NUDGE/Send:hContact:0>"
+
+
+[tZer]
+
+"service_tzer_Gangsta" = "Gangsta'", "<Service:/SendtZer:hContact:0>"
+"service_tzer_CantHearU" = "Can't Hear U", "<Service:/SendtZer:hContact:1>"
+"service_tzer_Scratch" = "Scratch", "<Service:/SendtZer:hContact:2>"
+"service_tzer_Booooo" = "Booooo", "<Service:/SendtZer:hContact:3>"
+"service_tzer_Kisses" = "Kisses", "<Service:/SendtZer:hContact:4>"
+"service_tzer_ChillOut" = "Chill Out!", "<Service:/SendtZer:hContact:5>"
+"service_tzer_Akitaka" = "Akitaka", "<Service:/SendtZer:hContact:6>"
+"service_tzer_Hilaaarious" = "Hilaaarious", "<Service:/SendtZer:hContact:8>"
+"service_tzer_LikeDuh" = "Like Duh!", "<Service:/SendtZer:hContact:9>"
+"service_tzer_L8R" = "L8R", "<Service:/SendtZer:hContact:10>"
+"service_tzer_LikeU" = "Like U!", "<Service:/SendtZer:hContact:11>"
+"service_tzer_ImSorry" = "I'm Sorry", "<Service:/SendtZer:hContact:7>"

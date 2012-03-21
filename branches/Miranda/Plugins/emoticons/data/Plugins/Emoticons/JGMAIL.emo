@@ -1,0 +1,33 @@
+# Google Talk protocol emoticons
+
+Derived: JABBER : ManualHost=atalk.google.com
+
+
+[Google Talk]
+
+"smile" = "Smile", ":)" ":-)" "=)"
+"laugh" = "Grin", ":D" ":-D" "=D"
+"wink" = "Wink", ";)" ";-)" ";^)"
+"crying" = "Cry", ":'("
+"shock" = "Shocked", ":-o"
+"thinking" = "Slant", ":-/"
+"dazed" = "Angry", "x-("
+"sad" = "Frown", ":(" ":-(" 
+"glass-cool" = "Cool", "B-)"
+"tongue" = "Tongue", ":P" ":-P"
+"love" = "Heart", "<3"
+"neutral" = "Straight Face", ":-|"
+
+[Hidden]
+
+"bell" = "Cowbell", "+/'\\"
+"monkey" = "It's a Monkey!", ":(|)"
+"crab" = "Crab", "V.v.V"
+"pig" = "Pig", ":(:)"
+"devilish" = "Devil", "}:-)" "}:)"
+"doh" = "Wince", ">.<"
+"rock" = "Rock out", "\\m/"
+"love-over" = "Broken Heart", "</3"
+"kiss" = "Kiss", ":*" ":-x"
+"mustache" = "Mustache", ":{"
+

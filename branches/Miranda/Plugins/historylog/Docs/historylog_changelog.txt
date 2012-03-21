@@ -1,0 +1,25 @@
+History Log
+
+Changelog:
+
+. 0.0.0.5
+  * Fix for crash
+  * Fix for enable not working
+  + Added highlighted messages as a separated meSpeak template
+
+. 0.0.0.4
+  + Added option to speak texts
+  * Per default disk log is disabled
+
+. 0.0.0.3
+  + Added BOM to files (editors should work better with this) - only for new files
+  + Added group chat logging (dll needed to be renamed for this to work)
+
+. 0.0.0.2
+  * Fix for multi-line messages (closes #41)
+  + Added new variables to filename (closes #44)
+  + Added option to ident multi-line messages (closes #43)
+  * Fix for invalid chars in msgs filename
+
+. 0.0.0.1
+  + Initial version

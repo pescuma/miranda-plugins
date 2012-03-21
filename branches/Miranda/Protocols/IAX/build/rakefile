@@ -1,0 +1,341 @@
+require 'rake'
+require 'fileutils'
+require 'rake/clean'
+require 'google_code'
+require 'net/ftp'
+
+RakeFileUtils.verbose(false)
+
+PROJECT="iax"
+GC_NAME = "IAX"
+
+SRC_DIR=File.expand_path("..")
+DOCS_DIR=File.expand_path("../Docs")
+RES_DIR=File.expand_path("../res")
+VERSION_FILE="#{DOCS_DIR}/#{PROJECT}_version.txt"
+
+TYPES=[ 'ansi', 'unicode' ]
+
+version=nil
+
+def cp_relative(file, base, target)
+    file = File.expand_path(file)
+    base = File.expand_path(base)
+    raise "Wrong file/base : #{file} / #base" unless file.slice(0, base.length) == base
+    
+    relative = file.slice(base.length, file.length - base.length)
+    target = File.expand_path(File.join(target, relative))
+    target_dir = File.dirname(target)
+    
+    makedirs target_dir unless File.exists?(target_dir)
+    cp file, target
+end
+
+
+task :get_version do
+  File.open(VERSION_FILE, "r") do |file|
+    while (line = file.gets)
+      version = (line.match(/\d+\.\d+\.\d+\.\d+/) || [])[0]
+      break if version
+    end
+  end
+  raise "Could not read version file" unless VERSION
+  puts
+  puts "Current #{PROJECT} version: #{version}"
+end
+
+
+# Build ##############################################################################
+
+SOLUTION="#{PROJECT}.dsw"
+CONFIG=[ "Release", "Unicode Release" ]
+BUILD_RESULT_DIR=[ "../Release", "../Unicode_Release" ]
+DLL=[ "../../../bin/Release/Plugins/#{PROJECT}.dll", "../../../bin/Release Unicode/Plugins/#{PROJECT}W.dll" ]
+PDB=[ "#{BUILD_RESULT_DIR[0]}/#{PROJECT}.pdb", "#{BUILD_RESULT_DIR[1]}/#{PROJECT}W.pdb" ]
+
+(0..1).each do |i|
+  type = TYPES[i]
+  
+  build = "build_#{type}".to_s
+
+  desc "Build #{type} project"
+  task build do
+    puts
+    puts "Building #{type} #{PROJECT}"
+    chdir(SRC_DIR) do
+      sh "msdev #{SOLUTION} /MAKE \"#{PROJECT} - Win32 #{CONFIG[i]}\" /REBUILD"  do |ok, status|
+        ok or fail "Failed to compile #{type} dll (#{status.exitstatus})"
+      end
+    end
+  end
+  task :build => build
+  
+  CLEAN.include(File.join(BUILD_RESULT_DIR[i], '/**/*'))
+  CLOBBER.include(DLL[i])
+end
+
+
+# Source zip #########################################################################
+
+SRC_FILES = FileList[ \
+  "#{SRC_DIR}/*.cpp", \
+  "#{SRC_DIR}/*.h", \
+  "#{SRC_DIR}/*.rc", \
+  "#{SRC_DIR}/*.dsp", \
+  "#{SRC_DIR}/*.dsw", \
+  "#{SRC_DIR}/lib/**/*.h", \
+  "#{SRC_DIR}/sdk/**/*.h" \
+]
+SRC_ZIP="#{PROJECT}_src"
+SRC_ZIP_FOLDER='zip_src'
+
+task :clean_package_src do
+  rmtree SRC_ZIP_FOLDER
+end
+task :clean => :clean_package_src
+
+desc "Create source package"
+task :package_src => :get_version do
+  
+  zip = "#{SRC_ZIP}.#{version}.zip"
+  puts
+  puts "Packaging #{zip}"
+  
+  rmtree SRC_ZIP_FOLDER
+  mkdir SRC_ZIP_FOLDER
+  
+  SRC_FILES.each do |file|
+    cp_relative(file, SRC_DIR, SRC_ZIP_FOLDER)
+  end
+  
+  rm zip, :force => true
+  chdir(SRC_ZIP_FOLDER) do
+    sh "../zip -r -q ../#{zip} *"
+  end
+  
+  rmtree SRC_ZIP_FOLDER
+end
+task :package => :package_src
+
+CLOBBER.include("#{SRC_ZIP}.*.zip")
+
+
+
+# Dll zips ###########################################################################
+
+ZIP_FOLDERS=['zip_ansi', 'zip_unicode']
+ZIPS=[ "#{PROJECT}", "#{PROJECT}W" ]
+
+VOICE_SERVICE=[ "../../../bin/Release/Plugins/voiceservice.dll", "../../../bin/Release/Plugins/voiceserviceW.dll" ]
+HISTORY_EVENTS=[ "../../../bin/Release/Plugins/aa_historyevents.dll", "../../../bin/Release Unicode/Plugins/aa_historyeventsW.dll" ]
+
+(0..1).each do |i|
+  type = TYPES[i]
+  
+  clean = "clean_package_#{type}".to_s
+  package = "package_#{type}".to_s
+
+  task clean do
+    rmtree ZIP_FOLDERS[i]
+	rmtree ZIP_FOLDERS[i] + '_pdb'
+  end
+  task :clean => clean
+  
+  desc "Create #{type} package"
+  task package => [ :get_version, "build_#{type}".to_s ] do
+    zip = "#{ZIPS[i]}.#{version}.zip"
+    puts
+    puts "Packaging #{zip}"
+    
+    rmtree ZIP_FOLDERS[i]
+    mkdir ZIP_FOLDERS[i]
+    
+    target_dir = File.join(ZIP_FOLDERS[i], 'Docs')
+    docs = FileList["#{DOCS_DIR}/*"]
+    docs.exclude(VERSION_FILE)
+    docs.each do |file|
+      cp_relative(file, DOCS_DIR, target_dir)
+    end
+    
+    target_dir = File.join(ZIP_FOLDERS[i], 'Icons')
+    docs = FileList["#{RES_DIR}/proto_#{PROJECT}.dll"]
+    docs.each do |file|
+      cp_relative(file, RES_DIR, target_dir)
+    end
+    
+    target_dir = File.join(ZIP_FOLDERS[i], 'Plugins')
+    makedirs target_dir
+    cp DLL[i], target_dir
+    cp VOICE_SERVICE[i], target_dir
+    cp HISTORY_EVENTS[i], target_dir
+    
+    rm zip, :force => true
+    chdir(ZIP_FOLDERS[i]) do
+      sh "../zip -r -q ../#{zip} *"
+    end
+    rmtree ZIP_FOLDERS[i]
+	
+    zip = "#{ZIPS[i]}.pdb.#{version}.zip"
+    puts
+    puts "Packaging #{zip}"
+    
+	rmtree ZIP_FOLDERS[i] + '_pdb'
+	target_dir = ZIP_FOLDERS[i] + '_pdb/Plugins'
+	makedirs target_dir
+	cp PDB[i], target_dir
+	chdir(ZIP_FOLDERS[i] + '_pdb') do
+      sh "../zip -r -q ../#{zip} *"
+	end
+	rmtree ZIP_FOLDERS[i] + '_pdb'
+  end
+  task :package => package
+  
+  CLOBBER.include("#{ZIPS[i]}.pdb.*.zip")
+  CLOBBER.include("#{ZIPS[i]}.*.zip")
+end
+
+
+# Rebuild ############################################################################
+
+desc "Rebuild all #{PROJECT} versions"
+task :rebuild => [ :clobber, :build ]
+
+desc "Build all #{PROJECT} versions"
+task :build
+
+
+# Upload #############################################################################
+
+desc "Build and upload files"
+task :upload
+
+
+def empty?(str)
+  return true unless str
+  return str.strip.length <= 0
+end
+
+def ask(name, val=nil)
+  if empty?(val)
+    puts
+    print "#{name}: "
+    return STDIN.gets.chomp
+  else
+    return val
+  end
+end
+
+desc "Upload to googlecode"
+task :upload_googlecode => [ :package, :get_version ] do
+  files = [ "#{ZIPS[0]}.#{version}.zip", \
+            "#{ZIPS[0]}.pdb.#{version}.zip", \
+            "#{ZIPS[1]}.#{version}.zip", \
+            "#{ZIPS[1]}.pdb.#{version}.zip" \
+          ]
+  descriptions = [ "#{GC_NAME} #{version} - Ansi", \
+                   "#{GC_NAME} PDB #{version} - Ansi", \
+                   "#{GC_NAME} #{version} - Unicode", \
+                   "#{GC_NAME} PDB #{version} - Unicode" \
+                 ]
+  type = [ "Ansi", "Ansi", "Unicode", "Unicode" ]
+  
+  files.each do |file|
+    raise "Google Code: File not found: #{file}" unless File.exists?(file)
+  end
+  
+  project = nil
+  username = nil
+  password = nil
+  
+  if File.exists?("googlecode.passwd")
+    File.open("googlecode.passwd", "r") do |file|
+      line = file.gets
+      project,username,password = line.split(':')
+    end
+  end
+  
+  project = ask("Google Code Project", project)
+  username = ask("Google Code Username", username)
+  password = ask("Google Code Password", password)
+  
+  raise "Google Code: Invalid data" if empty?(project) || empty?(username) || empty?(password)
+  
+  gc = GoogleCode.new(project, username, password)
+  
+  gc.current_files.each do |file|
+    if file.description.slice(0, GC_NAME.length + 1) == GC_NAME + ' ' 
+      file.labels.reject! { |label| label == GoogleCode::FEATURED }
+      file.labels << GoogleCode::DEPRECATED
+      gc.update(file)
+    end
+  end
+
+  puts
+  (0...files.length).each do |i|
+    puts "Google Code: uploading #{files[i]}"
+    
+    file = GoogleCode::Download.new File.basename(files[i])
+    file.description = descriptions[i]
+    file.labels << GoogleCode::FEATURED unless descriptions[i].match('PDB')
+    file.labels << 'Type-' + type[i] << 'Plugin-' + GC_NAME
+    file.local_file = files[i]
+    
+    gc.upload(file)
+  end
+  
+end
+task :upload => :upload_googlecode
+
+
+desc "Upload to ftp"
+task :upload_ftp => [ :package, :get_version ] do
+  files = [ "#{ZIPS[0]}.#{version}.zip", \
+            "#{ZIPS[0]}.pdb.#{version}.zip", \
+            "#{ZIPS[1]}.#{version}.zip", \
+            "#{ZIPS[1]}.pdb.#{version}.zip", \
+            "#{SRC_ZIP}.#{version}.zip", \
+            "#{DOCS_DIR}/#{PROJECT}_changelog.txt", \
+            "#{DOCS_DIR}/#{PROJECT}_readme.txt", \
+            "#{DOCS_DIR}/#{PROJECT}_version.txt" \
+          ]
+  
+  files.each do |file|
+    raise "FTP: File not found: #{file}" unless File.exists?(file)
+  end
+  
+  server = nil
+  path = nil
+  username = nil
+  password = nil
+  
+  if File.exists?("ftp.passwd")
+    File.open("ftp.passwd", "r") do |file|
+      line = file.gets
+      server,path,username,password = line.split(':')
+    end
+  end
+  
+  server = ask("FTP Server", server)
+  path = ask("FTP path", path)
+  username = ask("FTP Username", username)
+  password = ask("FTP Password", password)
+  
+  raise "FTP: Invalid data" if empty?(server) || empty?(path) || empty?(username) || empty?(password)
+  
+  puts
+  Net::FTP.open(server, username, password) do |ftp|
+    files.each do |file|
+      puts "FTP: Uploading #{File.basename(file)}"
+      
+      remote = File.join(path, File.basename(file).gsub(/\.\d+\.\d+\.\d+\.\d+/, ''))
+      
+      begin
+        ftp.delete remote
+      rescue 
+      end
+      
+      ftp.putbinaryfile(file, remote)
+    end
+  end
+end
+task :upload => :upload_ftp

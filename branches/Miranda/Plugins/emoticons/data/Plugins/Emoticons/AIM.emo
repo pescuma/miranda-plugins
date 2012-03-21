@@ -1,0 +1,27 @@
+# AIM protocol emoticons
+# http://www.aim.com/emoticons.adp
+
+[AIM]
+
+"smile" = "Smiling", ":-)" ":)" 
+"wink" = "Winking", ";-)" ";)" 
+"sad" = "Frowning", ":-(" ":(" 
+"tongue" = "Sticking-out-tongue", ":-P" ":-p"
+"shock" = "Surprised", "=-O"
+"kiss" = "Kissing", ":-*", 
+"shout" = "Yelling", ">:o"
+"smile-big" = "Ecstatic", ":-D" ":D"
+"moneymouth" = "Money-mouth", ":-$" 
+"foot-in-mouth" = "Foot-in-mouth", ":-!"
+"embarrassed" = "Embarrassed", ":-[" 
+"angel" = "Innocent", "O:-)"
+"thinking" = "Undecided", ":-\\"
+"crying" = "Crying", ":'(" 
+"shut-mouth" = "Lips-are-sealed", ":-X"
+"glass-cool" = "Cool", "8-)" 
+
+
+
+[Nudge]
+
+"service_nudge" = "Nudge", "<Service:/SendNudge:hContact:0:Wrapper:NUDGE/Send:hContact:0>"
