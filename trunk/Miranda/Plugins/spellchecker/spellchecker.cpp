@@ -25,7 +25,13 @@ Boston, MA 02111-1307, USA.
 
 PLUGININFOEX pluginInfo={
 	sizeof(PLUGININFOEX),
-	"Spell Checker",
+#ifdef WIN64
+	"Spell Checker (x64)",
+#elif UNICODE
+	"Spell Checker (Unicode)"
+#else
+	"Spell Checker (Ansi)"
+#endif
 	PLUGIN_MAKE_VERSION(0,2,6,0),
 	"Spell checker for the message windows. Uses Hunspell to do the checking.",
 	"Ricardo Pescuma Domenecci, FREAK_THEMIGHTY",
@@ -68,6 +74,7 @@ PLUGINLINK *pluginLink;
 LIST_INTERFACE li;
 MM_INTERFACE mmi;
 UTF8_INTERFACE utfi;
+int hLangpack = 0;
 
 HANDLE hHooks[6];
 HANDLE hServices[3];
@@ -170,6 +177,7 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	mir_getMMI(&mmi);
 	mir_getUTFI(&utfi);
 	mir_getLI(&li);
+	mir_getLP(&pluginInfo);
 
 	// hooks
 	hHooks[0] = HookEvent(ME_SYSTEM_MODULESLOADED, ModulesLoaded);
@@ -211,20 +219,18 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		upd.szBetaChangelogURL = "http://pescuma.org/miranda/spellchecker#Changelog";
 		upd.pbBetaVersionPrefix = (BYTE *)"Spell Checker ";
 		upd.cpbBetaVersionPrefix = (int)strlen((char *)upd.pbBetaVersionPrefix);
+		upd.szUpdateURL = UPDATER_AUTOREGISTER;
 #ifdef WIN64
 		upd.szBetaUpdateURL = "http://pescuma.googlecode.com/files/spellchecker64.%VERSION%.zip";
 //		upd.szVersionURL = "http://addons.miranda-im.org/details.php?action=viewfile&id=";
-//		upd.szUpdateURL = "http://addons.miranda-im.org/download.php?dlfile=";
 		upd.pbVersionPrefix = (BYTE *)"<span class=\"fileNameHeader\">Spell Checker (x64) ";
 #elif UNICODE
 		upd.szBetaUpdateURL = "http://pescuma.googlecode.com/files/spellcheckerW.%VERSION%.zip";
 		upd.szVersionURL = "http://addons.miranda-im.org/details.php?action=viewfile&id=3691";
-		upd.szUpdateURL = "http://addons.miranda-im.org/download.php?dlfile=3691";
 		upd.pbVersionPrefix = (BYTE *)"<span class=\"fileNameHeader\">Spell Checker (Unicode) ";
 #else
 		upd.szBetaUpdateURL = "http://pescuma.googlecode.com/files/spellchecker.%VERSION%.zip";
 		upd.szVersionURL = "http://addons.miranda-im.org/details.php?action=viewfile&id=3690";
-		upd.szUpdateURL = "http://addons.miranda-im.org/download.php?dlfile=3690";
 		upd.pbVersionPrefix = (BYTE *)"<span class=\"fileNameHeader\">Spell Checker (Ansi) ";
 #endif
 		upd.cpbVersionPrefix = (int)strlen((char *)upd.pbVersionPrefix);
