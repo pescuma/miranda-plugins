@@ -4,8 +4,8 @@
 #include <time.h>
 
 
+#define MIRANDA_CUSTOM_LP
 #include <newpluginapi.h>
-#include <m_folders.h>
 #include <m_clist.h>
 #include <m_skin.h>
 #include <m_avatars.h>
@@ -17,6 +17,7 @@
 #include <m_popup.h>
 #include <m_options.h>
 #include <m_utils.h>
+#include <m_folders.h>
 #include <m_langpack.h>
 #include <m_metacontacts.h>
 #include <m_history.h>

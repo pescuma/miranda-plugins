@@ -27,7 +27,7 @@ extern HINSTANCE hInst;
 HANDLE hMenu = NULL; 
 int OpenAvatarDialog(HANDLE hContact, char* fn);
 DWORD WINAPI AvatarDialogThread(LPVOID param);
-static BOOL CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM lParam);
+static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM lParam);
 int ShowSaveDialog(HWND hwnd, TCHAR* fn);
 
 BOOL ProtocolEnabled(const char *proto);
@@ -39,7 +39,7 @@ TCHAR* GetCurrentSelFile(HWND list);
 TCHAR * GetContactFolder(TCHAR *fn, HANDLE hContact);
 BOOL ResolveShortcut(TCHAR *shortcut, TCHAR *file);
 
-static int ShowDialogSvc(WPARAM wParam, LPARAM lParam);
+static INT_PTR ShowDialogSvc(WPARAM wParam, LPARAM lParam);
 extern HANDLE hServices[];
 extern HANDLE hHooks[];
 
@@ -75,8 +75,7 @@ public:
 int OpenAvatarDialog(HANDLE hContact, char* fn)
 {
 	DWORD dwId;
-	struct AvatarDialogData* avdlg;
-	avdlg = (struct AvatarDialogData*)malloc(sizeof(struct AvatarDialogData));
+	struct AvatarDialogData* avdlg = (struct AvatarDialogData*)malloc(sizeof(struct AvatarDialogData));
 	ZeroMemory(avdlg, sizeof(struct AvatarDialogData));
 	avdlg->hContact = hContact;
 	if (fn == NULL)
@@ -125,7 +124,7 @@ void EnableDisableControls(HWND hwnd)
 	EnableWindow(GetDlgItem(hwnd, IDC_DELETE), cursel != LB_ERR);
 }
 
-static BOOL CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
+static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 {
 	switch(uMsg)
 	{
@@ -554,7 +553,8 @@ void InitMenuItem()
 	hServices[2] = CreateServiceFunction("AvatarHistory/ShowDialog", ShowDialogSvc);
 
 	mi.cbSize = sizeof(mi);
-	mi.pszName = Translate("View Avatar History");
+	mi.ptszName = LPGENT("View Avatar History");
+	mi.flags = CMIF_TCHAR;
 	mi.position = 1000090010;
 	mi.hIcon = createDefaultOverlayedIcon(FALSE);
 	mi.pszService = "AvatarHistory/ShowDialog";
@@ -562,7 +562,7 @@ void InitMenuItem()
 	DestroyIcon(mi.hIcon);
 }
 
-static int ShowDialogSvc(WPARAM wParam, LPARAM lParam)
+static INT_PTR ShowDialogSvc(WPARAM wParam, LPARAM lParam)
 {
 	OpenAvatarDialog((HANDLE)wParam, (char*)lParam);
 	return 0;
@@ -580,7 +580,7 @@ TCHAR* GetCurrentSelFile(HWND list)
 int ShowSaveDialog(HWND hwnd, TCHAR* fn)
 {
 	TCHAR initdir[MAX_PATH] = _T(".");
-	char filter[MAX_PATH];
+	TCHAR filter[MAX_PATH];
 	TCHAR file[MAX_PATH];
 	OPENFILENAME ofn;
 	ZeroMemory(&ofn, sizeof(OPENFILENAME));
@@ -589,10 +589,8 @@ int ShowSaveDialog(HWND hwnd, TCHAR* fn)
 	ofn.hwndOwner = hwnd;
 	ofn.hInstance = hInst;
 
-	// Miranda dont have the unicode version of this servicce
-	CallService(MS_UTILS_GETBITMAPFILTERSTRINGS, MAX_PATH, (LPARAM)filter);
-	INPLACE_CHAR_TO_TCHAR(filterT, MAX_PATH, filter);
-	ofn.lpstrFilter = filterT;
+	CallService(MS_UTILS_GETBITMAPFILTERSTRINGST, MAX_PATH, (LPARAM)filter);
+	ofn.lpstrFilter = filter;
 	
 	ofn.nFilterIndex = 1;
 	lstrcpy(file, _tcsrchr(fn, '\\')+1);

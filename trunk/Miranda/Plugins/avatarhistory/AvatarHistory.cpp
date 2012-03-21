@@ -38,6 +38,8 @@ char *metacontacts_proto = NULL;
 
 char profilePath[MAX_PATH];		// database profile path (read at startup only)
 TCHAR basedir[MAX_PATH];
+MM_INTERFACE mmi;
+int hLangpack = 0;
 
 static int ModulesLoaded(WPARAM wParam, LPARAM lParam);
 static int PreShutdown(WPARAM wParam, LPARAM lParam);
@@ -55,8 +57,8 @@ void InitMenuItem();
 void * GetHistoryEventText(HANDLE hContact, HANDLE hDbEvent, DBEVENTINFO *dbe, int format);
 
 // Services
-static int IsEnabled(WPARAM wParam, LPARAM lParam);
-static int GetCachedAvatar(WPARAM wParam, LPARAM lParam);
+static INT_PTR IsEnabled(WPARAM wParam, LPARAM lParam);
+static INT_PTR GetCachedAvatar(WPARAM wParam, LPARAM lParam);
 TCHAR * GetCachedAvatar(char *proto, char *hash);
 BOOL CreateShortcut(TCHAR *file, TCHAR *shortcut);
 
@@ -69,10 +71,12 @@ BOOL CreateShortcut(TCHAR *file, TCHAR *shortcut);
 
 PLUGININFOEX pluginInfo={
 	sizeof(PLUGININFOEX),
-#ifdef UNICODE
+#ifdef WIN64
+	"Avatar History (x64)",
+#elif UNICODE
 	"Avatar History (Unicode)",
 #else
-	"Avatar History",
+	"Avatar History (Ansi)",
 #endif
 	PLUGIN_MAKE_VERSION(0,0,2,10),
 	"This plugin keeps backups of all your contacts' avatar changes and/or shows popups",
@@ -82,7 +86,9 @@ PLUGININFOEX pluginInfo={
 	"http://pescuma.mirandaim.ru/miranda/avatarhist",
 	UNICODE_AWARE,
 	0,		//doesn't replace anything built-in
-#ifdef UNICODE
+#ifdef WIN64
+	{ 0xe04702a2, 0x379, 0x4c69, { 0xbf, 0x8a, 0x84, 0xd5, 0xd0, 0xc9, 0x19, 0xcc } } // {E04702A2-0379-4C69-BF8A-84D5D0C919CC}
+#elif UNICODE
 	{ 0xdbe8c990, 0x7aa0, 0x458d, { 0xba, 0xb7, 0x33, 0xeb, 0x7, 0x23, 0x8e, 0x71 } } // {DBE8C990-7AA0-458d-BAB7-33EB07238E71}
 #else
 	{ 0x4079923c, 0x8aa1, 0x4a2e, { 0x95, 0x8b, 0x9d, 0xc, 0xd0, 0xe8, 0x2e, 0xb2 } } // {4079923C-8AA1-4a2e-958B-9D0CD0E82EB2}
@@ -95,17 +101,9 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvRese
 	return TRUE;
 }
 
-extern "C" __declspec(dllexport) PLUGININFO* MirandaPluginInfo(DWORD mirandaVersion)
-{
-	mirVer = mirandaVersion;
-	pluginInfo.cbSize = sizeof(PLUGININFO);
-	return (PLUGININFO*) &pluginInfo;
-}
-
 extern "C" __declspec(dllexport) PLUGININFOEX* MirandaPluginInfoEx(DWORD mirandaVersion)
 {
 	mirVer = mirandaVersion;
-	pluginInfo.cbSize = sizeof(PLUGININFOEX);
 	return &pluginInfo;
 }
 
@@ -115,7 +113,7 @@ extern "C" __declspec(dllexport) const MUUID* MirandaPluginInterfaces(void)
 	return interfaces;
 }
 
-static BOOL CALLBACK FirstRunDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
+static INT_PTR CALLBACK FirstRunDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
 {
 	switch(uMsg)
 	{
@@ -167,7 +165,8 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 {
 	pluginLink=link;
 
-	init_mir_malloc();
+	mir_getMMI(&mmi);
+	mir_getLP(&pluginInfo);
 
 	// Is first run?
 	if (DBGetContactSettingByte(NULL, MODULE_NAME, "FirstRun", 1))
@@ -227,8 +226,8 @@ static int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 	mir_sntprintf(basedir, MAX_REGS(basedir), _T("%s\\Avatars History"), profilePath);
 #endif
 
-	hFolder = (HANDLE)FoldersRegisterCustomPathT(Translate("Avatars"), Translate("Avatar History"), 
-		_T(PROFILE_PATH) _T("\\") _T(CURRENT_PROFILE) _T("\\Avatars History"));
+	hFolder = (HANDLE)FoldersRegisterCustomPathT(LPGEN("Avatars"), LPGEN("Avatar History"), 
+		PROFILE_PATHT _T("\\") CURRENT_PROFILET _T("\\Avatars History"));
 
 	hHooks[2] = HookEvent(ME_AV_CONTACTAVATARCHANGED, AvatarChanged);
 	hHooks[3] = HookEvent(ME_OPT_INITIALISE, OptInit);
@@ -260,7 +259,7 @@ static int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		upd.szBetaUpdateURL = "http://pescuma.mirandaim.ru/miranda/avatarhist.zip";
 #endif
 
-		upd.pbVersion = (BYTE *)CreateVersionStringPlugin((PLUGININFO*) &pluginInfo, szCurrentVersion);
+		upd.pbVersion = (BYTE *)CreateVersionStringPluginEx(&pluginInfo, szCurrentVersion);
 		upd.cpbVersion = strlen((char *)upd.pbVersion);
 
         CallService(MS_UPDATE_REGISTER, 0, (LPARAM)&upd);
@@ -659,7 +658,7 @@ extern "C" int __declspec(dllexport) Unload(void)
 }
 
 
-static int IsEnabled(WPARAM wParam, LPARAM lParam)
+static INT_PTR IsEnabled(WPARAM wParam, LPARAM lParam)
 {
 	HANDLE hContact = (HANDLE) wParam;
 	return ContactEnabled(hContact, "LogToDisk", AVH_DEF_LOGTODISK) 
@@ -676,7 +675,7 @@ lParam: (char *) hash
 return: (TCHAR *) NULL if none is found or the path to the avatar. You need to free this string 
         with mir_free.
 */
-static int GetCachedAvatar(WPARAM wParam, LPARAM lParam)
+static INT_PTR GetCachedAvatar(WPARAM wParam, LPARAM lParam)
 {
 	char hash[128];
 	lstrcpynA(hash, (char *) lParam, sizeof(hash));
@@ -729,12 +728,9 @@ int GetUIDFromHContact(HANDLE contact, TCHAR* uinout, size_t uinout_len)
 	ZeroMemory(&cinfo,sizeof(CONTACTINFO));
 	cinfo.cbSize = sizeof(CONTACTINFO);
 	cinfo.hContact = contact;
-	cinfo.dwFlag = CNF_UNIQUEID;
-#ifdef UNICODE
-	cinfo.dwFlag |= CNF_UNICODE;
-#endif
+	cinfo.dwFlag = CNF_UNIQUEID | CNF_TCHAR;
 
-	BOOL found = TRUE;
+	bool found = true;
 	if(CallService(MS_CONTACT_GETCONTACTINFO,0,(LPARAM)&cinfo)==0)
 	{
 		if(cinfo.type == CNFT_ASCIIZ)
@@ -752,41 +748,13 @@ int GetUIDFromHContact(HANDLE contact, TCHAR* uinout, size_t uinout_len)
 		{
 			_itot(cinfo.wVal,uinout,10);
 		}
-		else found = FALSE;
+		else found = false;
 	}
-	else found = FALSE;
+	else found = false;
 
 	if (!found)
 	{
-#ifdef UNICODE
-		// Try non unicode ver
-		cinfo.dwFlag = CNF_UNIQUEID;
-
-		found = TRUE;
-		if(CallService(MS_CONTACT_GETCONTACTINFO,0,(LPARAM)&cinfo)==0)
-		{
-			if(cinfo.type == CNFT_ASCIIZ)
-			{
-				MultiByteToWideChar(CP_ACP, 0, (char *) cinfo.pszVal, -1, uinout, uinout_len);
-				// It is up to us to free the string
-				// The catch? We need to use Miranda's free(), not our CRT's :)
-				mir_free(cinfo.pszVal);
-			}
-			else if(cinfo.type == CNFT_DWORD)
-			{
-				_itot(cinfo.dVal,uinout,10);
-			}
-			else if(cinfo.type == CNFT_WORD)
-			{
-				_itot(cinfo.wVal,uinout,10);
-			}
-			else found = FALSE;
-		}
-		else found = FALSE;
-
-		if (!found)
-#endif
-			lstrcpy(uinout, TranslateT("Unknown UIN"));
+		lstrcpyn(uinout, TranslateT("Unknown UIN"),uinout_len);
 	}
 	return 0;
 }

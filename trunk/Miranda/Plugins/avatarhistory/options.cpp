@@ -30,8 +30,8 @@ Avatar History Plugin
 Options opts;
 
 
-static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-static BOOL CALLBACK PopupsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK PopupsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
 static OptPageControl optionsControls[] = { 
@@ -76,25 +76,21 @@ int OptInit(WPARAM wParam,LPARAM lParam)
     odp.cbSize=sizeof(odp);
     odp.position=0;
 	odp.hInstance=hInst;
-	odp.ptszGroup = TranslateT("History"); // group to put your item under
-	odp.ptszTitle = TranslateT("Avatar"); // name of the item
+	odp.ptszGroup = LPGENT("History"); // group to put your item under
+	odp.ptszTitle = LPGENT("Avatar"); // name of the item
 	odp.pfnDlgProc = OptionsDlgProc;
 	odp.pszTemplate = MAKEINTRESOURCEA(IDD_OPTIONS);
     odp.flags = ODPF_BOLDGROUPS | ODPF_TCHAR | ODPF_EXPERTONLY;
     CallService(MS_OPT_ADDPAGE,wParam,(LPARAM)&odp);
 
-	if(ServiceExists(MS_POPUP_ADDPOPUPEX)
-#ifdef UNICODE
-		|| ServiceExists(MS_POPUP_ADDPOPUPW)
-#endif
-		)
+	if(ServiceExists(MS_POPUP_ADDPOPUPT))
 	{
 		ZeroMemory(&odp,sizeof(odp));
 		odp.cbSize=sizeof(odp);
 		odp.position=0;
 		odp.hInstance=hInst;
-		odp.ptszGroup = TranslateT("Popups");
-		odp.ptszTitle = TranslateT("Avatar Change");
+		odp.ptszGroup = LPGENT("Popups");
+		odp.ptszTitle = LPGENT("Avatar Change");
 		odp.pfnDlgProc = PopupsDlgProc;
 		odp.pszTemplate = MAKEINTRESOURCEA(IDD_POPUPS);
 		odp.flags = ODPF_BOLDGROUPS | ODPF_TCHAR;
@@ -120,7 +116,7 @@ void LoadOptions()
 }
 
 
-static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
+static INT_PTR CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
 {
 	return SaveOptsDlgProc(optionsControls, MAX_REGS(optionsControls), MODULE_NAME, hwndDlg, msg, wParam, lParam);
 }
@@ -168,7 +164,7 @@ static void PopupsEnableDisableCtrls(HWND hwndDlg)
 }
 
 
-static BOOL CALLBACK PopupsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
+static INT_PTR CALLBACK PopupsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
 {
 	switch (msg) 
 	{

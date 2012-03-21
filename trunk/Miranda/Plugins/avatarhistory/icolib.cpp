@@ -9,7 +9,7 @@ enum IconIndex
 
 typedef struct
 {
-	char* szDescr;
+	TCHAR* szDescr;
 	char* szName;
 	int   defIconID;
 	BOOL  core;
@@ -17,8 +17,8 @@ typedef struct
 
 static IconStruct iconList[] =
 {
-	{ "History",		"core_main_10",	IDI_AVATARHIST,		TRUE  },
-	{ "Avatar Overlay",	"avh_overlay",	IDI_AVATAROVERLAY,	FALSE  }
+	{ LPGENT("History"),		"core_main_10",	IDI_AVATARHIST,		TRUE  },
+	{ LPGENT("Avatar Overlay"),	"avh_overlay",	IDI_AVATAROVERLAY,	FALSE  }
 };
 
 extern HANDLE hHooks[];
@@ -69,19 +69,20 @@ void SetupIcoLib()
 	if (hHooks[4])
 	{
 		SKINICONDESC sid = {0};
-		char path[MAX_PATH];
+		TCHAR path[MAX_PATH];
 
-   		GetModuleFileNameA(hInst, path, sizeof(path));
+   		GetModuleFileName(hInst, path, sizeof(path));
 
-		sid.cbSize = SKINICONDESC_SIZE_V2;
-		sid.pszSection = Translate("Avatar History");
-		sid.pszDefaultFile = path;
+		sid.cbSize = SKINICONDESC_SIZE;
+		sid.ptszSection = LPGENT("Avatar History");
+		sid.ptszDefaultFile = path;
+		sid.flags = SIDF_ALL_TCHAR;
 
 		for (unsigned i = 0; i < MAX_REGS(iconList); i++) 
 		{
-			if (mirVer < PLUGIN_MAKE_VERSION(0, 7, 0, 0) || !iconList[i].core)
+			if (!iconList[i].core)
 			{
-				sid.pszDescription = Translate(iconList[i].szDescr);
+				sid.ptszDescription = iconList[i].szDescr;
 				sid.pszName = iconList[i].szName;
 				sid.iDefaultIndex = -iconList[i].defIconID;
 				CallService(MS_SKIN2_ADDICON, 0, (LPARAM)&sid);
