@@ -1,20 +1,40 @@
 /* 
-Copyright (C) 2006-2009 Ricardo Pescuma Domenecci
+ListeningTo plugin for Miranda IM
+==========================================================================
+Copyright	(C) 2005-2011 Ricardo Pescuma Domenecci
+			(C) 2010-2011 Merlin_de
 
-This is free software; you can redistribute it and/or
-modify it under the terms of the GNU Library General Public
-License as published by the Free Software Foundation; either
-version 2 of the License, or (at your option) any later version.
+PRE-CONDITION to use this code under the GNU General Public License:
+ 1. you do not build another Miranda IM plugin with the code without written permission
+    of the autor (peace for the project).
+ 2. you do not publish copies of the code in other Miranda IM-related code repositories.
+    This project is already hosted in a SVN and you are welcome to become a contributing member.
+ 3. you do not create listeningTo-derivatives based on this code for the Miranda IM project.
+    (feel free to do this for another project e.g. foobar)
+ 4. you do not distribute any kind of self-compiled binary of this plugin (we want continuity
+    for the plugin users, who should know that they use the original) you can compile this plugin
+    for your own needs, friends, but not for a whole branch of people (e.g. miranda plugin pack).
+ 5. This isn't free beer. If your jurisdiction (country) does not accept
+    GNU General Public License, as a whole, you have no rights to the software
+    until you sign a private contract with its author. !!!
+ 6. you always put these notes and copyright notice at the beginning of your code.
+==========================================================================
+
+in case you accept the pre-condition,
+this is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
 
 This is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Library General Public License for more details.
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
 
-You should have received a copy of the GNU Library General Public
-License along with this file; see the file license.txt.  If
-not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-Boston, MA 02111-1307, USA.  
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the
+Free Software Foundation, Inc.,
+59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 
@@ -36,34 +56,26 @@ Boston, MA 02111-1307, USA.
 
 #define ICON_NAME "LISTENING_TO_ICON"
 
-
 PLUGININFOEX pluginInfo={
 	sizeof(PLUGININFOEX),
-#ifdef UNICODE
-	"ListeningTo (Unicode)",
-#else
-	"ListeningTo",
-#endif
-	PLUGIN_MAKE_VERSION(0,3,0,0),
-	"Handle listening information to/for contacts",
-	"Ricardo Pescuma Domenecci",
-	"",
-	"© 2006-2009 Ricardo Pescuma Domenecci",
-	"http://pescuma.org/miranda/listeningto",
+	__PLUGIN_DISPLAY_NAME,
+	__VERSION_DWORD,
+	__SHORT_DESC,
+	__AUTHOR,
+	__AUTHOREMAIL,
+	__COPYRIGHT,
+	__AUTHORWEB,
 	UNICODE_AWARE,
-	0,		//doesn't replace anything built-in
-#ifdef UNICODE
-	{ 0xf981f3f5, 0x35a, 0x444f, { 0x98, 0x92, 0xca, 0x72, 0x2c, 0x19, 0x5a, 0xda } } // {F981F3F5-035A-444f-9892-CA722C195ADA}
-#else
-	{ 0xa4a8ff7a, 0xc48a, 0x4d2a, { 0xb5, 0xa9, 0x46, 0x46, 0x84, 0x43, 0x26, 0x3d } } // {A4A8FF7A-C48A-4d2a-B5A9-46468443263D}
-#endif
+	0,					//doesn't replace anything built-in
+	MIID_LISTENINGTO	//change to __UPDATER_UID if updater plugin support it
 };
 
 
-HINSTANCE hInst;
-PLUGINLINK *pluginLink;
-struct MM_INTERFACE mmi;
-struct UTF8_INTERFACE utfi;
+HINSTANCE	hInst;
+PLUGINLINK*	pluginLink;
+struct MM_INTERFACE		mmi;
+struct UTF8_INTERFACE	utfi;
+int hLangpack = 0;		//register for new langpack support
 
 static std::vector<HANDLE> hHooks;
 static std::vector<HANDLE> hServices;
@@ -74,9 +86,10 @@ static HANDLE hMainMenuGroup = NULL;
 static HANDLE hTTB = NULL;
 static char *metacontacts_proto = NULL;
 BOOL loaded = FALSE;
-static UINT hTimer = 0;
+UINT_PTR hTimer = 0;
 static HANDLE hExtraImage = NULL;
 static DWORD lastInfoSetTime = 0;
+int activePlayer = -1;
 
 std::vector<ProtocolInfo> proto_itens;
 
@@ -88,20 +101,20 @@ int TopToolBarLoaded(WPARAM wParam, LPARAM lParam);
 int ClistExtraListRebuild(WPARAM wParam, LPARAM lParam);
 int SettingChanged(WPARAM wParam,LPARAM lParam);
 
-int MainMenuClicked(WPARAM wParam, LPARAM lParam);
-BOOL ListeningToEnabled(char *proto, BOOL ignoreGlobal = FALSE);
-int ListeningToEnabled(WPARAM wParam, LPARAM lParam);
-int EnableListeningTo(WPARAM wParam,LPARAM lParam);
-int GetTextFormat(WPARAM wParam,LPARAM lParam);
-int GetParsedFormat(WPARAM wParam,LPARAM lParam);
-int GetOverrideContactOption(WPARAM wParam,LPARAM lParam);
-int GetUnknownText(WPARAM wParam,LPARAM lParam);
-int SetNewSong(WPARAM wParam,LPARAM lParam);
+INT_PTR MainMenuClicked(WPARAM wParam, LPARAM lParam);
+INT_PTR ListeningToEnabled(char *proto, BOOL ignoreGlobal = FALSE);
+INT_PTR ListeningToEnabled(WPARAM wParam, LPARAM lParam);
+INT_PTR EnableListeningTo(WPARAM wParam,LPARAM lParam);
+INT_PTR GetTextFormat(WPARAM wParam,LPARAM lParam);
+INT_PTR GetParsedFormat(WPARAM wParam,LPARAM lParam);
+INT_PTR GetOverrideContactOption(WPARAM wParam,LPARAM lParam);
+INT_PTR GetUnknownText(WPARAM wParam,LPARAM lParam);
+INT_PTR SetNewSong(WPARAM wParam,LPARAM lParam);
 void SetExtraIcon(HANDLE hContact, BOOL set);
 void SetListeningInfos(LISTENINGTOINFO *lti);
-int HotkeysEnable(WPARAM wParam,LPARAM lParam);
-int HotkeysDisable(WPARAM wParam,LPARAM lParam);
-int HotkeysToggle(WPARAM wParam,LPARAM lParam);
+INT_PTR HotkeysEnable(WPARAM wParam,LPARAM lParam);
+INT_PTR HotkeysDisable(WPARAM wParam,LPARAM lParam);
+INT_PTR HotkeysToggle(WPARAM wParam,LPARAM lParam);
 
 TCHAR* VariablesParseInfo(ARGUMENTSINFO *ai);
 TCHAR* VariablesParseType(ARGUMENTSINFO *ai);
@@ -150,33 +163,14 @@ extern "C" __declspec(dllexport) const MUUID* MirandaPluginInterfaces(void)
 	return interfaces;
 }
 
-/*
-BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
-{
-	// Find the windows
-	char class_name[1024];
-	if (GetClassNameA(hwnd, class_name, sizeof(class_name)))
-	{
-		class_name[sizeof(class_name)-1] = '\0';
-OutputDebugStringA(class_name);
-OutputDebugStringA(" -> ");
-		GetWindowTextA(hwnd, class_name, 1024);
-OutputDebugStringA(class_name);
-OutputDebugStringA("\n");
-	}
-
-	return TRUE;
-}
-*/
-
 extern "C" int __declspec(dllexport) Load(PLUGINLINK *link) 
 {
-//	EnumWindows(EnumWindowsProc, 0);
-
 	pluginLink = link;
 
 	mir_getMMI(&mmi);
 	mir_getUTFI(&utfi);
+	mir_getLP(&pluginInfo);
+
 
 	CHECK_VERSION("Listening To")
 
@@ -283,7 +277,7 @@ void RegisterProtocol(char *proto, TCHAR *account)
 		!ProtoServiceExists(proto, PS_ICQ_SETCUSTOMSTATUSEX))
 		return;
 
-	int id = proto_itens.size();
+	size_t id = proto_itens.size();
 	proto_itens.resize(id+1);
 
 	strncpy(proto_itens[id].proto, proto, MAX_REGS(proto_itens[id].proto));
@@ -399,25 +393,23 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		Update upd = {0};
 		char szCurrentVersion[30];
 
-		upd.cbSize = sizeof(upd);
-		upd.szComponentName = pluginInfo.shortName;
+		upd.cbSize			= sizeof(upd);
+		upd.szComponentName	= pluginInfo.shortName;
 
-		upd.szUpdateURL = UPDATER_AUTOREGISTER;
+		upd.szUpdateURL		= UPDATER_AUTOREGISTER;
 
-		upd.szBetaVersionURL = "http://pescuma.org/miranda/listeningto_version.txt";
-		upd.szBetaChangelogURL = "http://pescuma.org/miranda/listeningto#Changelog";
-		upd.pbBetaVersionPrefix = (BYTE *)"ListeningTo ";
-		upd.cpbBetaVersionPrefix = strlen((char *)upd.pbBetaVersionPrefix);
-#ifdef UNICODE
-		upd.szBetaUpdateURL = "http://pescuma.org/miranda/listeningtoW.zip";
-#else
-		upd.szBetaUpdateURL = "http://pescuma.org/miranda/listeningto.zip";
-#endif
+		upd.pbVersion		= (BYTE *)CreateVersionString(pluginInfo.version, szCurrentVersion);
+		upd.cpbVersion		= (int)strlen((char *)upd.pbVersion);
 
-		upd.pbVersion = (BYTE *)CreateVersionStringPlugin((PLUGININFO*) &pluginInfo, szCurrentVersion);
-		upd.cpbVersion = strlen((char *)upd.pbVersion);
+		upd.szBetaVersionURL		= __UPDATER_BETA_VERURL;
+		// bytes occuring in VersionURL before the version, used to locate the version information within the URL data
+		upd.pbBetaVersionPrefix		= (BYTE *)__UPDATER_BETA_VERPRE;
+		upd.cpbBetaVersionPrefix	= (int)strlen((char *)upd.pbBetaVersionPrefix);
+		upd.szBetaUpdateURL			= __UPDATER_BETA_URL;
+		// url for displaying changelog for beta versions
+		upd.szBetaChangelogURL		= __UPDATER_BETA_CHLOG;
 
-        CallService(MS_UPDATE_REGISTER, 0, (LPARAM)&upd);
+		CallService(MS_UPDATE_REGISTER, 0, (LPARAM)&upd);
 	}
 
 	{
@@ -442,8 +434,8 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		mi.hIcon = NULL;
 
 		// Add all protos
-		mi.pszName = Translate("Send to all protocols");
-		mi.flags = CMIF_CHILDPOPUP 
+		mi.ptszName = LPGENT("Send to all protocols");
+		mi.flags = CMIF_CHILDPOPUP | CMIF_TCHAR 
 				| (ListeningToEnabled(NULL, TRUE) ? CMIF_CHECKED : 0)
 				| (opts.enable_sending ? 0 : CMIF_GRAYED);
 		proto_itens.resize(1);
@@ -460,8 +452,8 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 	if (ServiceExists(MS_PROTO_ENUMACCOUNTS))
 	{
 		PROTOACCOUNT **protos;
-		int count;
-		CallService(MS_PROTO_ENUMACCOUNTS, (WPARAM)&count, (LPARAM)&protos);
+		int count = 0;
+		ProtoEnumAccounts(&count,&protos);
 
 		for (int i = 0; i < count; i++)
 		{
@@ -474,25 +466,6 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		}
 
 		hHooks.push_back( HookEvent(ME_PROTO_ACCLISTCHANGED, AccListChanged) );
-	}
-	else
-	{
-		PROTOCOLDESCRIPTOR **protos;
-		int count;
-		CallService(MS_PROTO_ENUMPROTOCOLS, (WPARAM)&count, (LPARAM)&protos);
-
-		for (int i = 0; i < count; i++)
-		{
-			if (protos[i]->type != PROTOTYPE_PROTOCOL)
-				continue;
-
-			char name[128];
-			CallProtoService(protos[i]->szName, PS_GETNAME, sizeof(name), (LPARAM)name);
-
-			TCHAR *acc = mir_a2t(name);
-			RegisterProtocol(protos[i]->szName, acc);
-			mir_free(acc);
-		}
 	}
 
 	RebuildMenu();
@@ -563,28 +536,30 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 	{
 		HOTKEYDESC hkd = {0};
 		hkd.cbSize = sizeof(hkd);
-		hkd.pszSection = Translate("Listening to");
+		hkd.ptszSection = LPGENT("Listening to");
+		hkd.dwFlags = HKD_TCHAR;
 
 		hkd.pszService = MS_LISTENINGTO_HOTKEYS_ENABLE;
 		hkd.pszName = "ListeningTo/EnableAll";
-		hkd.pszDescription = Translate("Send to all protocols");
+		hkd.ptszDescription = LPGENT("Send to all protocols");
 		CallService(MS_HOTKEY_REGISTER, 0, (LPARAM)&hkd);
 
 		hkd.pszService = MS_LISTENINGTO_HOTKEYS_DISABLE;
 		hkd.pszName = "ListeningTo/DisableAll";
-		hkd.pszDescription = Translate("Don't send to any protocols");
+		hkd.ptszDescription = LPGENT("Don't send to any protocols");
 		CallService(MS_HOTKEY_REGISTER, 0, (LPARAM)&hkd);
 
 		hkd.pszService = MS_LISTENINGTO_HOTKEYS_TOGGLE;
 		hkd.pszName = "ListeningTo/ToggleAll";
-		hkd.pszDescription = Translate("Toggle send to all protocols");
+		hkd.ptszDescription = LPGENT("Toggle send to all protocols");
 		CallService(MS_HOTKEY_REGISTER, 0, (LPARAM)&hkd);
 	}
 
 	SetListeningInfos(NULL);
-	StartTimer();
 
 	loaded = TRUE;
+	if (!hTimer)		//check if timer running (maybe start by HasNewListeningInfo)
+		StartTimer();
 
 	return 0;
 }
@@ -594,17 +569,13 @@ int PreShutdown(WPARAM wParam, LPARAM lParam)
 {
 	loaded = FALSE;
 
-	if (hTimer != NULL)
-	{
-		KillTimer(NULL, hTimer);
-		hTimer = NULL;
-	}
+	KILLTIMER(hTimer);
 
 	DeInitOptions();
 
 	DestroyHookableEvent(hEnableStateChangedEvent);
 
-	int i;
+	unsigned int i;
 	for(i = 0; i < hHooks.size(); i++)
 		UnhookEvent(hHooks[i]);
 
@@ -612,12 +583,14 @@ int PreShutdown(WPARAM wParam, LPARAM lParam)
 		DestroyServiceFunction(hServices[i]);
 
 	FreeMusic();
+	// To be sure that no one was left behind
+	SetListeningInfos(NULL);
 
 	return 0;
 }
 
 
-int TopToolBarClick(WPARAM wParam, LPARAM lParam)
+INT_PTR TopToolBarClick(WPARAM wParam, LPARAM lParam)
 {
 	BOOL enabled = !ListeningToEnabled(NULL, TRUE);
 
@@ -649,14 +622,14 @@ int TopToolBarLoaded(WPARAM wParam, LPARAM lParam)
 }
 
 
-int MainMenuClicked(WPARAM wParam, LPARAM lParam)
+INT_PTR MainMenuClicked(WPARAM wParam, LPARAM lParam)
 {
 	if (!loaded)
 		return -1;
 
 	int pos = wParam == 0 ? 0 : wParam - 500080000;
 
-	if (pos >= proto_itens.size() || pos < 0)
+	if (pos >= (signed) proto_itens.size() || pos < 0)
 		return 0;
 
 	EnableListeningTo((WPARAM) proto_itens[pos].proto, (LPARAM) !ListeningToEnabled(proto_itens[pos].proto, TRUE));
@@ -664,7 +637,7 @@ int MainMenuClicked(WPARAM wParam, LPARAM lParam)
 }
 
 
-BOOL ListeningToEnabled(char *proto, BOOL ignoreGlobal) 
+INT_PTR ListeningToEnabled(char *proto, BOOL ignoreGlobal) 
 {
 	if (!ignoreGlobal && !opts.enable_sending)
 		return FALSE;
@@ -672,7 +645,7 @@ BOOL ListeningToEnabled(char *proto, BOOL ignoreGlobal)
 	if (proto == NULL || proto[0] == 0)
 	{
 		// Check all protocols
-		BOOL enabled = TRUE;
+		INT_PTR enabled = TRUE;
 
 		for (unsigned int i = 1; i < proto_itens.size(); ++i)
 		{
@@ -689,12 +662,12 @@ BOOL ListeningToEnabled(char *proto, BOOL ignoreGlobal)
 	{
 		char setting[256];
 		mir_snprintf(setting, sizeof(setting), "%sEnabled", proto);
-		return (BOOL) DBGetContactSettingByte(NULL, MODULE_NAME, setting, FALSE);
+		return (INT_PTR) DBGetContactSettingByte(NULL, MODULE_NAME, setting, FALSE);
 	}
 }
 
 
-int ListeningToEnabled(WPARAM wParam, LPARAM lParam) 
+INT_PTR ListeningToEnabled(WPARAM wParam, LPARAM lParam) 
 {
 	if (!loaded)
 		return -1;
@@ -923,7 +896,7 @@ void SetListeningInfo(char *proto, LISTENINGTOINFO *lti)
 }
 
 
-int EnableListeningTo(WPARAM wParam,LPARAM lParam) 
+INT_PTR EnableListeningTo(WPARAM wParam,LPARAM lParam) 
 {
 	if (!loaded)
 		return -1;
@@ -969,7 +942,8 @@ int EnableListeningTo(WPARAM wParam,LPARAM lParam)
 		UpdateGlobalStatusMenus();
 	}
 
-	StartTimer();
+	if(!hTimer)		//check always if timer exist !!
+		StartTimer();
 
 	NotifyEventHooks(hEnableStateChangedEvent, wParam, lParam);
 
@@ -977,34 +951,34 @@ int EnableListeningTo(WPARAM wParam,LPARAM lParam)
 }
 
 
-int HotkeysEnable(WPARAM wParam,LPARAM lParam) 
+INT_PTR HotkeysEnable(WPARAM wParam,LPARAM lParam) 
 {
 	return EnableListeningTo(lParam, TRUE);
 }
 
 
-int HotkeysDisable(WPARAM wParam,LPARAM lParam) 
+INT_PTR HotkeysDisable(WPARAM wParam,LPARAM lParam) 
 {
 	return EnableListeningTo(lParam, FALSE);
 }
 
 
-int HotkeysToggle(WPARAM wParam,LPARAM lParam) 
+INT_PTR HotkeysToggle(WPARAM wParam,LPARAM lParam) 
 {
 	return EnableListeningTo(lParam, !ListeningToEnabled((char *)lParam, TRUE));
 }
 
 
-int GetTextFormat(WPARAM wParam,LPARAM lParam) 
+INT_PTR GetTextFormat(WPARAM wParam,LPARAM lParam) 
 {
 	if (!loaded)
 		return NULL;
 
-	return (int) mir_tstrdup(opts.templ);
+	return (INT_PTR) mir_tstrdup(opts.templ);
 }
 
 
-int GetParsedFormat(WPARAM wParam,LPARAM lParam) 
+INT_PTR GetParsedFormat(WPARAM wParam,LPARAM lParam) 
 {
 	if (!loaded)
 		return NULL;
@@ -1028,19 +1002,19 @@ int GetParsedFormat(WPARAM wParam,LPARAM lParam)
 
 	Buffer<TCHAR> ret;
 	ReplaceTemplate(&ret, NULL, opts.templ, fr, MAX_REGS(fr));
-	return (int) ret.detach();
+	return (INT_PTR) ret.detach();
 }
 
 
-int GetOverrideContactOption(WPARAM wParam,LPARAM lParam) 
+INT_PTR GetOverrideContactOption(WPARAM wParam,LPARAM lParam) 
 {
-	return (int) opts.override_contact_template;
+	return (INT_PTR) opts.override_contact_template;
 }
 
 
-int GetUnknownText(WPARAM wParam,LPARAM lParam) 
+INT_PTR GetUnknownText(WPARAM wParam,LPARAM lParam) 
 {
-	return (int) opts.unknown;
+	return (INT_PTR) opts.unknown;
 }
 
 
@@ -1050,24 +1024,28 @@ void SetListeningInfos(LISTENINGTOINFO *lti)
 	{
 		SetListeningInfo(proto_itens[i].proto, lti);
 	}
+
+	lastInfoSetTime = GetTickCount();
+
+	if (!lti)
+		FreeListeningInfo(NULL);
 }
 
+//--------------------------------------------------------------------------------
 static void CALLBACK GetInfoTimer(HWND hwnd, UINT uMsg, UINT idEvent, DWORD dwTime)
 {
-	if (hTimer != NULL)
-	{
-		KillTimer(NULL, hTimer);
-		hTimer = NULL;
-	}
+	if (!loaded)
+		return;
+
+	KILLTIMER(hTimer);
 
 	// Check if we can set it now...
 	DWORD now = GetTickCount();
 	if (now < lastInfoSetTime + MIN_TIME_BEETWEEN_SETS)
 	{
-		hTimer = SetTimer(NULL, NULL, lastInfoSetTime + MIN_TIME_BEETWEEN_SETS - now, GetInfoTimer);
+		hTimer = SetTimer(NULL, NULL, lastInfoSetTime + MIN_TIME_BEETWEEN_SETS - now, (TIMERPROC)GetInfoTimer);
 		return;
 	}
-	lastInfoSetTime = GetTickCount(); // TODO Move this to inside the if that really sets
 
 	if (!opts.enable_sending)
 	{
@@ -1077,40 +1055,55 @@ static void CALLBACK GetInfoTimer(HWND hwnd, UINT uMsg, UINT idEvent, DWORD dwTi
 	}
 
 	// Set it
-	int changed = ChangedListeningInfo();
-	if (changed < 0)
-	{
-//		m_log(_T("GetInfoTimer"), _T("changed < 0"));
-		SetListeningInfos(NULL);
+	// ... ChangedListeningInfo reset also activePlayer depend on status !!
+	switch (ChangedListeningInfo()) {
+		case -1:
+		{
+	//		m_log(_T("GetInfoTimer"), _T("changed < 0"));
+			SetListeningInfos(NULL);
+		}	break;
+		case 1:
+		{
+	//		m_log(_T("GetInfoTimer"), _T("changed > 0"));
+			SetListeningInfos(GetListeningInfo());
+		}	break;
+		default:
+			break;
 	}
-	else if (changed > 0)
-	{
-//		m_log(_T("GetInfoTimer"), _T("changed > 0"));
-		SetListeningInfos(GetListeningInfo());
-	}
-
 	StartTimer();
 }
 
 void StartTimer()
 {
-	// See if any protocol want Listening info
-	BOOL want = FALSE;
+	if (!loaded) return;
+
+	// See if any player and protocol want Listening info
+	BOOL want		= FALSE;
+	BOOL needPoll	= FALSE;
 
 	if (opts.enable_sending)
 	{
-		if (!players[WATRACK]->enabled)
+		if (!players[WATRACK]->m_enabled)
 		{
 			// See if any player needs it
-			BOOL needPoll = FALSE;
-			int i;
-			for (i = FIRST_PLAYER; i < NUM_PLAYERS; i++)
-			{
-				if (players[i]->needPoll)
+			if(activePlayer > -1) {
+				needPoll = players[activePlayer]->m_needPoll;
+			}
+			// See if any player needs it
+			else {
+				int i;
+				for (i = FIRST_PLAYER; i < NUM_PLAYERS; i++)
 				{
-					needPoll = TRUE;
-					break;
-				}
+					if(!players[i]->m_enabled)			//player is disabled
+						continue;
+					if(players[i]->GetStatus()) {		//player is online
+						needPoll = players[i]->m_needPoll;
+						break;
+					}
+					else if (players[i]->m_needPoll) {	//any player needs needPoll
+						needPoll = TRUE;
+					}
+				} //end for
 			}
 
 			if (needPoll)
@@ -1128,12 +1121,12 @@ void StartTimer()
 		}
 	}
 
-	if (want)
+	if (want)	//set polling Timer
 	{
 		if (hTimer == NULL)
-			hTimer = SetTimer(NULL, NULL, opts.time_to_pool * 1000, GetInfoTimer);
+			hTimer = SetTimer(NULL, NULL, opts.time_to_pool * 1000, (TIMERPROC)GetInfoTimer);
 	}
-	else
+	else		//disable polling Timer
 	{
 		if (hTimer != NULL)
 		{
@@ -1147,18 +1140,43 @@ void StartTimer()
 	}
 }
 
-void HasNewListeningInfo()
+void HasNewListeningInfo(int ID)		//set timer for NotifyInfoChanged
 {
-	if (hTimer != NULL)
-	{
-		KillTimer(NULL, hTimer);
-		hTimer = NULL;
-	}
+	if(	(activePlayer == -1 || players[activePlayer]->GetStatus() == PL_OFFLINE) &&
+		(players[ID]->GetStatus() > PL_OFFLINE) )
+		activePlayer = ID;
 
-	hTimer = SetTimer(NULL, NULL, 100, GetInfoTimer);
+	else if(activePlayer != ID)
+		return;
+	KILLTIMER(hTimer);
+	//200ms for better handle COM double events inside NotifyInfoChanged (e.g. start event + track changed event)
+	hTimer = SetTimer(NULL, NULL, 200, (TIMERPROC)GetInfoTimer);
 }
 
+BOOL SetActivePlayer(int ID, int newVal)
+{
+	if(activePlayer != -1 && activePlayer != ID)
+		return FALSE;	//other player is active
 
+	activePlayer = (newVal > -1 && newVal < NUM_PLAYERS) ? newVal : -1;
+
+	if( (hTimer) && 
+		(activePlayer > 0) &&
+		(players[activePlayer]->m_needPoll == FALSE) )
+		{
+			KILLTIMER(hTimer);
+		}
+	else 
+	if( (!hTimer) &&
+		(activePlayer < 0 || players[activePlayer]->m_needPoll == TRUE) )
+		{
+			StartTimer();
+		}
+
+	return TRUE;
+}
+
+//--------------------------------------------------------------------------------
 int ClistExtraListRebuild(WPARAM wParam, LPARAM lParam)
 {
 	HICON hIcon = IcoLib_LoadIcon(ICON_NAME);
@@ -1178,19 +1196,12 @@ void SetExtraIcon(HANDLE hContact, BOOL set)
 	}
 	else if (opts.show_adv_icon && hExtraImage != NULL)
 	{
+		if (! ServiceExists("CListFrame/SetSkinnedFrame") && opts.adv_icon_slot == 0)
+			return;
 		IconExtraColumn iec;
 		iec.cbSize = sizeof(iec);
 		iec.hImage = set ? hExtraImage : (HANDLE)-1;
-		if (opts.adv_icon_slot < 2)
-		{
-			iec.ColumnType = opts.adv_icon_slot + EXTRA_ICON_ADV1;
-		}
-		else 
-		{
-			int first = CallService(MS_CLUI_GETCAPS, 0, CLUIF2_USEREXTRASTART);
-			iec.ColumnType = opts.adv_icon_slot - 2 + first;
-		}
-
+		iec.ColumnType = opts.adv_icon_slot;
 		CallService(MS_CLIST_EXTRA_SET_ICON, (WPARAM)hContact, (LPARAM)&iec);
 	}
 }
@@ -1205,7 +1216,7 @@ int SettingChanged(WPARAM wParam,LPARAM lParam)
 	if (strcmp(cws->szSetting, "ListeningTo") != 0)
 		return 0;
 
-	char *proto = (char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, (WPARAM) hContact, 0);
+	char *proto = (char *) CallService(MS_PROTO_GETCONTACTBASEPROTO, wParam, 0);
 	if (proto == NULL)
 		return 0;
 
@@ -1221,7 +1232,7 @@ int SettingChanged(WPARAM wParam,LPARAM lParam)
 }
 
 
-int SetNewSong(WPARAM wParam,LPARAM lParam)
+INT_PTR SetNewSong(WPARAM wParam,LPARAM lParam)
 {
 	if (lParam == NULL)
 		return -1;
@@ -1241,7 +1252,7 @@ int SetNewSong(WPARAM wParam,LPARAM lParam)
 	return 0;
 }
 
-
+//--------------------------------------------------------------------------------
 TCHAR* VariablesParseInfo(ARGUMENTSINFO *ai)
 {
 	if (ai->cbSize < sizeof(ARGUMENTSINFO))
