@@ -52,9 +52,9 @@ static OptPageControl popupsControls[] = {
 	{ &opts.popup_right_click_action,		CONTROL_COMBO,		IDC_RIGHT_ACTION,	"PopupsRightClick", POPUP_ACTION_CLOSEPOPUP },
 	{ &opts.popup_left_click_action,		CONTROL_COMBO,		IDC_LEFT_ACTION,	"PopupsLeftClick", POPUP_ACTION_OPENAVATARHISTORY },
 	{ &opts.popup_show_changed,				CONTROL_CHECKBOX,	IDC_CHANGED_L,		"PopupsShowChanged", TRUE },
-	{ &opts.popup_changed,					CONTROL_TEXT,		IDC_CHANGED,		"PopupsTextChanged", (DWORD) _T(DEFAULT_TEMPLATE_CHANGED) },
+	{ &opts.popup_changed,					CONTROL_TEXT,		IDC_CHANGED,		"PopupsTextChanged", (ULONG_PTR) _T(DEFAULT_TEMPLATE_CHANGED) },
 	{ &opts.popup_show_removed,				CONTROL_CHECKBOX,	IDC_REMOVED_L,		"PopupsShowRemoved", TRUE },
-	{ &opts.popup_removed,					CONTROL_TEXT,		IDC_REMOVED,		"PopupsTextRemoved", (DWORD) _T(DEFAULT_TEMPLATE_REMOVED) }
+	{ &opts.popup_removed,					CONTROL_TEXT,		IDC_REMOVED,		"PopupsTextRemoved", (ULONG_PTR) _T(DEFAULT_TEMPLATE_REMOVED) }
 };
 
 static UINT popupsExpertControls[] = { 
