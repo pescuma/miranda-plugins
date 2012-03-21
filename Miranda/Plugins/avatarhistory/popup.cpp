@@ -47,7 +47,7 @@ void InitPopups()
 	hPopupWindow = CreateWindowEx(WS_EX_TOOLWINDOW, _T("static"), _T(MODULE_NAME) _T("_PopupWindow"), 
 		0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, HWND_DESKTOP,
 		NULL, hInst, NULL);
-	SetWindowLong(hPopupWindow, GWL_WNDPROC, (LONG)(WNDPROC)PopupWndProc);
+	SetWindowLong(hPopupWindow, GWLP_WNDPROC, (LONG)(WNDPROC)PopupWndProc);
 }
 
 
@@ -87,11 +87,10 @@ PopupDataType;
 void ShowPopupEx(HANDLE hContact, const TCHAR *title, const TCHAR *description, 
 			   void *plugin_data, int type, const Options *op)
 {
-#ifdef UNICODE
-	if(ServiceExists(MS_POPUP_ADDPOPUPW)) 
+	if(ServiceExists(MS_POPUP_ADDPOPUPT)) 
 	{
 		// Make popup
-		POPUPDATAW ppd = {0};
+		POPUPDATAT ppd = {0};
 
 		ppd.lchContact = hContact; 
 		ppd.lchIcon = createProtoOverlayedIcon(hContact);
@@ -101,13 +100,13 @@ void ShowPopupEx(HANDLE hContact, const TCHAR *title, const TCHAR *description,
 		((PopupDataType*)ppd.PluginData)->hIcon = ppd.lchIcon;
 
 		if (title != NULL)
-			lstrcpyn(ppd.lpwzContactName, title, MAX_REGS(ppd.lpwzContactName));
+			lstrcpyn(ppd.lptzContactName, title, MAX_REGS(ppd.lptzContactName));
 		else if (hContact != NULL)
-			lstrcpyn(ppd.lpwzContactName, (TCHAR *) CallService(MS_CLIST_GETCONTACTDISPLAYNAME, (WPARAM)hContact, GCDNF_TCHAR | GCDNF_NOCACHE), 
-					MAX_REGS(ppd.lpwzContactName));
+			lstrcpyn(ppd.lptzContactName, (TCHAR *) CallService(MS_CLIST_GETCONTACTDISPLAYNAME, (WPARAM)hContact, GCDNF_TCHAR | GCDNF_NOCACHE), 
+					MAX_REGS(ppd.lptzContactName));
 
 		if (description != NULL)
-			lstrcpyn(ppd.lpwzText, description, MAX_REGS(ppd.lpwzText));
+			lstrcpyn(ppd.lptzText, description, MAX_REGS(ppd.lptzText));
 
 		if (type == POPUP_TYPE_NORMAL || type == POPUP_TYPE_TEST)
 		{
@@ -166,89 +165,7 @@ void ShowPopupEx(HANDLE hContact, const TCHAR *title, const TCHAR *description,
 		}
 
 		// Now that every field has been filled, we want to see the popup.
-		CallService(MS_POPUP_ADDPOPUPW, (WPARAM)&ppd,0);
-	}
-	else
-#endif
-	if(ServiceExists(MS_POPUP_ADDPOPUPEX)) 
-	{
-		// Make popup
-		POPUPDATAEX ppd = {0};
-
-		ppd.lchContact = hContact; 
-		ppd.lchIcon = createProtoOverlayedIcon(hContact);
-
-		ppd.PluginData = mir_alloc(sizeof(PopupDataType));
-		((PopupDataType*)ppd.PluginData)->plugin_data = plugin_data;
-		((PopupDataType*)ppd.PluginData)->hIcon = ppd.lchIcon;
-
-		if (title != NULL)
-			TCHAR_TO_CHAR(ppd.lpzContactName, title);
-		else
-			lstrcpynA(ppd.lpzContactName, (char *) CallService(MS_CLIST_GETCONTACTDISPLAYNAME, (WPARAM)hContact, GCDNF_NOCACHE), 
-					MAX_REGS(ppd.lpzContactName));
-
-		if (description != NULL)
-			TCHAR_TO_CHAR(ppd.lpzText, description);
-
-		if (type == POPUP_TYPE_NORMAL || type == POPUP_TYPE_TEST)
-		{
-			if (op->popup_use_default_colors)
-			{
-				ppd.colorBack = 0;
-				ppd.colorText = 0;
-			}
-			else if (op->popup_use_win_colors)
-			{
-				ppd.colorBack = GetSysColor(COLOR_BTNFACE);
-				ppd.colorText = GetSysColor(COLOR_WINDOWTEXT);
-			}
-			else
-			{
-				ppd.colorBack = op->popup_bkg_color;
-				ppd.colorText = op->popup_text_color;
-			}
-		}
-		else // if (type == POPUP_TYPE_ERROR)
-		{
-			ppd.colorBack = RGB(200,0,0);
-			ppd.colorText = RGB(255,255,255);
-		}
-
-		if (type == POPUP_TYPE_NORMAL)
-		{
-			ppd.PluginWindowProc = PopupDlgProc;
-		}
-		else // if (type == POPUP_TYPE_TEST || type == POPUP_TYPE_ERROR)
-		{
-			ppd.PluginWindowProc = DumbPopupDlgProc;
-		}
-		
-		if (type == POPUP_TYPE_NORMAL || type == POPUP_TYPE_TEST)
-		{
-			switch (op->popup_delay_type) 
-			{
-				case POPUP_DELAY_CUSTOM:
-					ppd.iSeconds = opts.popup_timeout;
-					break;
-
-				case POPUP_DELAY_PERMANENT:
-					ppd.iSeconds = -1;
-					break;
-
-				case POPUP_DELAY_DEFAULT:
-				default:
-					ppd.iSeconds = 0;
-					break;
-			}
-		}
-		else // if (type == POPUP_TYPE_ERROR)
-		{
-			ppd.iSeconds = 0;
-		}
-
-		// Now that every field has been filled, we want to see the popup.
-		CallService(MS_POPUP_ADDPOPUPEX, (WPARAM)&ppd,0);
+		PUAddPopUpT(&ppd);
 	}
 	else
 	{
