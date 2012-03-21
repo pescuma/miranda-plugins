@@ -1,5 +1,5 @@
 /* 
-Copyright (C) 2006 Ricardo Pescuma Domenecci
+Copyright (C) 2006-2012 Ricardo Pescuma Domenecci
 
 This is free software; you can redistribute it and/or
 modify it under the terms of the GNU Library General Public
@@ -28,7 +28,9 @@ Boston, MA 02111-1307, USA.
 
 PLUGININFOEX pluginInfo={
 	sizeof(PLUGININFOEX),
-#ifdef UNICODE
+#ifdef _WIN64
+	"History Events (x64)",
+#elif UNICODE
 	"History Events (Unicode)",
 #else
 	"History Events",
@@ -37,11 +39,13 @@ PLUGININFOEX pluginInfo={
 	"A service plugin to handle custom history events",
 	"Ricardo Pescuma Domenecci",
 	"",
-	"© 2007 Ricardo Pescuma Domenecci",
+	"© 2007-2012 Ricardo Pescuma Domenecci",
 	"http://pescuma.mirandaim.ru/miranda/historyevents",
 	UNICODE_AWARE,
 	0,		//doesn't replace anything built-in
-#ifdef UNICODE
+#ifdef _WIN64
+	{ 0xc79ed89c, 0xa34b, 0x4d4d, { 0x90, 0x5f, 0x71, 0x60, 0x63, 0xb7, 0x1e, 0x98 } } // {C79ED89C-A34B-4D4D-905F-716063B71E98}
+#elif UNICODE
 	{ 0x25b9a055, 0x1e7f, 0x4505, { 0x99, 0xef, 0x9b, 0xc7, 0x6e, 0x3f, 0x1b, 0xd0 } } // {25B9A055-1E7F-4505-99EF-9BC76E3F1BD0}
 #else
 	{ 0xe502920c, 0xd4b9, 0x44d0, { 0xad, 0x29, 0xf0, 0x3, 0x93, 0x75, 0xc4, 0xf9 } } // {E502920C-D4B9-44d0-AD29-F0039375C4F9}
@@ -54,27 +58,29 @@ PLUGINLINK *pluginLink;
 MM_INTERFACE mmi;
 UTF8_INTERFACE utfi;
 LIST_INTERFACE li;
+int hLangpack = 0;
 
 int SortHandlers(const HISTORY_EVENT_HANDLER *type1, const HISTORY_EVENT_HANDLER *type2);
 LIST<HISTORY_EVENT_HANDLER> handlers(20, SortHandlers);
 
 static HANDLE hHooks[4] = {0};
+static HANDLE hServices[10] = {0};
 
 int ModulesLoaded(WPARAM wParam, LPARAM lParam);
 int PreShutdown(WPARAM wParam, LPARAM lParam);
 int DbEventFilterAdd(WPARAM wParam, LPARAM lParam);
 int DbEventAdded(WPARAM wParam, LPARAM lParam);
 
-int ServiceGetCount(WPARAM wParam, LPARAM lParam);
-int ServiceGetEvent(WPARAM wParam, LPARAM lParam);
-int ServiceRegister(WPARAM wParam, LPARAM lParam);
-int ServiceCanHandle(WPARAM wParam, LPARAM lParam);
-int ServiceGetIcon(WPARAM wParam, LPARAM lParam);
-int ServiceGetFlags(WPARAM wParam, LPARAM lParam);
-int ServiceGetText(WPARAM wParam, LPARAM lParam);
-int ServiceReleaseText(WPARAM wParam, LPARAM lParam);
-int ServiceAddToHistory(WPARAM wParam, LPARAM lParam);
-int ServiceIsEnabledTemplate(WPARAM wParam, LPARAM lParam);
+INT_PTR ServiceGetCount(WPARAM wParam, LPARAM lParam);
+INT_PTR ServiceGetEvent(WPARAM wParam, LPARAM lParam);
+INT_PTR ServiceRegister(WPARAM wParam, LPARAM lParam);
+INT_PTR ServiceCanHandle(WPARAM wParam, LPARAM lParam);
+INT_PTR ServiceGetIcon(WPARAM wParam, LPARAM lParam);
+INT_PTR ServiceGetFlags(WPARAM wParam, LPARAM lParam);
+INT_PTR ServiceGetText(WPARAM wParam, LPARAM lParam);
+INT_PTR ServiceReleaseText(WPARAM wParam, LPARAM lParam);
+INT_PTR ServiceAddToHistory(WPARAM wParam, LPARAM lParam);
+INT_PTR ServiceIsEnabledTemplate(WPARAM wParam, LPARAM lParam);
 
 HANDLE hDeleteThreadEvent;
 DWORD WINAPI DeleteThread(LPVOID vParam);
@@ -119,16 +125,8 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvRe
 }
 
 
-extern "C" __declspec(dllexport) PLUGININFO* MirandaPluginInfo(DWORD mirandaVersion) 
-{
-	pluginInfo.cbSize = sizeof(PLUGININFO);
-	return (PLUGININFO*) &pluginInfo;
-}
-
-
 extern "C" __declspec(dllexport) PLUGININFOEX* MirandaPluginInfoEx(DWORD mirandaVersion)
 {
-	pluginInfo.cbSize = sizeof(PLUGININFOEX);
 	return &pluginInfo;
 }
 
@@ -147,6 +145,7 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	mir_getMMI(&mmi);
 	mir_getUTFI(&utfi);
 	mir_getLI(&li);
+	mir_getLP(&pluginInfo);
 
 	hDeleteThreadEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 
@@ -170,16 +169,16 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 							 | HISTORYEVENTS_FLAG_EXPECT_CONTACT_NAME_BEFORE, 
 							 "core_main_3", GetFileHistoryEventText);
 
-	CreateServiceFunction(MS_HISTORYEVENTS_GET_COUNT, ServiceGetCount);
-	CreateServiceFunction(MS_HISTORYEVENTS_GET_EVENT, ServiceGetEvent);
-	CreateServiceFunction(MS_HISTORYEVENTS_REGISTER, ServiceRegister);
-	CreateServiceFunction(MS_HISTORYEVENTS_CAN_HANDLE, ServiceCanHandle);
-	CreateServiceFunction(MS_HISTORYEVENTS_GET_ICON, ServiceGetIcon);
-	CreateServiceFunction(MS_HISTORYEVENTS_GET_FLAGS, ServiceGetFlags);
-	CreateServiceFunction(MS_HISTORYEVENTS_GET_TEXT, ServiceGetText);
-	CreateServiceFunction(MS_HISTORYEVENTS_RELEASE_TEXT, ServiceReleaseText);
-	CreateServiceFunction(MS_HISTORYEVENTS_ADD_TO_HISTORY, ServiceAddToHistory);
-	CreateServiceFunction(MS_HISTORYEVENTS_IS_ENABLED_TEMPLATE, ServiceIsEnabledTemplate);
+	hServices[0] = CreateServiceFunction(MS_HISTORYEVENTS_GET_COUNT, ServiceGetCount);
+	hServices[1] = CreateServiceFunction(MS_HISTORYEVENTS_GET_EVENT, ServiceGetEvent);
+	hServices[2] = CreateServiceFunction(MS_HISTORYEVENTS_REGISTER, ServiceRegister);
+	hServices[3] = CreateServiceFunction(MS_HISTORYEVENTS_CAN_HANDLE, ServiceCanHandle);
+	hServices[4] = CreateServiceFunction(MS_HISTORYEVENTS_GET_ICON, ServiceGetIcon);
+	hServices[5] = CreateServiceFunction(MS_HISTORYEVENTS_GET_FLAGS, ServiceGetFlags);
+	hServices[6] = CreateServiceFunction(MS_HISTORYEVENTS_GET_TEXT, ServiceGetText);
+	hServices[7] = CreateServiceFunction(MS_HISTORYEVENTS_RELEASE_TEXT, ServiceReleaseText);
+	hServices[8] = CreateServiceFunction(MS_HISTORYEVENTS_ADD_TO_HISTORY, ServiceAddToHistory);
+	hServices[9] = CreateServiceFunction(MS_HISTORYEVENTS_IS_ENABLED_TEMPLATE, ServiceIsEnabledTemplate);
 	
 	// hooks
 	hHooks[0] = HookEvent(ME_SYSTEM_MODULESLOADED, ModulesLoaded);
@@ -218,13 +217,15 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		upd.szBetaChangelogURL = "http://pescuma.org/miranda/historyevents#Changelog";
 		upd.pbBetaVersionPrefix = (BYTE *)"HistoryEvents ";
 		upd.cpbBetaVersionPrefix = strlen((char *)upd.pbBetaVersionPrefix);
-#ifdef UNICODE
+#ifdef _WIN64
+		upd.szBetaUpdateURL = "http://pescuma.org/miranda/historyevents64.zip";
+#elif UNICODE
 		upd.szBetaUpdateURL = "http://pescuma.org/miranda/historyeventsW.zip";
 #else
 		upd.szBetaUpdateURL = "http://pescuma.org/miranda/historyevents.zip";
 #endif
 
-		upd.pbVersion = (BYTE *)CreateVersionStringPlugin((PLUGININFO*) &pluginInfo, szCurrentVersion);
+		upd.pbVersion = (BYTE *)CreateVersionStringPluginEx(&pluginInfo, szCurrentVersion);
 		upd.cpbVersion = strlen((char *)upd.pbVersion);
 
         CallService(MS_UPDATE_REGISTER, 0, (LPARAM)&upd);
@@ -252,6 +253,10 @@ int PreShutdown(WPARAM wParam, LPARAM lParam)
 	for(int i = 0; i < MAX_REGS(hHooks); i++)
 		if (hHooks[i] != NULL)
 			UnhookEvent(hHooks[i]);
+
+	for(int i = 0; i < MAX_REGS(hServices); i++)
+		if (hServices[i] != NULL)
+			DestroyServiceFunction(hServices[i]);
 
 	while(handlers.getCount() > 0)
 	{
@@ -341,7 +346,7 @@ void RegisterDefaultEventType(char *name, char *description, WORD eventType, int
 		SKINICONDESC sid = {0};
 		sid.cbSize = sizeof(SKINICONDESC);
 		sid.flags = SIDF_SORTED;
-		sid.pszSection = Translate("History/Events");
+		sid.pszSection = LPGEN("History/Events");
 		sid.pszDescription = heh->description;
 		sid.pszName = heh->defaultIconName;
 		CallService(MS_SKIN2_ADDICON, 0, (LPARAM) &sid);
@@ -351,7 +356,7 @@ void RegisterDefaultEventType(char *name, char *description, WORD eventType, int
 }
 
 
-int ServiceRegister(WPARAM wParam, LPARAM lParam)
+INT_PTR ServiceRegister(WPARAM wParam, LPARAM lParam)
 {
 	HISTORY_EVENT_HANDLER *orig = (HISTORY_EVENT_HANDLER *) wParam;
 	if (orig == NULL
@@ -391,7 +396,7 @@ int ServiceRegister(WPARAM wParam, LPARAM lParam)
 		SKINICONDESC sid = {0};
 		sid.cbSize = sizeof(SKINICONDESC);
 		sid.flags = SIDF_SORTED;
-		sid.pszSection = Translate("History/Events");
+		sid.pszSection = LPGEN("History/Events");
 		sid.pszDescription = heh->description;
 		sid.pszName = heh->defaultIconName;
 		sid.hDefaultIcon = orig->defaultIcon;
@@ -417,14 +422,14 @@ int ServiceRegister(WPARAM wParam, LPARAM lParam)
 }
 
 
-int ServiceCanHandle(WPARAM wParam, LPARAM lParam)
+INT_PTR ServiceCanHandle(WPARAM wParam, LPARAM lParam)
 {
 	HISTORY_EVENT_HANDLER *heh = GetHandler(wParam);
 	return heh != NULL;
 }
 
 
-int ServiceGetIcon(WPARAM wParam, LPARAM lParam)
+INT_PTR ServiceGetIcon(WPARAM wParam, LPARAM lParam)
 {
 	// Get handler
 	HISTORY_EVENT_HANDLER *heh = GetHandler(wParam);
@@ -436,7 +441,7 @@ int ServiceGetIcon(WPARAM wParam, LPARAM lParam)
 }
 
 
-int ServiceGetFlags(WPARAM wParam, LPARAM lParam)
+INT_PTR ServiceGetFlags(WPARAM wParam, LPARAM lParam)
 {
 	// Get handler
 	HISTORY_EVENT_HANDLER *heh = GetHandler(wParam);
@@ -448,7 +453,7 @@ int ServiceGetFlags(WPARAM wParam, LPARAM lParam)
 }
 
 
-int ServiceGetText(WPARAM wParam, LPARAM lParam)
+INT_PTR ServiceGetText(WPARAM wParam, LPARAM lParam)
 {
 	HISTORY_EVENT_PARAM *hep = (HISTORY_EVENT_PARAM *) wParam;
 	if (hep == NULL
@@ -550,7 +555,7 @@ int ServiceGetText(WPARAM wParam, LPARAM lParam)
 }
 
 
-int ServiceReleaseText(WPARAM wParam, LPARAM lParam)
+INT_PTR ServiceReleaseText(WPARAM wParam, LPARAM lParam)
 {
 	mir_free((void *) wParam);
 	return 0;
@@ -594,7 +599,7 @@ HANDLE GetMetaContact(HANDLE hContact)
 }
 
 
-int ServiceAddToHistory(WPARAM wParam, LPARAM lParam)
+INT_PTR ServiceAddToHistory(WPARAM wParam, LPARAM lParam)
 {
 	HISTORY_EVENT_ADD * heaIn = (HISTORY_EVENT_ADD *) wParam;
 	if (heaIn == NULL || (heaIn->cbSize < sizeof(HISTORY_EVENT_ADD) && heaIn->cbSize != SIZEOF_HISTORY_EVENT_ADD_V1) || heaIn->templateNum < 0)
@@ -659,7 +664,7 @@ int ServiceAddToHistory(WPARAM wParam, LPARAM lParam)
 	return (int) ret;
 }
 
-int ServiceIsEnabledTemplate(WPARAM wParam, LPARAM lParam)
+INT_PTR ServiceIsEnabledTemplate(WPARAM wParam, LPARAM lParam)
 {
 	WORD eventType = wParam;
 	int templateNum = lParam;
@@ -1228,13 +1233,13 @@ int DbEventAdded(WPARAM wParam, LPARAM lParam)
 }
 
 
-int ServiceGetCount(WPARAM wParam, LPARAM lParam)
+INT_PTR ServiceGetCount(WPARAM wParam, LPARAM lParam)
 {
 	return handlers.getCount();
 }
 
 
-int ServiceGetEvent(WPARAM wParam, LPARAM lParam)
+INT_PTR ServiceGetEvent(WPARAM wParam, LPARAM lParam)
 {
 	int pos = (int) wParam;
 	if (pos >= 0)

@@ -1,5 +1,5 @@
 /* 
-Copyright (C) 2006 Ricardo Pescuma Domenecci
+Copyright (C) 2006-2012 Ricardo Pescuma Domenecci
 
 This is free software; you can redistribute it and/or
 modify it under the terms of the GNU Library General Public
@@ -26,7 +26,7 @@ Boston, MA 02111-1307, USA.
 
 HANDLE hOptHook = NULL;
 
-static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 void GetTemplare(Buffer<TCHAR> *buffer, HISTORY_EVENT_HANDLER *heh, int templates);
 
@@ -120,8 +120,8 @@ int InitOptionsCallback(WPARAM wParam,LPARAM lParam)
 	OPTIONSDIALOGPAGE odp = {0};
     odp.cbSize = sizeof(odp);
 	odp.hInstance = hInst;
-	odp.ptszGroup = TranslateT("History");
-	odp.ptszTitle = TranslateT("Events");
+	odp.ptszGroup = LPGENT("History");
+	odp.ptszTitle = LPGENT("Events");
 	odp.pfnDlgProc = OptionsDlgProc;
 	odp.pszTemplate = MAKEINTRESOURCEA(IDD_OPTIONS);
 	odp.flags = ODPF_BOLDGROUPS | ODPF_TCHAR;
@@ -151,14 +151,11 @@ void DeInitOptions()
 
 BOOL ScreenToClient(HWND hWnd, LPRECT lpRect)
 {
-	BOOL ret;
-
 	POINT pt;
-
 	pt.x = lpRect->left;
 	pt.y = lpRect->top;
 
-	ret = ScreenToClient(hWnd, &pt);
+	BOOL ret = ScreenToClient(hWnd, &pt);
 
 	if (!ret) return ret;
 
@@ -188,7 +185,7 @@ static void GetTextMetric(HFONT hFont, TEXTMETRIC *tm)
 }
 
 
-static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
+static INT_PTR CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
 {
 	static int avaiable = 0;
 	static int total = 0;
