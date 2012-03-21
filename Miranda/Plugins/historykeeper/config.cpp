@@ -130,7 +130,7 @@ BOOL ListeningToAllowProtocol(const char *proto)
 
 void StatusFormat(TCHAR *out, size_t out_size, void *val)
 {
-	lstrcpyn(out, (TCHAR *) CallService(MS_CLIST_GETSTATUSMODEDESCRIPTION, (DWORD) val, GCMDF_TCHAR), out_size);
+	lstrcpyn(out, (TCHAR *) CallService(MS_CLIST_GETSTATUSMODEDESCRIPTION, (DWORD) val, GSMDF_TCHAR), out_size);
 }
 
 

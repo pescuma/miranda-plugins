@@ -1,5 +1,5 @@
 /* 
-Copyright (C) 2006-2009 Ricardo Pescuma Domenecci
+Copyright (C) 2006-2012 Ricardo Pescuma Domenecci
 
 This is free software; you can redistribute it and/or
 modify it under the terms of the GNU Library General Public
@@ -26,7 +26,9 @@ Boston, MA 02111-1307, USA.
 
 PLUGININFOEX pluginInfo={
 	sizeof(PLUGININFOEX),
-#ifdef UNICODE
+#ifdef _WIN64
+	"History Keeper (x64)",
+#elif UNICODE
 	"History Keeper (Unicode)",
 #else
 	"History Keeper",
@@ -35,11 +37,13 @@ PLUGININFOEX pluginInfo={
 	"Log various types of events to history",
 	"Ricardo Pescuma Domenecci",
 	"",
-	"© 2007-2009 Ricardo Pescuma Domenecci",
+	"© 2007-2012 Ricardo Pescuma Domenecci",
 	"http://www.pescuma.org/miranda/historykeeper",
 	UNICODE_AWARE,
 	0,		//doesn't replace anything built-in
-#ifdef UNICODE
+#ifdef _WIN64
+	{ 0xb95a3203, 0xa35b, 0x48b6, { 0xa8, 0x3b, 0x63, 0xad, 0x3b, 0x9e, 0x92, 0x2d } } // {B95A3203-A35B-48B6-A83B-63AD3B9E922D}
+#elif UNICODE
 	{ 0xca52cf41, 0x12c2, 0x411b, { 0xb8, 0x0, 0xd2, 0xbd, 0x95, 0x9b, 0xe0, 0x99 } } // {CA52CF41-12C2-411b-B800-D2BD959BE099}
 #else
 	{ 0x5f33a404, 0x351f, 0x440b, { 0xa7, 0xdb, 0xb9, 0xb5, 0xd3, 0xeb, 0x2b, 0xbd } } // {5F33A404-351F-440b-A7DB-B9B5D3EB2BBD}
@@ -52,6 +56,7 @@ PLUGINLINK *pluginLink;
 MM_INTERFACE mmi;
 UTF8_INTERFACE utfi;
 LIST_INTERFACE li;
+int hLangpack = 0;
 
 HANDLE hHooks[6] = {0};
 
@@ -74,15 +79,15 @@ int ContactAdded(WPARAM wParam,LPARAM lParam);
 int ProtoAckHook(WPARAM wParam, LPARAM lParam);
 int PreShutdown(WPARAM wParam, LPARAM lParam);
 
-int EnableAll(WPARAM wParam, LPARAM lParam, LPARAM type);
-int DisableAll(WPARAM wParam, LPARAM lParam, LPARAM type);
-int AllEnabled(WPARAM wParam, LPARAM lParam, LPARAM type);
-int EnableLog(WPARAM wParam, LPARAM lParam, LPARAM type);
-int DisableLog(WPARAM wParam, LPARAM lParam, LPARAM type);
-int LogEnabled(WPARAM wParam, LPARAM lParam, LPARAM type);
-int EnableNotification(WPARAM wParam, LPARAM lParam, LPARAM type);
-int DisableNotification(WPARAM wParam, LPARAM lParam, LPARAM type);
-int NotificationEnabled(WPARAM wParam, LPARAM lParam, LPARAM type);
+INT_PTR EnableAll(WPARAM wParam, LPARAM lParam, LPARAM type);
+INT_PTR DisableAll(WPARAM wParam, LPARAM lParam, LPARAM type);
+INT_PTR AllEnabled(WPARAM wParam, LPARAM lParam, LPARAM type);
+INT_PTR EnableLog(WPARAM wParam, LPARAM lParam, LPARAM type);
+INT_PTR DisableLog(WPARAM wParam, LPARAM lParam, LPARAM type);
+INT_PTR LogEnabled(WPARAM wParam, LPARAM lParam, LPARAM type);
+INT_PTR EnableNotification(WPARAM wParam, LPARAM lParam, LPARAM type);
+INT_PTR DisableNotification(WPARAM wParam, LPARAM lParam, LPARAM type);
+INT_PTR NotificationEnabled(WPARAM wParam, LPARAM lParam, LPARAM type);
 
 BOOL ProtocolEnabled(int type, const char *protocol);
 
@@ -108,16 +113,8 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvRe
 }
 
 
-extern "C" __declspec(dllexport) PLUGININFO* MirandaPluginInfo(DWORD mirandaVersion) 
-{
-	pluginInfo.cbSize = sizeof(PLUGININFO);
-	return (PLUGININFO*) &pluginInfo;
-}
-
-
 extern "C" __declspec(dllexport) PLUGININFOEX* MirandaPluginInfoEx(DWORD mirandaVersion)
 {
-	pluginInfo.cbSize = sizeof(PLUGININFOEX);
 	return &pluginInfo;
 }
 
@@ -138,6 +135,7 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	mir_getMMI(&mmi);
 	mir_getUTFI(&utfi);
 	mir_getLI(&li);
+	mir_getLP(&pluginInfo);
 
 	// Hidden settings
 	UNIFIED_CONTEXT_MENUS = DBGetContactSettingByte(NULL, MODULE_NAME, "UnifiedContextMenus", FALSE);
@@ -149,9 +147,9 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	mi.cbSize = sizeof(mi);
 	mi.popupPosition = mi.position = 1000090020;
 
-	mi.flags = CMIF_NOTOFFLIST|CMIF_ROOTPOPUP;
+	mi.flags = CMIF_NOTOFFLIST|CMIF_ROOTPOPUP|CMIF_TCHAR;
 	mi.pszPopupName = (char *)-1;
-	mi.pszName = "History Keeper";
+	mi.ptszName = LPGENT("History Keeper");
 	HANDLE hRootMenu = (HANDLE) CallService(MS_CLIST_ADDCONTACTMENUITEM, 0, (LPARAM)&mi);
 
 	mi.pszPopupName = (char *) hRootMenu;
@@ -406,13 +404,15 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		upd.szBetaChangelogURL = "http://www.pescuma.org/miranda/historykeeper#Changelog";
 		upd.pbBetaVersionPrefix = (BYTE *)"History Keeper ";
 		upd.cpbBetaVersionPrefix = strlen((char *)upd.pbBetaVersionPrefix);
-#ifdef UNICODE
+#ifdef _WIN64
+		upd.szBetaUpdateURL = "http://www.pescuma.org/miranda/historykeeper64.zip";
+#elif UNICODE
 		upd.szBetaUpdateURL = "http://www.pescuma.org/miranda/historykeeperW.zip";
 #else
 		upd.szBetaUpdateURL = "http://www.pescuma.org/miranda/historykeeper.zip";
 #endif
 
-		upd.pbVersion = (BYTE *)CreateVersionStringPlugin((PLUGININFO*) &pluginInfo, szCurrentVersion);
+		upd.pbVersion = (BYTE *)CreateVersionStringPluginEx(&pluginInfo, szCurrentVersion);
 		upd.cpbVersion = strlen((char *)upd.pbVersion);
 
         CallService(MS_UPDATE_REGISTER, 0, (LPARAM)&upd);
@@ -532,7 +532,7 @@ int PreBuildContactMenu(WPARAM wParam, LPARAM lParam)
 }
 
 
-int EnableAll(WPARAM wParam, LPARAM lParam, LPARAM type) 
+INT_PTR EnableAll(WPARAM wParam, LPARAM lParam, LPARAM type) 
 {
 	HANDLE hContact = (HANDLE) wParam;
 	if (hContact == NULL)
@@ -544,7 +544,7 @@ int EnableAll(WPARAM wParam, LPARAM lParam, LPARAM type)
 	return 0;
 }
 
-int DisableAll(WPARAM wParam, LPARAM lParam, LPARAM type) 
+INT_PTR DisableAll(WPARAM wParam, LPARAM lParam, LPARAM type) 
 {
 	HANDLE hContact = (HANDLE) wParam;
 	if (hContact == NULL)
@@ -557,7 +557,7 @@ int DisableAll(WPARAM wParam, LPARAM lParam, LPARAM type)
 }
 
 
-int EnableLog(WPARAM wParam, LPARAM lParam, LPARAM type) 
+INT_PTR EnableLog(WPARAM wParam, LPARAM lParam, LPARAM type) 
 {
 	HANDLE hContact = (HANDLE) wParam;
 	if (hContact == NULL)
@@ -569,7 +569,7 @@ int EnableLog(WPARAM wParam, LPARAM lParam, LPARAM type)
 	return 0;
 }
 
-int DisableLog(WPARAM wParam, LPARAM lParam, LPARAM type) 
+INT_PTR DisableLog(WPARAM wParam, LPARAM lParam, LPARAM type) 
 {
 	HANDLE hContact = (HANDLE) wParam;
 	if (hContact == NULL)
@@ -582,7 +582,7 @@ int DisableLog(WPARAM wParam, LPARAM lParam, LPARAM type)
 }
 
 
-int EnableNotification(WPARAM wParam, LPARAM lParam, LPARAM type) 
+INT_PTR EnableNotification(WPARAM wParam, LPARAM lParam, LPARAM type) 
 {
 	HANDLE hContact = (HANDLE) wParam;
 	if (hContact == NULL)
@@ -594,7 +594,7 @@ int EnableNotification(WPARAM wParam, LPARAM lParam, LPARAM type)
 	return 0;
 }
 
-int DisableNotification(WPARAM wParam, LPARAM lParam, LPARAM type) 
+INT_PTR DisableNotification(WPARAM wParam, LPARAM lParam, LPARAM type) 
 {
 	HANDLE hContact = (HANDLE) wParam;
 	if (hContact == NULL)
@@ -607,19 +607,19 @@ int DisableNotification(WPARAM wParam, LPARAM lParam, LPARAM type)
 }
 
 
-int AllEnabled(WPARAM wParam, LPARAM lParam, LPARAM type) 
+INT_PTR AllEnabled(WPARAM wParam, LPARAM lParam, LPARAM type) 
 {
 	return ContactEnabled(type, (HANDLE) wParam);
 }
 
 
-int LogEnabled(WPARAM wParam, LPARAM lParam, LPARAM type) 
+INT_PTR LogEnabled(WPARAM wParam, LPARAM lParam, LPARAM type) 
 {
 	return ContactEnabled(type, (HANDLE) wParam, 0, NUM_LOG_ITEMS);
 }
 
 
-int NotificationEnabled(WPARAM wParam, LPARAM lParam, LPARAM type) 
+INT_PTR NotificationEnabled(WPARAM wParam, LPARAM lParam, LPARAM type) 
 {
 	return ContactEnabled(type, (HANDLE) wParam, NUM_LOG_ITEMS, NUM_ITEMS);
 }
