@@ -2,16 +2,16 @@
 #include <windows.h>
 #include <stdio.h>
 #include <time.h>
+#include <strsafe.h>
 
 
-#define MIRANDA_CUSTOM_LP
+#define MIRANDA_VER 0x0A00
 #include <newpluginapi.h>
 #include <m_clist.h>
 #include <m_skin.h>
 #include <m_avatars.h>
 #include <m_database.h>
 #include <m_system.h>
-#include <m_protocols.h>
 #include <m_protosvc.h>
 #include <m_contacts.h>
 #include <m_popup.h>
@@ -27,14 +27,12 @@
 
 // Globals
 extern HINSTANCE hInst;
-extern PLUGINLINK *pluginLink;
 extern HANDLE hMenu;
 extern DWORD mirVer;
 
 #include "resource.h"
 #include "m_avatarhist.h"
 
-#include "../utils/mir_memory.h"
 #include "../utils/mir_buffer.h"
 
 #include "../historyevents/m_historyevents.h"
@@ -51,11 +49,10 @@ extern DWORD mirVer;
 #define AVH_DEF_DEFPOPUPS 0
 #define AVH_DEF_SHOWMENU 1
 
-#define DEFAULT_TEMPLATE_REMOVED "removed his/her avatar"
-#define DEFAULT_TEMPLATE_CHANGED "changed his/her avatar"
+#define DEFAULT_TEMPLATE_REMOVED LPGENT("removed his/her avatar")
+#define DEFAULT_TEMPLATE_CHANGED LPGENT("changed his/her avatar")
 
 TCHAR * MyDBGetStringT(HANDLE hContact, char* module, char* setting, TCHAR* out, size_t len);
-char * MyDBGetString(HANDLE hContact, char* module, char* setting, char * out, size_t len);
 void LoadOptions();
 
  // from icolib.cpp
@@ -104,18 +101,4 @@ extern Options opts;
 #include "popup.h"
 
 
-#ifdef UNICODE
-
-#define TCHAR_TO_CHAR(dest, orig)	mir_snprintf(dest, MAX_REGS(dest), "%S", orig)
-#define CHAR_TO_TCHAR(dest, orig)	mir_sntprintf(dest, MAX_REGS(dest), "%S", orig)
-
-#else
-
-#define TCHAR_TO_CHAR(dest, orig)	lstrcpynA(dest, orig, MAX_REGS(dest))
-#define CHAR_TO_TCHAR(dest, orig)	lstrcpynA(dest, orig, MAX_REGS(dest))
-
-#endif
-
-
-int PathToAbsolute(char *pSrc, char *pOut);
 BOOL ContactEnabled(HANDLE hContact, char *setting, int def);

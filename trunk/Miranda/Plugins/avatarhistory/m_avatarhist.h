@@ -42,7 +42,7 @@ lParam: ignored
 Get cached avatar
 
 wParam: (char *) protocol name
-lParam: (char *) hash 
+lParam: (TCHAR *) hash 
 return: (TCHAR *) NULL if none is found or the path to the avatar. You need to free this string 
         with mir_free.
 */

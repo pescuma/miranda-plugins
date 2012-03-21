@@ -25,7 +25,6 @@ Avatar History Plugin
 
 extern HINSTANCE hInst;
 HANDLE hMenu = NULL; 
-int OpenAvatarDialog(HANDLE hContact, char* fn);
 DWORD WINAPI AvatarDialogThread(LPVOID param);
 static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM lParam);
 int ShowSaveDialog(HWND hwnd, TCHAR* fn);
@@ -75,7 +74,7 @@ public:
 int OpenAvatarDialog(HANDLE hContact, char* fn)
 {
 	DWORD dwId;
-	struct AvatarDialogData* avdlg = (struct AvatarDialogData*)malloc(sizeof(struct AvatarDialogData));
+	struct AvatarDialogData *avdlg = (struct AvatarDialogData*)malloc(sizeof(struct AvatarDialogData));
 	ZeroMemory(avdlg, sizeof(struct AvatarDialogData));
 	avdlg->hContact = hContact;
 	if (fn == NULL)
@@ -140,10 +139,11 @@ static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM l
 
 			SetWindowLongPtr(hwnd, GWLP_USERDATA, (ULONG_PTR)data->hContact);
 			UpdateAvatarPic(hwnd);
-			CheckDlgButton(hwnd, IDC_LOGUSER, (UINT)db_byte_get(data->hContact, "AvatarHistory", "LogToDisk", BST_INDETERMINATE));
-			CheckDlgButton(hwnd, IDC_POPUPUSER, (UINT)db_byte_get(data->hContact, "AvatarHistory", "AvatarPopups", BST_INDETERMINATE));
-			CheckDlgButton(hwnd, IDC_HISTORYUSER, (UINT)db_byte_get(data->hContact, "AvatarHistory", "LogToHistory", BST_INDETERMINATE));
+			CheckDlgButton(hwnd, IDC_LOGUSER, (UINT)db_byte_get(data->hContact, MODULE_NAME, "LogToDisk", BST_INDETERMINATE));
+			CheckDlgButton(hwnd, IDC_POPUPUSER, (UINT)db_byte_get(data->hContact, MODULE_NAME, "AvatarPopups", BST_INDETERMINATE));
+			CheckDlgButton(hwnd, IDC_HISTORYUSER, (UINT)db_byte_get(data->hContact, MODULE_NAME, "LogToHistory", BST_INDETERMINATE));
 			ShowWindow(GetDlgItem(hwnd, IDC_OPENFOLDER), opts.log_per_contact_folders ? SW_SHOW : SW_HIDE);
+			Utils_RestoreWindowPosition(hwnd,NULL,MODULE_NAME,"AvatarHistoryDialog");
 			TranslateDialogDefault(hwnd);
 			EnableDisableControls(hwnd);
 			free(data);
@@ -158,6 +158,7 @@ static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM l
 		}
 		case WM_DESTROY:
 		{
+			Utils_SaveWindowPosition(hwnd,NULL,MODULE_NAME,"AvatarHistoryDialog");
 			DestroyIcon((HICON)SendMessage(hwnd, WM_SETICON, ICON_BIG, 0));
 			DestroyIcon((HICON)SendMessage(hwnd, WM_SETICON, ICON_SMALL, 0));
 			HWND list = GetDlgItem(hwnd, IDC_AVATARLIST);
@@ -203,7 +204,7 @@ static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM l
 
 			HMENU menu = LoadMenu(hInst, MAKEINTRESOURCE(IDR_MENU1));
 			HMENU submenu = GetSubMenu(menu, 0);
-			CallService(MS_LANGPACK_TRANSLATEMENU,(WPARAM)submenu,0);
+			TranslateMenu(submenu);
 
 			if (!UpdateAvatarPic(hwnd))
 			{
@@ -319,29 +320,29 @@ static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM l
 
 					if(IsDlgButtonChecked(hwnd, IDC_POPUPUSER) != BST_INDETERMINATE)
 					{
-						db_byte_set(hContact, "AvatarHistory", "AvatarPopups", (BYTE) IsDlgButtonChecked(hwnd, IDC_POPUPUSER));
+						db_byte_set(hContact, MODULE_NAME, "AvatarPopups", (BYTE) IsDlgButtonChecked(hwnd, IDC_POPUPUSER));
 					}
 					else
 					{
-						DBDeleteContactSetting(hContact, "AvatarHistory", "AvatarPopups");
+						DBDeleteContactSetting(hContact, MODULE_NAME, "AvatarPopups");
 					}
 			
 					if(IsDlgButtonChecked(hwnd, IDC_LOGUSER) != BST_INDETERMINATE)
 					{
-						db_byte_set(hContact, "AvatarHistory", "LogToDisk", (BYTE) IsDlgButtonChecked(hwnd, IDC_LOGUSER));
+						db_byte_set(hContact, MODULE_NAME, "LogToDisk", (BYTE) IsDlgButtonChecked(hwnd, IDC_LOGUSER));
 					}
 					else
 					{
-						DBDeleteContactSetting(hContact, "AvatarHistory", "LogToDisk");
+						DBDeleteContactSetting(hContact, MODULE_NAME, "LogToDisk");
 					}
 			
 					if(IsDlgButtonChecked(hwnd, IDC_HISTORYUSER) != BST_INDETERMINATE)
 					{
-						db_byte_set(hContact, "AvatarHistory", "LogToHistory", (BYTE) IsDlgButtonChecked(hwnd, IDC_HISTORYUSER));
+						db_byte_set(hContact, MODULE_NAME, "LogToHistory", (BYTE) IsDlgButtonChecked(hwnd, IDC_HISTORYUSER));
 					}
 					else
 					{
-						DBDeleteContactSetting(hContact, "AvatarHistory", "LogToHistory");
+						DBDeleteContactSetting(hContact, MODULE_NAME, "LogToHistory");
 					}
 
 					CleanupAvatarPic(hwnd);
@@ -366,7 +367,7 @@ static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM l
 						HWND list = GetDlgItem(hwnd, IDC_AVATARLIST);
 						HANDLE hContact = (HANDLE)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 						GetContactFolder(avfolder, hContact);
-						ShellExecute(NULL, db_byte_get(NULL, "AvatarHistory", "OpenFolderMethod", 0) ? _T("explore") : _T("open"), avfolder, NULL, NULL, SW_SHOWNORMAL);
+						ShellExecute(NULL, db_byte_get(NULL, MODULE_NAME, "OpenFolderMethod", 0) ? _T("explore") : _T("open"), avfolder, NULL, NULL, SW_SHOWNORMAL);
 						return TRUE;
 					}
 				}
@@ -477,7 +478,7 @@ int FillAvatarListFromDB(HWND list, HANDLE hContact)
 
 				// Get file in disk
 				char path[MAX_PATH] = "";
-				PathToAbsolute((char *) &dbei.pBlob[i+1], path);
+				CallService(MS_UTILS_PATHTOABSOLUTE,(WPARAM) (char *) &dbei.pBlob[i+1],(LPARAM)path);
 				TCHAR *filename = mir_a2t(path);
 
 				// Add to list
@@ -505,6 +506,7 @@ BOOL UpdateAvatarPic(HWND hwnd)
 
 	HWND list = GetDlgItem(hwnd, IDC_AVATARLIST);
 	TCHAR *filename = GetCurrentSelFile(list);
+	if(!filename) return 0;
 
 	HBITMAP avpic = (HBITMAP) CallService(MS_IMG_LOAD, (WPARAM) filename, IMGL_TCHAR);
 
@@ -593,7 +595,7 @@ int ShowSaveDialog(HWND hwnd, TCHAR* fn)
 	ofn.lpstrFilter = filter;
 	
 	ofn.nFilterIndex = 1;
-	lstrcpy(file, _tcsrchr(fn, '\\')+1);
+	lstrcpyn(file, _tcsrchr(fn, '\\')+1, sizeof(file));
 	ofn.lpstrFile = file;
 
 	ofn.nMaxFile = MAX_PATH;
@@ -612,14 +614,10 @@ TCHAR* MyDBGetStringT(HANDLE hContact, char* module, char* setting, TCHAR* out, 
 	dbgcs.szModule = module;
 	dbgcs.szSetting = setting;
 	dbgcs.pValue = &dbv;
+	dbv.type = DBVT_TCHAR;
 
-#ifdef UNICODE
-	dbv.type = DBVT_WCHAR;
-#else
-	dbv.type = DBVT_ASCIIZ;
-#endif
 	dbv.ptszVal = out;
-	dbv.cchVal = len;
+	dbv.cchVal = (int) len;
 	if (CallService(MS_DB_CONTACT_GETSETTINGSTATIC, (WPARAM)hContact, (LPARAM)&dbgcs) != 0)
 		return NULL;
 	else
@@ -635,7 +633,7 @@ char * MyDBGetString(HANDLE hContact, char* module, char* setting, char * out, s
 	dbgcs.pValue = &dbv;
 	dbv.type = DBVT_ASCIIZ;
 	dbv.pszVal = out;
-	dbv.cchVal = len;
+	dbv.cchVal = (int) len;
 	if (CallService(MS_DB_CONTACT_GETSETTINGSTATIC, (WPARAM)hContact, (LPARAM)&dbgcs) != 0)
 	{
 		out[len-1] = '\0';

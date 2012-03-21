@@ -24,7 +24,7 @@ Boston, MA 02111-1307, USA.
 #include <windows.h>
 
 #include "mir_memory.h"
-#include <m_variables.h>
+#include "m_variables.h"
 
 
 template<class T>
@@ -102,13 +102,13 @@ static void __bcopy(WCHAR *dest, const WCHAR *orig, size_t len)
 template<>
 static void __bcopy(WCHAR *dest, const char *orig, size_t len)
 {
-	MultiByteToWideChar(CallService("LangPack/GetCodePage", 0, 0), 0, orig, len, dest, len);
+	MultiByteToWideChar(CallService("LangPack/GetCodePage", 0, 0), 0, orig, (int)len, dest, (int)len);
 }
 
 template<>
 static void __bcopy(char *dest, const WCHAR *orig, size_t len)
 {
-	WideCharToMultiByte(CallService("LangPack/GetCodePage", 0, 0), 0, orig, len, dest, len, NULL, NULL);
+	WideCharToMultiByte(CallService("LangPack/GetCodePage", 0, 0), 0, orig, (int)len, dest, (int)len, NULL, NULL);
 }
 
 
