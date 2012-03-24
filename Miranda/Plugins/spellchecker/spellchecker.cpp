@@ -28,15 +28,15 @@ PLUGININFOEX pluginInfo={
 #ifdef WIN64
 	"Spell Checker (x64)",
 #elif UNICODE
-	"Spell Checker (Unicode)"
+	"Spell Checker (Unicode)",
 #else
-	"Spell Checker (Ansi)"
+	"Spell Checker (Ansi)",
 #endif
 	PLUGIN_MAKE_VERSION(0,2,6,0),
 	"Spell checker for the message windows. Uses Hunspell to do the checking.",
 	"Ricardo Pescuma Domenecci, FREAK_THEMIGHTY",
 	"pescuma@miranda-im.org",
-	"© 2006-2010 Ricardo Pescuma Domenecci",
+	"Â© 2006-2010 Ricardo Pescuma Domenecci",
 	"http://pescuma.org/miranda/spellchecker",
 	UNICODE_AWARE,
 	0,		//doesn't replace anything built-in
