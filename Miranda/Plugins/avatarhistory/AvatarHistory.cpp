@@ -39,7 +39,9 @@ char *metacontacts_proto = NULL;
 TCHAR profilePath[MAX_PATH];		// database profile path (read at startup only)
 TCHAR basedir[MAX_PATH];
 MM_INTERFACE mmi;
+UTF8_INTERFACE utfi;
 int hLangpack = 0;
+HANDLE hAvatarWindowsList = NULL;
 
 static int ModulesLoaded(WPARAM wParam, LPARAM lParam);
 static int PreShutdown(WPARAM wParam, LPARAM lParam);
@@ -168,7 +170,16 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 {
 	pluginLink=link;
 
-	mir_getMMI(&mmi);
+	if(mir_getMMI(&mmi))
+	{
+		MessageBox(NULL,_T("Avatar History"),_T("Miranda Memory manager not initialized, plugin cannot load.\nPlease update Miranda IM to the latest version."),MB_OK | MB_TOPMOST);
+		return 1;
+	}
+	if(mir_getUTFI(&utfi))
+	{
+		MessageBox(NULL,_T("Avatar History"),_T("Miranda UTF8 interface not initialized, plugin cannot load.\nPlease update Miranda IM to the latest version."),MB_OK | MB_TOPMOST);
+		return 1;
+	}
 	mir_getLP(&pluginInfo);
 
 	// Is first run?
@@ -210,6 +221,8 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 
 	hHooks[0] = HookEvent(ME_SYSTEM_MODULESLOADED,ModulesLoaded);
 	hHooks[1] = HookEvent(ME_SYSTEM_PRESHUTDOWN, PreShutdown);
+	hHooks[2] = HookEvent(ME_AV_CONTACTAVATARCHANGED, AvatarChanged);
+	hHooks[3] = HookEvent(ME_OPT_INITIALISE, OptInit);
 
 	hServices[0] = CreateServiceFunction(MS_AVATARHISTORY_ENABLED, IsEnabled);
 	hServices[1] = CreateServiceFunction(MS_AVATARHISTORY_GET_CACHED_AVATAR, GetCachedAvatar);
@@ -220,6 +233,11 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 	SkinAddNewSoundExT("avatar_changed",LPGENT("Avatar History"),LPGENT("Contact changed avatar"));
 	SkinAddNewSoundExT("avatar_removed",LPGENT("Avatar History"),LPGENT("Contact removed avatar"));
 
+	hAvatarWindowsList = (HANDLE)CallService(MS_UTILS_ALLOCWINDOWLIST, 0, 0);
+
+	SetupIcoLib();
+	InitMenuItem();
+
 	return 0;
 }
 
@@ -229,11 +247,6 @@ static int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 	hFolder = FoldersRegisterCustomPathT(LPGEN("Avatars"), LPGEN("Avatar History"), 
 		PROFILE_PATHT _T("\\") CURRENT_PROFILET _T("\\Avatars History"));
-
-	hHooks[2] = HookEvent(ME_AV_CONTACTAVATARCHANGED, AvatarChanged);
-	hHooks[3] = HookEvent(ME_OPT_INITIALISE, OptInit);
-	SetupIcoLib();
-	InitMenuItem();
 	InitPopups();
 
 	if (ServiceExists(MS_MC_GETPROTOCOLNAME))
@@ -292,6 +305,8 @@ static int PreShutdown(WPARAM wParam, LPARAM lParam)
 
 	for (i = 0; i < MAX_REGS(hServices); i++)
 		DestroyServiceFunction(hServices[i]);
+
+	WindowList_Broadcast(hAvatarWindowsList,WM_CLOSE,0,0);
 
 	return 0;
 }
@@ -605,10 +620,16 @@ static int AvatarChanged(WPARAM wParam, LPARAM lParam)
 
 		if (ContactEnabled(hContact, "LogToHistory", AVH_DEF_LOGTOHISTORY))
 		{
-			char rel_path[MAX_PATH] = "";
-			INPLACE_TCHAR_TO_CHAR(tmp, MAX_PATH, history_filename);
-			CallService(MS_UTILS_PATHTORELATIVE,(WPARAM)tmp,(LPARAM)rel_path);
-			HistoryEvents_AddToHistoryEx(hContact, EVENTTYPE_AVATAR_CHANGE, 0, NULL, 0, (PBYTE) rel_path, (int) strlen(rel_path) + 1, DBEF_READ);
+			TCHAR rel_path[MAX_PATH] = _T("");
+			CallService(MS_UTILS_PATHTORELATIVET,(WPARAM)history_filename,(LPARAM)rel_path);
+#ifdef _UNICODE
+			char *blob = mir_utf8encodeT(rel_path);
+			int flags = DBEF_READ | DBEF_UTF;
+#else
+			char *blob = mir_strdup(rel_path);
+			int flags = DBEF_READ;
+#endif
+			HistoryEvents_AddToHistoryEx(hContact, EVENTTYPE_AVATAR_CHANGE, 0, NULL, 0, (PBYTE) blob, (int) strlen(blob) + 1, flags);
 		}
 	}
 
@@ -725,6 +746,7 @@ int GetUIDFromHContact(HANDLE contact, TCHAR* uinout, size_t uinout_len)
 
 TCHAR * GetHistoryFolder(TCHAR *fn)
 {
+	if (fn == NULL) return NULL;
 	FoldersGetCustomPathT(hFolder, fn, MAX_PATH, basedir);
 	if(!CreateDirectory(fn, NULL))
 		ErrorExit(NULL,_T("GetHistoryFolder"));
@@ -973,13 +995,16 @@ void * GetHistoryEventText(HANDLE hContact, HANDLE hDbEvent, DBEVENTINFO *dbe, i
 		{
 			TCHAR absFile[MAX_PATH] = _T("");
 			CallService(MS_UTILS_PATHTOABSOLUTET,(WPARAM) &dbe->pBlob[i], (LPARAM)absFile);
-			HBITMAP hBmp = (HBITMAP) CallService(MS_IMG_LOAD, (WPARAM) absFile, IMGL_TCHAR);
-
-			if (hBmp != NULL)
+			if(absFile != NULL)
 			{
-				buffer.append("\\line  ", 7);
-				GetRTFFor(&buffer, hBmp);
-				DeleteObject(hBmp);
+				HBITMAP hBmp = (HBITMAP) CallService(MS_IMG_LOAD, (WPARAM) absFile, IMGL_TCHAR);
+
+				if (hBmp != NULL)
+				{
+					buffer.append("\\line  ", 7);
+					GetRTFFor(&buffer, hBmp);
+					DeleteObject(hBmp);
+				}
 			}
 		}
 

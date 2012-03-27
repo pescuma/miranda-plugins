@@ -29,6 +29,7 @@
 extern HINSTANCE hInst;
 extern HANDLE hMenu;
 extern DWORD mirVer;
+extern HANDLE hAvatarWindowsList;
 
 #include "resource.h"
 #include "m_avatarhist.h"
@@ -99,6 +100,3 @@ extern Options opts;
 
 
 #include "popup.h"
-
-
-BOOL ContactEnabled(HANDLE hContact, char *setting, int def);

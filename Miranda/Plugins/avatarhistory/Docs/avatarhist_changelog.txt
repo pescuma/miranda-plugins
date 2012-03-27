@@ -2,6 +2,12 @@ Avatar History
 
 Changelog:
 
++ Show Contact Name in Avatar History dialog title
++ Show picture path in avatar history dialog
++ support for WindowList
+* fixed some issues reported by borkra
++ updated m_folders.h
+
 . 0.0.3.0
 THIS REQUIRES MIRANDA IM 0.10 ALPHA #3 OR ABOVE!!
   + added x64 version

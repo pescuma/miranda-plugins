@@ -73,6 +73,14 @@ public:
 
 int OpenAvatarDialog(HANDLE hContact, char* fn)
 {
+	HWND hAvatarWindow = WindowList_Find(hAvatarWindowsList, hContact);
+	if (hAvatarWindow)
+	{
+		SetForegroundWindow(hAvatarWindow);
+		SetFocus(hAvatarWindow);
+		return 0;
+	}
+
 	DWORD dwId;
 	struct AvatarDialogData *avdlg = (struct AvatarDialogData*)malloc(sizeof(struct AvatarDialogData));
 	ZeroMemory(avdlg, sizeof(struct AvatarDialogData));
@@ -118,9 +126,6 @@ void EnableDisableControls(HWND hwnd)
 		EnableWindow(GetDlgItem(hwnd, IDC_BACK), cursel > 0);
 		EnableWindow(GetDlgItem(hwnd, IDC_NEXT), cursel < count-1);
 	}
-
-	EnableWindow(GetDlgItem(hwnd, IDC_SAVE), cursel != LB_ERR);
-	EnableWindow(GetDlgItem(hwnd, IDC_DELETE), cursel != LB_ERR);
 }
 
 static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM lParam)
@@ -136,6 +141,13 @@ static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM l
 				FillAvatarListFromDB(GetDlgItem(hwnd, IDC_AVATARLIST), data->hContact);
 			else if (opts.log_per_contact_folders)
 				FillAvatarListFromFolder(GetDlgItem(hwnd, IDC_AVATARLIST), data->hContact);
+			TCHAR *displayName = (TCHAR*) CallService(MS_CLIST_GETCONTACTDISPLAYNAME,(WPARAM) data->hContact,GCDNF_TCHAR);
+			if(displayName)
+			{
+				TCHAR title[MAX_PATH];
+				mir_sntprintf(title,MAX_PATH,TranslateT("Avatar History for %s"),displayName);
+				SetWindowText(hwnd,title);
+			}
 
 			SetWindowLongPtr(hwnd, GWLP_USERDATA, (ULONG_PTR)data->hContact);
 			UpdateAvatarPic(hwnd);
@@ -143,7 +155,8 @@ static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM l
 			CheckDlgButton(hwnd, IDC_POPUPUSER, (UINT)db_byte_get(data->hContact, MODULE_NAME, "AvatarPopups", BST_INDETERMINATE));
 			CheckDlgButton(hwnd, IDC_HISTORYUSER, (UINT)db_byte_get(data->hContact, MODULE_NAME, "LogToHistory", BST_INDETERMINATE));
 			ShowWindow(GetDlgItem(hwnd, IDC_OPENFOLDER), opts.log_per_contact_folders ? SW_SHOW : SW_HIDE);
-			Utils_RestoreWindowPosition(hwnd,NULL,MODULE_NAME,"AvatarHistoryDialog");
+			Utils_RestoreWindowPositionNoSize(hwnd,NULL,MODULE_NAME,"AvatarHistoryDialog");
+			WindowList_Add(hAvatarWindowsList,hwnd,data->hContact);
 			TranslateDialogDefault(hwnd);
 			EnableDisableControls(hwnd);
 			free(data);
@@ -159,6 +172,7 @@ static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM l
 		case WM_DESTROY:
 		{
 			Utils_SaveWindowPosition(hwnd,NULL,MODULE_NAME,"AvatarHistoryDialog");
+			WindowList_Remove(hAvatarWindowsList,hwnd);
 			DestroyIcon((HICON)SendMessage(hwnd, WM_SETICON, ICON_BIG, 0));
 			DestroyIcon((HICON)SendMessage(hwnd, WM_SETICON, ICON_SMALL, 0));
 			HWND list = GetDlgItem(hwnd, IDC_AVATARLIST);
@@ -318,32 +332,9 @@ static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM l
 				{
 					HANDLE hContact = (HANDLE) GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
-					if(IsDlgButtonChecked(hwnd, IDC_POPUPUSER) != BST_INDETERMINATE)
-					{
-						db_byte_set(hContact, MODULE_NAME, "AvatarPopups", (BYTE) IsDlgButtonChecked(hwnd, IDC_POPUPUSER));
-					}
-					else
-					{
-						DBDeleteContactSetting(hContact, MODULE_NAME, "AvatarPopups");
-					}
-			
-					if(IsDlgButtonChecked(hwnd, IDC_LOGUSER) != BST_INDETERMINATE)
-					{
-						db_byte_set(hContact, MODULE_NAME, "LogToDisk", (BYTE) IsDlgButtonChecked(hwnd, IDC_LOGUSER));
-					}
-					else
-					{
-						DBDeleteContactSetting(hContact, MODULE_NAME, "LogToDisk");
-					}
-			
-					if(IsDlgButtonChecked(hwnd, IDC_HISTORYUSER) != BST_INDETERMINATE)
-					{
-						db_byte_set(hContact, MODULE_NAME, "LogToHistory", (BYTE) IsDlgButtonChecked(hwnd, IDC_HISTORYUSER));
-					}
-					else
-					{
-						DBDeleteContactSetting(hContact, MODULE_NAME, "LogToHistory");
-					}
+					db_byte_set(hContact, MODULE_NAME, "AvatarPopups", (BYTE) IsDlgButtonChecked(hwnd, IDC_POPUPUSER));
+					db_byte_set(hContact, MODULE_NAME, "LogToDisk", (BYTE) IsDlgButtonChecked(hwnd, IDC_LOGUSER));
+					db_byte_set(hContact, MODULE_NAME, "LogToHistory", (BYTE) IsDlgButtonChecked(hwnd, IDC_HISTORYUSER));
 
 					CleanupAvatarPic(hwnd);
 					EndDialog(hwnd, 0);
@@ -364,7 +355,6 @@ static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM l
 					if (opts.log_per_contact_folders)
 					{
 						TCHAR avfolder[MAX_PATH];
-						HWND list = GetDlgItem(hwnd, IDC_AVATARLIST);
 						HANDLE hContact = (HANDLE)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 						GetContactFolder(avfolder, hContact);
 						ShellExecute(NULL, db_byte_get(NULL, MODULE_NAME, "OpenFolderMethod", 0) ? _T("explore") : _T("open"), avfolder, NULL, NULL, SW_SHOWNORMAL);
@@ -506,7 +496,12 @@ BOOL UpdateAvatarPic(HWND hwnd)
 
 	HWND list = GetDlgItem(hwnd, IDC_AVATARLIST);
 	TCHAR *filename = GetCurrentSelFile(list);
-	if(!filename) return 0;
+	if(!filename)
+	{
+		SetDlgItemText(hwnd,IDC_AVATARPATH,TranslateT("avatar path is null."));
+		return 0;
+	}
+	SetDlgItemText(hwnd,IDC_AVATARPATH,filename);
 
 	HBITMAP avpic = (HBITMAP) CallService(MS_IMG_LOAD, (WPARAM) filename, IMGL_TCHAR);
 
@@ -552,14 +547,14 @@ void InitMenuItem()
 
 	CLISTMENUITEM mi = {0};
 
-	hServices[2] = CreateServiceFunction("AvatarHistory/ShowDialog", ShowDialogSvc);
+	hServices[2] = CreateServiceFunction(MS_AVATARHISTORY_SHOWDIALOG, ShowDialogSvc);
 
 	mi.cbSize = sizeof(mi);
 	mi.ptszName = LPGENT("View Avatar History");
 	mi.flags = CMIF_TCHAR;
 	mi.position = 1000090010;
 	mi.hIcon = createDefaultOverlayedIcon(FALSE);
-	mi.pszService = "AvatarHistory/ShowDialog";
+	mi.pszService = MS_AVATARHISTORY_SHOWDIALOG;
 	hMenu = (HANDLE)CallService(MS_CLIST_ADDCONTACTMENUITEM, 0, (LPARAM)&mi);
 	DestroyIcon(mi.hIcon);
 }
