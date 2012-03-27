@@ -40,22 +40,23 @@ END
 // Dialog
 //
 
-IDD_AVATARDLG DIALOGEX 0, 0, 216, 166
+IDD_AVATARDLG DIALOGEX 0, 0, 216, 195
 STYLE DS_SETFONT | DS_SETFOREGROUND | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 CAPTION "Avatar History"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     LISTBOX         IDC_AVATARLIST,7,7,110,74,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     CONTROL         "",IDC_AVATAR,"Static",SS_BITMAP | SS_NOTIFY | SS_CENTERIMAGE | SS_REALSIZEIMAGE | SS_SUNKEN,125,7,84,74
+    LTEXT           "Static",IDC_AVATARPATH,7,105,204,26
     PUSHBUTTON      "Open Folder",IDC_OPENFOLDER,6,81,49,14
     PUSHBUTTON      "<",IDC_BACK,138,82,31,10,BS_CENTER | BS_VCENTER
     PUSHBUTTON      ">",IDC_NEXT,172,82,31,10,BS_CENTER | BS_VCENTER
     CONTROL         "Store this user's old avatars in disk",IDC_LOGUSER,
-                    "Button",BS_AUTO3STATE | WS_TABSTOP,7,100,202,10
+                    "Button",BS_AUTO3STATE | WS_TABSTOP,7,135,202,10
     CONTROL         "Log this user's avatars changes to history",IDC_HISTORYUSER,
-                    "Button",BS_AUTO3STATE | WS_TABSTOP,7,112,202,10
-    CONTROL         "Show popups for this user",IDC_POPUPUSER,"Button",BS_AUTO3STATE | WS_TABSTOP,7,124,202,10
-    DEFPUSHBUTTON   "OK",IDOK,73,138,50,14
+                    "Button",BS_AUTO3STATE | WS_TABSTOP,7,147,202,10
+    CONTROL         "Show popups for this user",IDC_POPUPUSER,"Button",BS_AUTO3STATE | WS_TABSTOP,7,159,202,10
+    DEFPUSHBUTTON   "OK",IDOK,73,169,50,14
 END
 
 IDD_OPTIONS DIALOGEX 0, 0, 314, 173
@@ -183,26 +184,6 @@ END
 #endif    // APSTUDIO_INVOKED
 
 #endif    // Neutral resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// German (Germany) resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)
-LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
-#pragma code_page(1252)
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
-
-// Icon with lowest ID value placed first to ensure application icon
-// remains consistent on all systems.
-IDI_NEWAVATAR           ICON                    "NewAvatar.ico"
-IDI_AVATARHISTORY       ICON                    "AvatarHistory.ico"
-#endif    // German (Germany) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

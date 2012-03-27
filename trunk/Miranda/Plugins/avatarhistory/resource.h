@@ -1,5 +1,5 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
+// Microsoft Visual C++ generated include file.
 // Used by AvatarHistory.rc
 //
 #define IDD_OPTIONS_OLD                 101
@@ -46,6 +46,7 @@
 #define IDC_MIR_SAME                    1022
 #define IDC_LEFT_ACTION                 1023
 #define IDC_MIR_PROTO                   1023
+#define IDC_AVATARPATH                  1023
 #define IDC_MIR_SHORT                   1024
 #define IDC_SHORT                       1025
 #define IDC_DUP                         1026
@@ -81,7 +82,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        110
 #define _APS_NEXT_COMMAND_VALUE         40004
-#define _APS_NEXT_CONTROL_VALUE         1023
+#define _APS_NEXT_CONTROL_VALUE         1025
 #define _APS_NEXT_SYMED_VALUE           103
 #endif
 #endif
