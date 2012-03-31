@@ -30,7 +30,7 @@ HANDLE hOptHook = NULL;
 
 Options opts;
 
-static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
 
@@ -58,8 +58,8 @@ int InitOptionsCallback(WPARAM wParam,LPARAM lParam)
     odp.cbSize=sizeof(odp);
     odp.position=0;
 	odp.hInstance=hInst;
-	odp.ptszGroup = TranslateT("Plugins");
-	odp.ptszTitle = TranslateT("Quick Contacts");
+	odp.ptszGroup = LPGENT("Plugins");
+	odp.ptszTitle = LPGENT("Quick Contacts");
 	odp.pfnDlgProc = OptionsDlgProc;
 	odp.pszTemplate = MAKEINTRESOURCEA(IDD_OPT);
     odp.flags = ODPF_BOLDGROUPS | ODPF_EXPERTONLY | ODPF_TCHAR;
@@ -97,7 +97,7 @@ static OptPageControl controls[] = {
 	{ NULL, CONTROL_CHECKBOX,		IDC_KEEP_OFFLINE,	"KeepSubcontactsFromOffline",	(BYTE) TRUE }
 };
 
-static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
+static INT_PTR CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam) 
 {
 	int ret = SaveOptsDlgProc(controls, MAX_REGS(controls), MODULE_NAME, hwndDlg, msg, wParam, lParam);
 
