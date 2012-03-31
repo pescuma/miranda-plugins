@@ -162,6 +162,7 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		upd.szBetaVersionURL = "http://pescuma.mirandaim.ru/miranda/quickcontacts_version.txt";
 		upd.szBetaChangelogURL = "http://pescuma.mirandaim.ru/miranda/quickcontacts#Changelog";
 		upd.pbBetaVersionPrefix = (BYTE *)"Quick Contacts ";
+		upd.cpbBetaVersionPrefix = strlen((char *)upd.pbBetaVersionPrefix);
 #ifdef WIN64
 		upd.szBetaUpdateURL = "http://pescuma.org/miranda/quickcontacts64.zip";
 #elif
