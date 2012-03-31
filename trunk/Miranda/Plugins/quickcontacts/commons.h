@@ -31,7 +31,7 @@ Boston, MA 02111-1307, USA.
 
 
 // Miranda headers
-#define MIRANDA_VER 0x0700
+#define MIRANDA_VER 0x0A00
 #include <newpluginapi.h>
 #include <m_system.h>
 #include <m_system_cpp.h>
@@ -76,7 +76,6 @@ Boston, MA 02111-1307, USA.
 
 // Global Variables
 extern HINSTANCE hInst;
-extern PLUGINLINK *pluginLink;
 extern char *metacontacts_proto;
 
 

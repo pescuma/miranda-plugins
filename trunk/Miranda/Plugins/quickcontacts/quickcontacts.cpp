@@ -27,7 +27,9 @@ Boston, MA 02111-1307, USA.
 
 PLUGININFOEX pluginInfo={
 	sizeof(PLUGININFOEX),
-#ifdef UNICODE
+#ifdef WIN64
+	"Quick Contacts (x64)",
+#elif UNICODE
 	"Quick Contacts (Unicode)",
 #else
 	"Quick Contacts",
@@ -40,7 +42,9 @@ PLUGININFOEX pluginInfo={
 	"http://pescuma.org/miranda/quickcontacts",
 	UNICODE_AWARE,
 	0,		//doesn't replace anything built-in
-#ifdef UNICODE
+#ifdef WIN64
+	{ 0xf93ba59c, 0x4f48, 0x4f2e, { 0x8a, 0x91, 0x77, 0xa2, 0x80, 0x15, 0x27, 0xa3 } } // {F93BA59C-4F48-4F2E-8A91-77A2801527A3}
+#elif UNICODE
 	{ 0xc679e1c9, 0x7967, 0x40ce, { 0x8a, 0x40, 0x95, 0x5b, 0x51, 0xde, 0x64, 0x3b } } // {C679E1C9-7967-40ce-8A40-955B51DE643B}
 #else
 	{ 0xd3cc7943, 0xff2e, 0x4c2a, { 0xb3, 0xac, 0x6c, 0xe9, 0xbc, 0x83, 0x18, 0x78 } } // {D3CC7943-FF2E-4c2a-B3AC-6CE9BC831878}
@@ -54,10 +58,12 @@ HIMAGELIST hIml;
 LIST_INTERFACE li;
 MM_INTERFACE mmi;
 UTF8_INTERFACE utfi;
+int hLangpack = 0;
 
 HANDLE hModulesLoaded = NULL;
 HANDLE hEventAdded = NULL;
 HANDLE hHotkeyPressed = NULL;
+HANDLE hQSShowDialog = NULL;
 
 long main_dialog_open = 0;
 HWND hwndMain = NULL;
@@ -65,7 +71,7 @@ HWND hwndMain = NULL;
 int ModulesLoaded(WPARAM wParam, LPARAM lParam);
 int EventAdded(WPARAM wparam, LPARAM lparam);
 int HotkeyPressed(WPARAM wParam, LPARAM lParam);
-int ShowDialog(WPARAM wParam,LPARAM lParam);
+INT_PTR ShowDialog(WPARAM wParam,LPARAM lParam);
 void FreeContacts();
 
 int hksModule = 0;
@@ -88,16 +94,8 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvRe
 }
 
 
-extern "C" __declspec(dllexport) PLUGININFO* MirandaPluginInfo(DWORD mirandaVersion) 
-{
-	pluginInfo.cbSize = sizeof(PLUGININFO);
-	return (PLUGININFO*) &pluginInfo;
-}
-
-
 extern "C" __declspec(dllexport) PLUGININFOEX* MirandaPluginInfoEx(DWORD mirandaVersion)
 {
-	pluginInfo.cbSize = sizeof(PLUGININFOEX);
 	return &pluginInfo;
 }
 
@@ -116,8 +114,9 @@ extern "C" __declspec(dllexport) int Load(PLUGINLINK *link)
 	mir_getMMI(&mmi);
 	mir_getUTFI(&utfi);
 	mir_getLI(&li);
+	mir_getLP(&pluginInfo);
 
-	CreateServiceFunction(MS_QC_SHOW_DIALOG, ShowDialog);
+	hQSShowDialog = CreateServiceFunction(MS_QC_SHOW_DIALOG, ShowDialog);
 
 	// hooks
 	hModulesLoaded = HookEvent(ME_SYSTEM_MODULESLOADED, ModulesLoaded);
@@ -131,6 +130,8 @@ extern "C" __declspec(dllexport) int Unload(void)
 	FreeContacts();
 
 	DeInitOptions();
+
+	DestroyServiceFunction(hQSShowDialog);
 
 	UnhookEvent(hModulesLoaded);
 	UnhookEvent(hEventAdded);
@@ -161,24 +162,25 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		upd.szBetaVersionURL = "http://pescuma.mirandaim.ru/miranda/quickcontacts_version.txt";
 		upd.szBetaChangelogURL = "http://pescuma.mirandaim.ru/miranda/quickcontacts#Changelog";
 		upd.pbBetaVersionPrefix = (BYTE *)"Quick Contacts ";
-		upd.cpbBetaVersionPrefix = strlen((char *)upd.pbBetaVersionPrefix);
-#ifdef UNICODE
-		upd.szBetaUpdateURL = "http://pescuma.mirandaim.ru/miranda/quickcontactsW.zip";
+#ifdef WIN64
+		upd.szBetaUpdateURL = "http://pescuma.org/miranda/quickcontacts64.zip";
+#elif
+		upd.szBetaUpdateURL = "http://pescuma.org/miranda/quickcontactsW.zip";
 #else
-		upd.szBetaUpdateURL = "http://pescuma.mirandaim.ru/miranda/quickcontacts.zip";
+		upd.szBetaUpdateURL = "http://pescuma.org/miranda/quickcontacts.zip";
 #endif
 
-		upd.pbVersion = (BYTE *)CreateVersionStringPlugin((PLUGININFO*) &pluginInfo, szCurrentVersion);
+		upd.pbVersion = (BYTE *)CreateVersionStringPluginEx(&pluginInfo, szCurrentVersion);
 		upd.cpbVersion = strlen((char *)upd.pbVersion);
 
         CallService(MS_UPDATE_REGISTER, 0, (LPARAM)&upd);
 	}
 
 	// Get number of protocols
-	int pcount;
-	PROTOCOLDESCRIPTOR** pdesc;
+	int pcount = 0;
+	PROTOACCOUNT** pdesc;
 
-	CallService(MS_PROTO_ENUMPROTOCOLS,(WPARAM)(int*)&pcount,(LPARAM)(PROTOCOLDESCRIPTOR***)&pdesc);
+	ProtoEnumAccounts(&pcount,&pdesc);
 
 	opts.num_protos = 0;
 	for (int loop=0;loop<pcount;loop++)
@@ -195,9 +197,10 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 		HOTKEYDESC hkd = {0};
 		hkd.cbSize = sizeof(hkd);
-		hkd.pszName = Translate("Quick Contacts/Open dialog");
-		hkd.pszDescription = Translate("Open dialog");
-		hkd.pszSection = Translate("Quick Contacts");
+		hkd.dwFlags = HKD_TCHAR;
+		hkd.pszName = "Quick Contacts/Open dialog";
+		hkd.ptszDescription = LPGENT("Open dialog");
+		hkd.ptszSection = LPGENT("Quick Contacts");
 		hkd.pszService = MS_QC_SHOW_DIALOG;
 		hkd.DefHotKey = HOTKEYCODE(HOTKEYF_CONTROL|HOTKEYF_ALT, 'Q');
 		CallService(MS_HOTKEY_REGISTER, 0, (LPARAM)&hkd);
@@ -206,44 +209,44 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 		hkd.lParam = HOTKEY_VOICE;
 		hkd.DefHotKey = HOTKEYCODE(HOTKEYF_CONTROL, 'V');
-		hkd.pszName = Translate("Quick Contacts/Voice");
-		hkd.pszDescription = Translate("Make a voice call");
+		hkd.pszName = "Quick Contacts/Voice";
+		hkd.ptszDescription = LPGENT("Make a voice call");
 		CallService(MS_HOTKEY_REGISTER, 0, (LPARAM)&hkd);
 
 		hkd.lParam = HOTKEY_FILE;
 		hkd.DefHotKey = HOTKEYCODE(HOTKEYF_CONTROL, 'F');
-		hkd.pszName = Translate("Quick Contacts/File");
-		hkd.pszDescription = Translate("Send file");
+		hkd.pszName = "Quick Contacts/File";
+		hkd.ptszDescription = LPGENT("Send file");
 		CallService(MS_HOTKEY_REGISTER, 0, (LPARAM)&hkd);
 
 		hkd.lParam = HOTKEY_URL;
 		hkd.DefHotKey = HOTKEYCODE(HOTKEYF_CONTROL, 'U');
-		hkd.pszName = Translate("Quick Contacts/URL");
-		hkd.pszDescription = Translate("Send URL");
+		hkd.pszName = "Quick Contacts/URL";
+		hkd.ptszDescription = LPGENT("Send URL");
 		CallService(MS_HOTKEY_REGISTER, 0, (LPARAM)&hkd);
 
 		hkd.lParam = HOTKEY_INFO;
 		hkd.DefHotKey = HOTKEYCODE(HOTKEYF_CONTROL, 'I');
-		hkd.pszName = Translate("Quick Contacts/Info");
-		hkd.pszDescription = Translate("Open userinfo");
+		hkd.pszName = "Quick Contacts/Info";
+		hkd.ptszDescription = LPGENT("Open userinfo");
 		CallService(MS_HOTKEY_REGISTER, 0, (LPARAM)&hkd);
 		
 		hkd.lParam = HOTKEY_HISTORY;
 		hkd.DefHotKey = HOTKEYCODE(HOTKEYF_CONTROL, 'H');
-		hkd.pszName = Translate("Quick Contacts/History");
-		hkd.pszDescription = Translate("Open history");
+		hkd.pszName = "Quick Contacts/History";
+		hkd.ptszDescription = LPGENT("Open history");
 		CallService(MS_HOTKEY_REGISTER, 0, (LPARAM)&hkd);
 		
 		hkd.lParam = HOTKEY_MENU;
 		hkd.DefHotKey = HOTKEYCODE(HOTKEYF_CONTROL, 'M');
-		hkd.pszName = Translate("Quick Contacts/Menu");
-		hkd.pszDescription = Translate("Open contact menu");
+		hkd.pszName = "Quick Contacts/Menu";
+		hkd.ptszDescription = LPGENT("Open contact menu");
 		CallService(MS_HOTKEY_REGISTER, 0, (LPARAM)&hkd);
 		
 		hkd.lParam = HOTKEY_ALL_CONTACTS;
 		hkd.DefHotKey = HOTKEYCODE(HOTKEYF_CONTROL, 'A');
-		hkd.pszName = Translate("Quick Contacts/All Contacts");
-		hkd.pszDescription = Translate("Show all contacts");
+		hkd.pszName = "Quick Contacts/All Contacts";
+		hkd.ptszDescription = LPGENT("Show all contacts");
 		CallService(MS_HOTKEY_REGISTER, 0, (LPARAM)&hkd);
 	}
 
@@ -278,8 +281,8 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 	ZeroMemory(&mi,sizeof(mi));
 	mi.cbSize = sizeof(mi);
 	mi.position = 500100001;
-	mi.flags = 0;
-	mi.pszName = Translate("Quick Contacts...");
+	mi.flags = CMIF_TCHAR;
+	mi.ptszName = LPGENT("Quick Contacts...");
 	mi.pszService = MS_QC_SHOW_DIALOG;
 	CallService(MS_CLIST_ADDMAINMENUITEM,0,(LPARAM)&mi);
 
@@ -445,7 +448,7 @@ void LoadContacts(HWND hwndDlg, BOOL show_all)
 
 	// Read last-sent-to contact from db and set handle as window-userdata
 	HANDLE hlastsent = (HANDLE)DBGetContactSettingDword(NULL, MODULE_NAME, "LastSentTo", -1);
-	SetWindowLong(hwndMain, GWL_USERDATA, (LONG)hlastsent);
+	SetWindowLong(hwndMain, GWLP_USERDATA, (LONG)hlastsent);
 
 	// enumerate all contacts and write them to the array
 	// item data of listbox-strings is the array position
@@ -887,7 +890,7 @@ static void FillCheckbox(HWND hwndDlg, int dlgItem, char *name, char *key)
 }
 
 
-static BOOL CALLBACK MainDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
@@ -910,7 +913,7 @@ static BOOL CALLBACK MainDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM l
 
 			// Combo
 			SendMessage(GetDlgItem(hwndDlg, IDC_USERNAME), EM_LIMITTEXT, (WPARAM)119,0);
-			wpEditMainProc = (WNDPROC) SetWindowLong(GetWindow(GetDlgItem(hwndDlg, IDC_USERNAME),GW_CHILD), GWL_WNDPROC, (LONG)EditProc);
+			wpEditMainProc = (WNDPROC) SetWindowLong(GetWindow(GetDlgItem(hwndDlg, IDC_USERNAME),GW_CHILD), GWLP_WNDPROC, (LONG)EditProc);
 
 			// Buttons
 			FillCheckbox(hwndDlg, IDC_SHOW_ALL_CONTACTS, "Show all contacts", hasNewHotkeyModule ? NULL : "Ctrl+A");
@@ -1361,7 +1364,7 @@ int HotkeyPressed(WPARAM wParam, LPARAM lParam)
 
 
 // Show the main dialog
-int ShowDialog(WPARAM wParam, LPARAM lParam) 
+INT_PTR ShowDialog(WPARAM wParam, LPARAM lParam) 
 {
 	if (!main_dialog_open) 
 	{
