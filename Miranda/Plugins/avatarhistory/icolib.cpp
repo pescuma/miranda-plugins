@@ -1,5 +1,4 @@
 #include "AvatarHistory.h"
-#include <commctrl.h> //for ImageList_*
 
 enum IconIndex
 {
@@ -64,8 +63,6 @@ int IcoLibIconsChanged(WPARAM wParam, LPARAM lParam)
 
 void SetupIcoLib()
 {
-    hHooks[4] = HookEvent(ME_SKIN2_ICONSCHANGED, IcoLibIconsChanged);
-
 	if (hHooks[4])
 	{
 		SKINICONDESC sid = {0};

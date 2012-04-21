@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <time.h>
 #include <strsafe.h>
+#include <commctrl.h> //for ImageList_*
+#include <prsht.h>
+#include <ShObjIdl.h>
+#include <ShlGuid.h>
 
 
 #define MIRANDA_VER 0x0A00
@@ -53,7 +57,6 @@ extern HANDLE hAvatarWindowsList;
 #define DEFAULT_TEMPLATE_REMOVED LPGENT("removed his/her avatar")
 #define DEFAULT_TEMPLATE_CHANGED LPGENT("changed his/her avatar")
 
-TCHAR * MyDBGetStringT(HANDLE hContact, char* module, char* setting, TCHAR* out, size_t len);
 void LoadOptions();
 
  // from icolib.cpp
@@ -62,6 +65,10 @@ void SetupIcoLib();
 HICON createDefaultOverlayedIcon(BOOL big);
 HICON createProtoOverlayedIcon(HANDLE hContact);
 
+int PreBuildContactMenu(WPARAM wParam,LPARAM lParam);
+int IcoLibIconsChanged(WPARAM wParam,LPARAM lParam);
+
+int OpenAvatarDialog(HANDLE hContact, char* fn);
 
 #define MAX_REGS(_A_) ( sizeof(_A_) / sizeof(_A_[0]) )
 

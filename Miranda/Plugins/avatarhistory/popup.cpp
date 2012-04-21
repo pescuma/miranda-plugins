@@ -65,9 +65,9 @@ void ShowErrPopup(const TCHAR *description, const TCHAR *title)
 }
 
 
-void ShowTestPopup(const TCHAR *title, const TCHAR *description, const Options *op)
+void ShowTestPopup(HANDLE hContact,const TCHAR *title, const TCHAR *description, const Options *op)
 {
-	ShowPopupEx(NULL, title, description, NULL, POPUP_TYPE_TEST, op);
+	ShowPopupEx(hContact, title, description, NULL, POPUP_TYPE_TEST, op);
 }
 
 

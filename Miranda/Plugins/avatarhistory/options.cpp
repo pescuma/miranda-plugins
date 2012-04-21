@@ -222,7 +222,8 @@ static INT_PTR CALLBACK PopupsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPA
 					op.popup_use_win_colors = IsDlgButtonChecked(hwndDlg, IDC_WINCOLORS) != 0;
 					op.popup_use_default_colors = IsDlgButtonChecked(hwndDlg, IDC_DEFAULTCOLORS) != 0;
 
-					ShowTestPopup(TranslateT("Test Contact"), TranslateT("Test description"), &op);
+					HANDLE hContact = (HANDLE) CallService(MS_DB_CONTACT_FINDFIRST,0,0);
+					ShowTestPopup(hContact,TranslateT("Test Contact"), TranslateT("Test description"), &op);
 
 					break;
 				}

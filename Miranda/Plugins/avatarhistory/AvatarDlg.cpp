@@ -20,14 +20,11 @@ Avatar History Plugin
 
 #include "AvatarHistory.h"
 
-#include <commctrl.h>
-#include <prsht.h>
-
 extern HINSTANCE hInst;
 HANDLE hMenu = NULL; 
 DWORD WINAPI AvatarDialogThread(LPVOID param);
 static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM lParam);
-int ShowSaveDialog(HWND hwnd, TCHAR* fn);
+int ShowSaveDialog(HWND hwnd, TCHAR* fn,HANDLE hContact = NULL);
 
 BOOL ProtocolEnabled(const char *proto);
 int FillAvatarListFromDB(HWND list, HANDLE hContact);
@@ -543,8 +540,6 @@ int PreBuildContactMenu(WPARAM wParam,LPARAM lParam)
 
 void InitMenuItem()
 {
-	hHooks[5] = HookEvent(ME_CLIST_PREBUILDCONTACTMENU, PreBuildContactMenu);
-
 	CLISTMENUITEM mi = {0};
 
 	hServices[2] = CreateServiceFunction(MS_AVATARHISTORY_SHOWDIALOG, ShowDialogSvc);
@@ -574,14 +569,14 @@ TCHAR* GetCurrentSelFile(HWND list)
 		return NULL;
 }
 
-int ShowSaveDialog(HWND hwnd, TCHAR* fn)
+int ShowSaveDialog(HWND hwnd, TCHAR* fn, HANDLE hContact)
 {
-	TCHAR initdir[MAX_PATH] = _T(".");
 	TCHAR filter[MAX_PATH];
 	TCHAR file[MAX_PATH];
 	OPENFILENAME ofn;
 	ZeroMemory(&ofn, sizeof(OPENFILENAME));
-	MyDBGetStringT(NULL, "AvatarHistory", "SavedAvatarFolder", initdir, MAX_PATH);
+	DBVARIANT dbvInitDir = {0};
+	bool ret = (DBGetContactSettingTString(hContact,MODULE_NAME,"SavedAvatarFolder",&dbvInitDir)== 0);
 	ofn.lStructSize = sizeof(OPENFILENAME);
 	ofn.hwndOwner = hwnd;
 	ofn.hInstance = hInst;
@@ -596,47 +591,16 @@ int ShowSaveDialog(HWND hwnd, TCHAR* fn)
 	ofn.nMaxFile = MAX_PATH;
 	ofn.Flags = OFN_PATHMUSTEXIST;
 	ofn.lpstrDefExt = _tcsrchr(fn, '.')+1;
-	ofn.lpstrInitialDir = initdir[0]?initdir:NULL;
+	if(ret)
+	{
+		ofn.lpstrInitialDir = dbvInitDir.ptszVal;
+		DBFreeVariant(&dbvInitDir);
+	}
+	else
+	{
+		ofn.lpstrInitialDir = _T(".");
+	}
 	if(GetSaveFileName(&ofn))
 		CopyFile(fn, file, FALSE);
 	return 0;
-}
-
-TCHAR* MyDBGetStringT(HANDLE hContact, char* module, char* setting, TCHAR* out, size_t len)
-{
-	DBCONTACTGETSETTING dbgcs;
-	DBVARIANT dbv;
-	dbgcs.szModule = module;
-	dbgcs.szSetting = setting;
-	dbgcs.pValue = &dbv;
-	dbv.type = DBVT_TCHAR;
-
-	dbv.ptszVal = out;
-	dbv.cchVal = (int) len;
-	if (CallService(MS_DB_CONTACT_GETSETTINGSTATIC, (WPARAM)hContact, (LPARAM)&dbgcs) != 0)
-		return NULL;
-	else
-		return out;
-}
-
-char * MyDBGetString(HANDLE hContact, char* module, char* setting, char * out, size_t len)
-{
-	DBCONTACTGETSETTING dbgcs;
-	DBVARIANT dbv;
-	dbgcs.szModule = module;
-	dbgcs.szSetting = setting;
-	dbgcs.pValue = &dbv;
-	dbv.type = DBVT_ASCIIZ;
-	dbv.pszVal = out;
-	dbv.cchVal = (int) len;
-	if (CallService(MS_DB_CONTACT_GETSETTINGSTATIC, (WPARAM)hContact, (LPARAM)&dbgcs) != 0)
-	{
-		out[len-1] = '\0';
-		return NULL;
-	}
-	else
-	{
-		out[len-1] = '\0';
-		return out;
-	}
 }

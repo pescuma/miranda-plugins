@@ -7,6 +7,7 @@ Changelog:
 + support for WindowList
 * fixed some issues reported by borkra
 + updated m_folders.h
+* fixed duplicate avatar notifications
 
 . 0.0.3.0
 THIS REQUIRES MIRANDA IM 0.10 ALPHA #3 OR ABOVE!!
