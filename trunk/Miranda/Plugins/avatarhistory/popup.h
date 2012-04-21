@@ -39,7 +39,7 @@ void DeInitPopups();
 void ShowPopup(HANDLE hContact, const TCHAR *title, const TCHAR *description);
 
 // Show an test
-void ShowTestPopup(const TCHAR *title, const TCHAR *description, const Options *op);
+void ShowTestPopup(HANDLE hContact,const TCHAR *title, const TCHAR *description, const Options *op);
 
 // Show an error popup
 void ShowErrPopup(const char *description, const char *title = NULL);
