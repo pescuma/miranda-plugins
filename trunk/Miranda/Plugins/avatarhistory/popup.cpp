@@ -224,7 +224,7 @@ static LRESULT CALLBACK PopupDlgProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 		case UM_FREEPLUGINDATA: 
 		{
 			PopupDataType* popup = (PopupDataType*)PUGetPluginData(hWnd);
-			if ((unsigned)popup != CALLSERVICE_NOTFOUND)
+			if ((INT_PTR)popup != CALLSERVICE_NOTFOUND)
 			{
 				DestroyIcon(popup->hIcon);
 				mir_free(popup);
@@ -256,7 +256,7 @@ static LRESULT CALLBACK DumbPopupDlgProc(HWND hWnd, UINT message, WPARAM wParam,
 		case UM_FREEPLUGINDATA: 
 		{
 			PopupDataType* popup = (PopupDataType*)PUGetPluginData(hWnd);
-			if ((unsigned)popup != CALLSERVICE_NOTFOUND)
+			if ((INT_PTR)popup != CALLSERVICE_NOTFOUND)
 			{
 				DestroyIcon(popup->hIcon);
 				mir_free(popup);
