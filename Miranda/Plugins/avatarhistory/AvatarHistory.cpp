@@ -69,9 +69,9 @@ BOOL CreateShortcut(TCHAR *file, TCHAR *shortcut);
 
 PLUGININFOEX pluginInfo={
 	sizeof(PLUGININFOEX),
-#ifdef WIN64
+#ifdef _WIN64
 	"Avatar History (x64)",
-#elif UNICODE
+#elif _UNICODE
 	"Avatar History (Unicode)",
 #else
 	"Avatar History (Ansi)",
@@ -84,9 +84,9 @@ PLUGININFOEX pluginInfo={
 	"http://pescuma.org/miranda/avatarhist",
 	UNICODE_AWARE,
 	0,		//doesn't replace anything built-in
-#ifdef WIN64
+#ifdef _WIN64
 	{ 0xe04702a2, 0x379, 0x4c69, { 0xbf, 0x8a, 0x84, 0xd5, 0xd0, 0xc9, 0x19, 0xcc } } // {E04702A2-0379-4C69-BF8A-84D5D0C919CC}
-#elif UNICODE
+#elif _UNICODE
 	{ 0xdbe8c990, 0x7aa0, 0x458d, { 0xba, 0xb7, 0x33, 0xeb, 0x7, 0x23, 0x8e, 0x71 } } // {DBE8C990-7AA0-458d-BAB7-33EB07238E71}
 #else
 	{ 0x4079923c, 0x8aa1, 0x4a2e, { 0x95, 0x8b, 0x9d, 0xc, 0xd0, 0xe8, 0x2e, 0xb2 } } // {4079923C-8AA1-4a2e-958B-9D0CD0E82EB2}
@@ -266,9 +266,9 @@ static int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		upd.szBetaChangelogURL = "http://pescuma.org/miranda/avatarhist#Changelog";
 		upd.pbBetaVersionPrefix = (BYTE *)"Avatar History ";
 		upd.cpbBetaVersionPrefix = (int) strlen((char *)upd.pbBetaVersionPrefix);
-#ifdef WIN64
+#ifdef _WIN64
 		upd.szBetaUpdateURL = "http://pescuma.org/miranda/avatarhist64.zip";
-#elif UNICODE
+#elif _UNICODE
 		upd.szBetaUpdateURL = "http://pescuma.org/miranda/avatarhistW.zip";
 #else
 		upd.szBetaUpdateURL = "http://pescuma.org/miranda/avatarhist.zip";
@@ -403,7 +403,7 @@ void ErrorExit(HANDLE hContact,LPTSTR lpszFunction)
     LocalFree(lpDisplayBuf);
 }
 
-#ifdef UNICODE
+#ifdef _UNICODE
 
 #define CS "%S"
 
@@ -811,7 +811,7 @@ BOOL CreateShortcut(TCHAR *file, TCHAR *shortcut)
 
         if (SUCCEEDED(hr))
         {
-#ifdef UNICODE
+#ifdef _UNICODE
 			hr = ppf->Save(shortcut, TRUE); 
 #else
 			WCHAR tmp[MAX_PATH]; 
@@ -845,7 +845,7 @@ BOOL ResolveShortcut(TCHAR *shortcut, TCHAR *file)
 
         if (SUCCEEDED(hr))
 		{
-#ifdef UNICODE
+#ifdef _UNICODE
 			hr = ppf->Load(shortcut, STGM_READ); 
 #else
 			WCHAR tmp[MAX_PATH]; 
