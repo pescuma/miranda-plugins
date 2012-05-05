@@ -88,7 +88,7 @@ int OpenAvatarDialog(HANDLE hContact, char* fn)
 	}
 	else
 	{
-#ifdef UNICODE
+#ifdef _UNICODE
 		MultiByteToWideChar(CP_ACP, 0, fn, -1, avdlg->fn, MAX_REGS(avdlg->fn));
 #else
 		lstrcpyn(avdlg->fn, fn, sizeof(avdlg->fn));
@@ -233,8 +233,9 @@ static INT_PTR CALLBACK AvatarDlgProc(HWND hwnd,UINT uMsg,WPARAM wParam,LPARAM l
 			{
 				case ID_AVATARLISTPOPUP_SAVEAS:
 				{
+					HANDLE hContact = (HANDLE) GetWindowLongPtr(hwnd, GWLP_USERDATA);
 					ListEntry *le = (ListEntry*) SendMessage(list, LB_GETITEMDATA, pos, 0);
-					ShowSaveDialog(hwnd, le->filename);
+					ShowSaveDialog(hwnd, le->filename, hContact);
 					break;
 				}
 				case ID_AVATARLISTPOPUP_DELETE:
@@ -589,7 +590,7 @@ int ShowSaveDialog(HWND hwnd, TCHAR* fn, HANDLE hContact)
 	ofn.lpstrFile = file;
 
 	ofn.nMaxFile = MAX_PATH;
-	ofn.Flags = OFN_PATHMUSTEXIST;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_DONTADDTORECENT;
 	ofn.lpstrDefExt = _tcsrchr(fn, '.')+1;
 	if(ret)
 	{
@@ -601,6 +602,9 @@ int ShowSaveDialog(HWND hwnd, TCHAR* fn, HANDLE hContact)
 		ofn.lpstrInitialDir = _T(".");
 	}
 	if(GetSaveFileName(&ofn))
+	{
 		CopyFile(fn, file, FALSE);
+		DBWriteContactSettingTString(hContact,MODULE_NAME,"SavedAvatarFolder",file);
+	}
 	return 0;
 }
