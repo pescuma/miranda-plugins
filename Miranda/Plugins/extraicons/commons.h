@@ -20,6 +20,8 @@
 #ifndef __COMMONS_H__
 # define __COMMONS_H__
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #ifdef UNICODE
 #error "Unicode not needed by this plugin"
 #endif
@@ -39,6 +41,8 @@ using namespace std;
 
 // Miranda headers
 #define MIRANDA_VER 0x0800
+#define MIRANDA_CUSTOM_LP
+
 #include <newpluginapi.h>
 #include <m_system.h>
 #include <m_protocols.h>

@@ -32,13 +32,14 @@ PLUGININFOEX pluginInfo = {
 		"http://pescuma.org/miranda/extraicons",
 		0,
 		0, //doesn't replace anything built-in
-		{ 0x112f7d30, 0xcd19, 0x4c74, { 0xa0, 0x3b, 0xbf, 0xbb, 0x76, 0xb7, 0x5b, 0xc4 } } // {112F7D30-CD19-4c74-A03B-BFBB76B75BC4}
+		{ 0x112f7d30, 0xcd19, 0x4c74, { 0xa0, 0x3b, 0xbf, 0xbb, 0x76, 0xb7, 0x5b, 0xc4 } } // {112F7D30-CD19-4c74-A03BBFBB76B75BC4}
 };
 
 HINSTANCE hInst;
 PLUGINLINK *pluginLink;
 MM_INTERFACE mmi;
 UTF8_INTERFACE utfi;
+int hLangpack;
 
 vector<HANDLE> hHooks;
 vector<HANDLE> hServices;
@@ -60,8 +61,8 @@ int ClistExtraListRebuild(WPARAM wParam, LPARAM lParam);
 int ClistExtraImageApply(WPARAM wParam, LPARAM lParam);
 int ClistExtraClick(WPARAM wParam, LPARAM lParam);
 
-int ExtraIcon_Register(WPARAM wParam, LPARAM lParam);
-int ExtraIcon_SetIcon(WPARAM wParam, LPARAM lParam);
+INT_PTR ExtraIcon_Register(WPARAM wParam, LPARAM lParam);
+INT_PTR ExtraIcon_SetIcon(WPARAM wParam, LPARAM lParam);
 
 // Functions ////////////////////////////////////////////////////////////////////////////
 
@@ -95,6 +96,7 @@ extern "C" int __declspec(dllexport) Load(PLUGINLINK *link)
 
 	mir_getMMI(&mmi);
 	mir_getUTFI(&utfi);
+	mir_getLP(&pluginInfo);
 
 	DWORD ret = CallService(MS_CLUI_GETCAPS, CLUICAPS_FLAGS2, 0);
 	clistFirstSlot = HIWORD(ret);
@@ -353,7 +355,7 @@ void RebuildListsBasedOnGroups(vector<ExtraIconGroup *> &groups)
 	std::sort(extraIconsBySlot.begin(), extraIconsBySlot.end(), compareFunc());
 }
 
-int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
+INT_PTR ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 {
 	if (wParam == 0)
 		return 0;
@@ -378,7 +380,7 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 
 		// Found one, now merge it
 
-		if (stricmp(extra->getDescription(), desc))
+		if (_stricmp(extra->getDescription(), desc))
 		{
 			string newDesc = extra->getDescription();
 			newDesc += " / ";
@@ -403,7 +405,7 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 		return extra->getID();
 	}
 
-	int id = registeredExtraIcons.size() + 1;
+	size_t id = registeredExtraIcons.size() + 1;
 
 	switch (ei->type)
 	{
@@ -472,7 +474,7 @@ int ExtraIcon_Register(WPARAM wParam, LPARAM lParam)
 	return id;
 }
 
-int ExtraIcon_SetIcon(WPARAM wParam, LPARAM lParam)
+INT_PTR ExtraIcon_SetIcon(WPARAM wParam, LPARAM lParam)
 {
 	if (wParam == 0)
 		return -1;
