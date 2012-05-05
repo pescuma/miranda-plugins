@@ -25,7 +25,7 @@
 
 HANDLE hOptHook = NULL;
 
-static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // Functions //////////////////////////////////////////////////////////////////////////////////////
 
@@ -410,7 +410,7 @@ static void UngroupSelectedItems(HWND tree)
 
 	bool selected = IsSelected(tree, hItem);
 
-	for (unsigned int i = ids->size(); i > 0; --i)
+	for (size_t i = ids->size(); i > 0; --i)
 	{
 		BaseExtraIcon *extra = registeredExtraIcons[ids->at(i - 1) - 1];
 		Tree_AddExtraIcon(tree, extra, selected, hItem);
@@ -466,7 +466,7 @@ static int CALLBACK CompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSor
 	return registeredExtraIcons[a->at(0) - 1]->compare(registeredExtraIcons[b->at(0) - 1]);
 }
 
-static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static int dragging = 0;
 	static HANDLE hDragItem = NULL;
@@ -489,7 +489,7 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 			}
 
 			HWND tree = GetDlgItem(hwndDlg, IDC_EXTRAORDER);
-			SetWindowLong(tree, GWL_STYLE, GetWindowLong(tree, GWL_STYLE) | TVS_NOHSCROLL);
+			SetWindowLongPtr(tree, GWL_STYLE, GetWindowLong(tree, GWL_STYLE) | TVS_NOHSCROLL);
 
 			int cx = GetSystemMetrics(SM_CXSMICON);
 			HIMAGELIST hImageList = ImageList_Create(cx, cx, ILC_COLOR32 | ILC_MASK, 2, 2);
@@ -545,7 +545,7 @@ static BOOL CALLBACK OptionsDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 			sort.lpfnCompare = CompareFunc;
 			TreeView_SortChildrenCB(tree, &sort, 0);
 
-			origTreeProc = (WNDPROC) SetWindowLong(tree, GWL_WNDPROC, (LONG) TreeProc);
+			origTreeProc = (WNDPROC) SetWindowLongPtr(tree, -4, (INT_PTR)TreeProc);
 
 			return TRUE;
 		}
