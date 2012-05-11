@@ -60,11 +60,6 @@ static INT_PTR GetCachedAvatar(WPARAM wParam, LPARAM lParam);
 TCHAR * GetCachedAvatar(char *proto, TCHAR *hash);
 BOOL CreateShortcut(TCHAR *file, TCHAR *shortcut);
 
-#ifdef DBGPOPUPS
-#define ShowDebugPopup ShowPopup
-#else
-#define ShowDebugPopup 
-#endif
 
 
 PLUGININFOEX pluginInfo={
