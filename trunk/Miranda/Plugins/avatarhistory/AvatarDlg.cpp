@@ -589,6 +589,17 @@ int ShowSaveDialog(HWND hwnd, TCHAR* fn, HANDLE hContact)
 	lstrcpyn(file, _tcsrchr(fn, '\\')+1, sizeof(file));
 	ofn.lpstrFile = file;
 
+	TCHAR *displayName = (TCHAR*) CallService(MS_CLIST_GETCONTACTDISPLAYNAME,(WPARAM)hContact,GCDNF_TCHAR);
+	if(displayName)
+	{
+		TCHAR title[MAX_PATH];
+		mir_sntprintf(title,sizeof(title),TranslateT("Save Avatar for %s"),displayName);
+		ofn.lpstrTitle = title;
+	}
+	else
+	{
+		ofn.lpstrTitle = TranslateT("Save Avatar");
+	}
 	ofn.nMaxFile = MAX_PATH;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_DONTADDTORECENT;
 	ofn.lpstrDefExt = _tcsrchr(fn, '.')+1;

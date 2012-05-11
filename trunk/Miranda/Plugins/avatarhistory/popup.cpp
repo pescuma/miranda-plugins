@@ -76,6 +76,14 @@ void ShowPopup(HANDLE hContact, const TCHAR *title, const TCHAR *description)
 	ShowPopupEx(hContact, title, description, hContact, POPUP_TYPE_NORMAL, &opts);
 }
 
+void ShowDebugPopup(HANDLE hContact, const TCHAR *title, const TCHAR *description)
+{
+	if(DBGetContactSettingByte(NULL,MODULE_NAME,"Debug",0))
+	{
+		ShowPopup(hContact,title,description);
+	}
+}
+
 typedef struct
 {
 	void* plugin_data;
