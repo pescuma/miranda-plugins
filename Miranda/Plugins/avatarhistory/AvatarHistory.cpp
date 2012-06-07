@@ -71,7 +71,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Avatar History (Ansi)",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,3,1),
+	PLUGIN_MAKE_VERSION(0,0,3,2),
 	"This plugin keeps backups of all your contacts' avatar changes and/or shows popups",
 	"Matthew Wild (MattJ), Ricardo Pescuma Domenecci",
 	"mwild1@gmail.com",
@@ -96,9 +96,9 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvRese
 
 extern "C" __declspec(dllexport) PLUGININFOEX* MirandaPluginInfoEx(DWORD mirandaVersion)
 {
-	if(mirandaVersion < PLUGIN_MAKE_VERSION(0,10,0,3))
+	if(mirandaVersion < PLUGIN_MAKE_VERSION(0,9,50,3))
 	{
-		MessageBox(NULL,_T("AvatarHistory requires Miranda IM 0.10 Alpha #3 or later."),_T("Avatar History"),MB_OK);
+		MessageBox(NULL,_T("AvatarHistory requires Miranda IM 0.9.50 or later."),_T("Avatar History"),MB_OK);
 		return NULL;
 	}
 	mirVer = mirandaVersion;
