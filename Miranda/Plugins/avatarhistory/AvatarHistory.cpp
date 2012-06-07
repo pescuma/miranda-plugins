@@ -71,7 +71,7 @@ PLUGININFOEX pluginInfo={
 #else
 	"Avatar History (Ansi)",
 #endif
-	PLUGIN_MAKE_VERSION(0,0,3,2),
+	PLUGIN_MAKE_VERSION(0,0,3,3),
 	"This plugin keeps backups of all your contacts' avatar changes and/or shows popups",
 	"Matthew Wild (MattJ), Ricardo Pescuma Domenecci",
 	"mwild1@gmail.com",
@@ -257,17 +257,19 @@ static int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 
 		upd.szUpdateURL = UPDATER_AUTOREGISTER;
 
-		upd.szBetaVersionURL = "http://pescuma.org/miranda/avatarhist_version.txt";
-		upd.szBetaChangelogURL = "http://pescuma.org/miranda/avatarhist#Changelog";
-		upd.pbBetaVersionPrefix = (BYTE *)"Avatar History ";
-		upd.cpbBetaVersionPrefix = (int) strlen((char *)upd.pbBetaVersionPrefix);
+		upd.szBetaVersionURL = "http://code.google.com/p/pescuma/downloads/list?q=label:Plugin-AVH";
+		upd.szBetaChangelogURL = "http://code.google.com/p/pescuma/source/list";
 #ifdef _WIN64
-		upd.szBetaUpdateURL = "http://pescuma.org/miranda/avatarhist64.zip";
+		upd.pbBetaVersionPrefix = (BYTE *) "Avatar History (x64) ";
+		upd.szBetaUpdateURL = "http://pescuma.googlecode.com/files/avatarhistW.%VERSION%-x64.zip";
 #elif _UNICODE
-		upd.szBetaUpdateURL = "http://pescuma.org/miranda/avatarhistW.zip";
+		upd.pbBetaVersionPrefix = (BYTE *) "Avatar History (Unicode) ";
+		upd.szBetaUpdateURL = "http://pescuma.googlecode.com/files/avatarhistW.%VERSION%.zip";
 #else
-		upd.szBetaUpdateURL = "http://pescuma.org/miranda/avatarhist.zip";
+		upd.pbBetaVersionPrefix = (BYTE *) "Avatar History (ANSI) ";
+		upd.szBetaUpdateURL = "http://pescuma.googlecode.com/files/avatarhist.%VERSION%.zip";
 #endif
+		upd.cpbBetaVersionPrefix = (int) strlen((char *)upd.pbBetaVersionPrefix);
 
 		upd.pbVersion = (BYTE *)CreateVersionStringPluginEx(&pluginInfo, szCurrentVersion);
 		upd.cpbVersion = (int) strlen((char *)upd.pbVersion);
