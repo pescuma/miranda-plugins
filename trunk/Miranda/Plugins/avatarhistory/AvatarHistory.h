@@ -9,7 +9,7 @@
 #include <ShlGuid.h>
 
 
-#define MIRANDA_VER 0x0A00
+#define MIRANDA_VER 0x0900
 #include <newpluginapi.h>
 #include <m_clist.h>
 #include <m_skin.h>
