@@ -26,7 +26,7 @@ struct Icon
 	HANDLE hImage;
 
 	Icon(const char *icolibName) :
-		name(icolibName), refCount(0), hImage((HANDLE) -1)
+		name(icolibName), refCount(0), hImage(INVALID_HANDLE_VALUE)
 	{
 	}
 };
@@ -53,7 +53,7 @@ static Icon * FindIcon(const char *icolibName)
 		icon = &usedIcons[usedIcons.size() - 1];
 	}
 
-	if (icon->hImage == (HANDLE) -1)
+	if (icon->hImage == INVALID_HANDLE_VALUE)
 	{
 		HICON hIcon = IcoLib_LoadIcon(icon->name.c_str());
 		if (hIcon != NULL)
@@ -103,6 +103,6 @@ void ResetIcons()
 	usedIcons.erase(std::remove_if(usedIcons.begin(), usedIcons.end(), NotUsedIcon), usedIcons.end());
 
 	for (unsigned int i = 0; i < usedIcons.size(); ++i)
-		usedIcons[i].hImage = (HANDLE) -1;
+		usedIcons[i].hImage = INVALID_HANDLE_VALUE;
 }
 
