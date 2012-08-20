@@ -165,7 +165,7 @@ int ModulesLoaded(WPARAM wParam, LPARAM lParam)
 		upd.cpbBetaVersionPrefix = strlen((char *)upd.pbBetaVersionPrefix);
 #ifdef WIN64
 		upd.szBetaUpdateURL = "http://pescuma.org/miranda/quickcontacts64.zip";
-#elif
+#elif UNICODE
 		upd.szBetaUpdateURL = "http://pescuma.org/miranda/quickcontactsW.zip";
 #else
 		upd.szBetaUpdateURL = "http://pescuma.org/miranda/quickcontacts.zip";
@@ -449,7 +449,7 @@ void LoadContacts(HWND hwndDlg, BOOL show_all)
 
 	// Read last-sent-to contact from db and set handle as window-userdata
 	HANDLE hlastsent = (HANDLE)DBGetContactSettingDword(NULL, MODULE_NAME, "LastSentTo", -1);
-	SetWindowLong(hwndMain, GWLP_USERDATA, (LONG)hlastsent);
+	SetWindowLongPtr(hwndMain, GWLP_USERDATA, (LONG)hlastsent);
 
 	// enumerate all contacts and write them to the array
 	// item data of listbox-strings is the array position
@@ -914,7 +914,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT msg, WPARAM wParam, LPARA
 
 			// Combo
 			SendMessage(GetDlgItem(hwndDlg, IDC_USERNAME), EM_LIMITTEXT, (WPARAM)119,0);
-			wpEditMainProc = (WNDPROC) SetWindowLong(GetWindow(GetDlgItem(hwndDlg, IDC_USERNAME),GW_CHILD), GWLP_WNDPROC, (LONG)EditProc);
+			wpEditMainProc = (WNDPROC) SetWindowLongPtr(GetWindow(GetDlgItem(hwndDlg, IDC_USERNAME),GW_CHILD), GWLP_WNDPROC, (LONG)EditProc);
 
 			// Buttons
 			FillCheckbox(hwndDlg, IDC_SHOW_ALL_CONTACTS, "Show all contacts", hasNewHotkeyModule ? NULL : "Ctrl+A");
